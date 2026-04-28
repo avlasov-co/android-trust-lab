@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install analyzer
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "analyzer[dev]"
+      - name: Run tests
+        run: pytest -q
+      - name: Check generated artifacts
+        run: python tools/generate_report.py --check
+      - name: CLI smoke test
+        run: |
+          trustlab validate-report datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json
+          trustlab validate-report datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json
+          trustlab validate-report datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json
+          trustlab validate-diff tests/fixtures/sample_diff.json
+          trustlab summarize tests/fixtures/sample_diff.json

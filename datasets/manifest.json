@@ -1,0 +1,81 @@
+{
+  "samples": [
+    {
+      "collection_date": "2026-04-25T15:06:21Z",
+      "collection_method": "adb_shell_snapshot",
+      "experiment_id": "E01_stock_avd",
+      "known_limitations": [
+        "synthetic sample",
+        "emulator target",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "adb_shell",
+      "raw_artifact_path": "datasets/samples/stock_avd/raw_sample.txt",
+      "report_path": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
+      "sample_id": "stock-avd-adb-sample",
+      "target_type": "avd"
+    },
+    {
+      "collection_date": "2026-04-25T15:07:21Z",
+      "collection_method": "synthetic_rooted_adb_snapshot",
+      "experiment_id": "E02_rooted_avd",
+      "known_limitations": [
+        "synthetic rooted ADB-visible sample",
+        "emulator target",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "adb_shell",
+      "raw_artifact_path": "datasets/samples/rooted_avd/raw_adb_sample.txt",
+      "report_path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
+      "sample_id": "rooted-avd-adb-sample",
+      "target_type": "avd"
+    },
+    {
+      "collection_date": "2026-04-25T15:07:51Z",
+      "collection_method": "synthetic_root_collector_snapshot",
+      "experiment_id": "E02_rooted_avd",
+      "known_limitations": [
+        "synthetic rooted root-observer sample",
+        "emulator target",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "root_collector",
+      "raw_artifact_path": "datasets/samples/rooted_avd/raw_root_sample.txt",
+      "report_path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
+      "sample_id": "rooted-avd-root-sample",
+      "target_type": "avd"
+    },
+    {
+      "collection_date": "2026-04-25T15:08:21Z",
+      "collection_method": "synthetic_writable_system_snapshot",
+      "experiment_id": "E03_writable_system_avd",
+      "known_limitations": [
+        "synthetic writable-system sample",
+        "emulator target",
+        "overlay evidence only",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "adb_shell",
+      "raw_artifact_path": "datasets/samples/writable_system_avd/raw_sample.txt",
+      "report_path": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
+      "sample_id": "writable-system-avd-adb-sample",
+      "target_type": "avd"
+    },
+    {
+      "collection_date": "2026-04-25T15:50:00Z",
+      "collection_method": "magisk_module_manual",
+      "experiment_id": "E05_magisk_collector",
+      "known_limitations": [
+        "synthetic Magisk collector sample",
+        "emulator target",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "root_collector",
+      "raw_artifact_path": "datasets/samples/magisk_collector/raw_sample.txt",
+      "report_path": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
+      "sample_id": "magisk-collector-root-sample",
+      "target_type": "avd"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

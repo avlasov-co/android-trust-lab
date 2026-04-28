@@ -1,0 +1,22 @@
+name: Docs
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  required-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required docs
+        run: |
+          test -f README.md
+          test -f SECURITY.md
+          test -f CONTRIBUTING.md
+          test -f docs/trust_model.md
+          test -f docs/emulator_limitations.md
+          test -f docs/duckdetector_comparison.md
+          test -f docs/paper.md
+          test -f collector/schema/trust_report.schema.json
+          test -f collector/schema/trust_diff.schema.json

@@ -1,0 +1,43 @@
+{
+  "base_report": "atl-40b3dd9d667c204d",
+  "changed_dimensions": [
+    {
+      "after": true,
+      "before": false,
+      "dimension": "magisk_presence",
+      "evidence_paths": [
+        "magisk_state.magisk_binary_present"
+      ],
+      "interpretation": "Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it.",
+      "severity": "medium"
+    },
+    {
+      "after": "root",
+      "before": "shell",
+      "dimension": "observer_privilege",
+      "evidence_paths": [
+        "observer.privilege_level"
+      ],
+      "interpretation": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
+      "severity": "info"
+    }
+  ],
+  "compare_report": "atl-f08292bce61027ec",
+  "confidence_changes": [],
+  "diff_id": "atldiff-41c04f6e87743cac",
+  "missing_signals": [],
+  "new_signals": [],
+  "schema_version": "1.0.0",
+  "summary": "2 dimensions changed, 9 dimensions unchanged.",
+  "unchanged_dimensions": [
+    "bootloader_lock_state",
+    "verified_boot_state",
+    "vbmeta_state",
+    "verity_mode",
+    "selinux_mode",
+    "mount_integrity",
+    "root_presence",
+    "property_consistency",
+    "emulator_state"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aleksander-vlasov/android-trust-lab/blob/main/collector/schema/trust_diff.schema.json",
+  "title": "Android Trust Lab Trust Diff",
+  "type": "object",
+  "required": [
+    "diff_id",
+    "schema_version",
+    "base_report",
+    "compare_report",
+    "changed_dimensions",
+    "unchanged_dimensions",
+    "new_signals",
+    "missing_signals",
+    "confidence_changes",
+    "summary"
+  ],
+  "properties": {
+    "diff_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "base_report": {
+      "type": "string"
+    },
+    "compare_report": {
+      "type": "string"
+    },
+    "changed_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "dimension",
+          "before",
+          "after",
+          "severity",
+          "interpretation",
+          "evidence_paths"
+        ],
+        "properties": {
+          "dimension": {
+            "type": "string"
+          },
+          "before": {},
+          "after": {},
+          "severity": {
+            "enum": [
+              "info",
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "interpretation": {
+            "type": "string"
+          },
+          "evidence_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "unchanged_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "new_signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "missing_signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence_changes": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

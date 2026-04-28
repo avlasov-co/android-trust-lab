@@ -1,0 +1,42 @@
+{
+  "base_report": "atl-345035d528ae68c9",
+  "changed_dimensions": [
+    {
+      "after": {
+        "overlay_detected": true,
+        "writable_sensitive_mounts": [
+          "/system"
+        ]
+      },
+      "before": {
+        "overlay_detected": false,
+        "writable_sensitive_mounts": []
+      },
+      "dimension": "mount_integrity",
+      "evidence_paths": [
+        "mounts.integrity_summary"
+      ],
+      "interpretation": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
+      "severity": "high"
+    }
+  ],
+  "compare_report": "atl-170932c614ddfe76",
+  "confidence_changes": [],
+  "diff_id": "atldiff-fbd58409566ef7e9",
+  "missing_signals": [],
+  "new_signals": [],
+  "schema_version": "1.0.0",
+  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "unchanged_dimensions": [
+    "bootloader_lock_state",
+    "verified_boot_state",
+    "vbmeta_state",
+    "verity_mode",
+    "selinux_mode",
+    "root_presence",
+    "magisk_presence",
+    "property_consistency",
+    "emulator_state",
+    "observer_privilege"
+  ]
+}

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: Android Trust Lab
+message: "If you use Android Trust Lab in research, cite it as a reproducible trust-state measurement harness."
+type: software
+authors:
+  - family-names: Vlasov
+    given-names: Aleksander
+version: 0.1.0
+date-released: 2026-04-25
+repository-code: https://github.com/aleksander-vlasov/android-trust-lab
+abstract: "A reproducible research framework for measuring Android trust-state transitions across controlled system configurations."
+preferred-citation:
+  type: software
+  title: Android Trust Lab
+  authors:
+    - family-names: Vlasov
+      given-names: Aleksander
+  version: 0.1.0
+  date-released: 2026-04-25
+  repository-code: https://github.com/aleksander-vlasov/android-trust-lab

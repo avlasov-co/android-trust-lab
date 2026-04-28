@@ -1,0 +1,378 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aleksander-vlasov/android-trust-lab/blob/main/collector/schema/trust_report.schema.json",
+  "title": "Android Trust Lab Trust Report",
+  "type": "object",
+  "required": [
+    "report_id",
+    "schema_version",
+    "collection_timestamp",
+    "experiment_id",
+    "target",
+    "observer",
+    "boot_state",
+    "verified_boot",
+    "selinux",
+    "mounts",
+    "properties",
+    "root_state",
+    "magisk_state",
+    "process_state",
+    "emulator_state",
+    "limitations",
+    "raw_artifacts"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "collection_timestamp": {
+      "type": "string"
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "target_type",
+        "device_codename",
+        "manufacturer",
+        "model",
+        "android_version",
+        "sdk",
+        "build_fingerprint"
+      ],
+      "properties": {
+        "target_type": {
+          "enum": [
+            "avd",
+            "physical",
+            "unknown"
+          ]
+        },
+        "device_codename": {
+          "type": "string"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "android_version": {
+          "type": "string"
+        },
+        "sdk": {
+          "type": "string"
+        },
+        "build_fingerprint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "observer": {
+      "type": "object",
+      "required": [
+        "observer_type",
+        "privilege_level",
+        "collection_method"
+      ],
+      "properties": {
+        "observer_type": {
+          "enum": [
+            "host",
+            "adb_shell",
+            "unprivileged_app",
+            "root_collector"
+          ]
+        },
+        "privilege_level": {
+          "enum": [
+            "host",
+            "shell",
+            "app_sandbox",
+            "root",
+            "unknown"
+          ]
+        },
+        "collection_method": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "boot_state": {
+      "type": "object",
+      "required": [
+        "boot_completed",
+        "boot_reason",
+        "slot_suffix",
+        "kernel_cmdline_present"
+      ],
+      "properties": {
+        "boot_completed": {
+          "enum": [
+            "0",
+            "1",
+            "unknown"
+          ]
+        },
+        "boot_reason": {
+          "type": "string"
+        },
+        "slot_suffix": {
+          "type": "string"
+        },
+        "kernel_cmdline_present": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "verified_boot": {
+      "type": "object",
+      "required": [
+        "verified_boot_state",
+        "flash_locked",
+        "vbmeta_device_state",
+        "verity_mode",
+        "raw_properties",
+        "confidence"
+      ],
+      "properties": {
+        "verified_boot_state": {
+          "enum": [
+            "green",
+            "yellow",
+            "orange",
+            "red",
+            "unknown"
+          ]
+        },
+        "flash_locked": {
+          "enum": [
+            "0",
+            "1",
+            "unknown"
+          ]
+        },
+        "vbmeta_device_state": {
+          "enum": [
+            "locked",
+            "unlocked",
+            "unknown"
+          ]
+        },
+        "verity_mode": {
+          "enum": [
+            "enforcing",
+            "eio",
+            "logging",
+            "disabled",
+            "unknown"
+          ]
+        },
+        "raw_properties": {
+          "type": "object"
+        },
+        "confidence": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "selinux": {
+      "type": "object",
+      "required": [
+        "mode",
+        "policy_visible",
+        "denials_collected"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "enforcing",
+            "permissive",
+            "disabled",
+            "unknown",
+            "inaccessible"
+          ]
+        },
+        "policy_visible": {
+          "type": "boolean"
+        },
+        "denials_collected": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mounts": {
+      "type": "object",
+      "required": [
+        "system_mount",
+        "vendor_mount",
+        "product_mount",
+        "system_ext_mount",
+        "odm_mount",
+        "data_mount",
+        "apex_mount",
+        "overlay_detected",
+        "writable_sensitive_mounts",
+        "integrity_summary"
+      ],
+      "properties": {
+        "system_mount": {
+          "type": "object"
+        },
+        "vendor_mount": {
+          "type": "object"
+        },
+        "product_mount": {
+          "type": "object"
+        },
+        "system_ext_mount": {
+          "type": "object"
+        },
+        "odm_mount": {
+          "type": "object"
+        },
+        "data_mount": {
+          "type": "object"
+        },
+        "apex_mount": {
+          "type": "object"
+        },
+        "overlay_detected": {
+          "type": "boolean"
+        },
+        "writable_sensitive_mounts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "properties": {
+      "type": "object"
+    },
+    "root_state": {
+      "type": "object",
+      "required": [
+        "su_present",
+        "uid",
+        "gid",
+        "root_shell_available",
+        "root_paths"
+      ],
+      "properties": {
+        "su_present": {
+          "type": "boolean"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "gid": {
+          "type": "string"
+        },
+        "root_shell_available": {
+          "type": "boolean"
+        },
+        "root_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "magisk_state": {
+      "type": "object",
+      "required": [
+        "magisk_binary_present",
+        "magisk_version",
+        "magisk_path",
+        "zygisk_visible_indicators",
+        "module_context"
+      ],
+      "properties": {
+        "magisk_binary_present": {
+          "type": "boolean"
+        },
+        "magisk_version": {
+          "type": "string"
+        },
+        "magisk_path": {
+          "type": "string"
+        },
+        "zygisk_visible_indicators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "module_context": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "process_state": {
+      "type": "object"
+    },
+    "emulator_state": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "object",
+      "required": [
+        "emulator_target",
+        "missing_real_bootloader",
+        "missing_tee_validation",
+        "incomplete_permissions",
+        "collection_errors"
+      ],
+      "properties": {
+        "emulator_target": {
+          "type": "boolean"
+        },
+        "missing_real_bootloader": {
+          "type": "boolean"
+        },
+        "missing_tee_validation": {
+          "type": "boolean"
+        },
+        "incomplete_permissions": {
+          "type": "boolean"
+        },
+        "collection_errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "raw_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

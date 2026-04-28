@@ -1,0 +1,14 @@
+{
+  "manifest_id": "atl-root-manifest-20260425T155000Z",
+  "schema_version": "collection-manifest-0.1",
+  "collection_timestamp": "2026-04-25T15:50:00Z",
+  "experiment_id": "E05_magisk_collector",
+  "observer": {
+    "observer_type": "root_collector",
+    "privilege_level": "root",
+    "collection_method": "magisk_module_manual"
+  },
+  "raw_artifact": "datasets/samples/magisk_collector/raw_sample.txt",
+  "normalization": "Run trustlab normalize --observer root_collector --collection-method magisk_module_manual --input datasets/samples/magisk_collector/raw_sample.txt",
+  "note": "Read-only root-side raw snapshot manifest. This file is not a normalized trust report."
+}

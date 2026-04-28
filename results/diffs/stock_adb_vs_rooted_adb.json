@@ -1,0 +1,34 @@
+{
+  "base_report": "atl-345035d528ae68c9",
+  "changed_dimensions": [
+    {
+      "after": true,
+      "before": false,
+      "dimension": "root_presence",
+      "evidence_paths": [
+        "root_state.su_present"
+      ],
+      "interpretation": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
+      "severity": "medium"
+    }
+  ],
+  "compare_report": "atl-40b3dd9d667c204d",
+  "confidence_changes": [],
+  "diff_id": "atldiff-ddb6cfae24dc5ca5",
+  "missing_signals": [],
+  "new_signals": [],
+  "schema_version": "1.0.0",
+  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "unchanged_dimensions": [
+    "bootloader_lock_state",
+    "verified_boot_state",
+    "vbmeta_state",
+    "verity_mode",
+    "selinux_mode",
+    "mount_integrity",
+    "magisk_presence",
+    "property_consistency",
+    "emulator_state",
+    "observer_privilege"
+  ]
+}

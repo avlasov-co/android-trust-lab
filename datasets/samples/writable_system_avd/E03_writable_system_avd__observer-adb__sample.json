@@ -1,0 +1,203 @@
+{
+  "boot_state": {
+    "boot_completed": "1",
+    "boot_reason": "unknown",
+    "kernel_cmdline_present": true,
+    "slot_suffix": "unknown"
+  },
+  "collection_timestamp": "2026-04-25T15:08:21Z",
+  "emulator_state": {
+    "indicators": [
+      "fingerprint",
+      "model",
+      "ro.kernel.qemu"
+    ],
+    "is_emulator": true
+  },
+  "experiment_id": "E03_writable_system_avd",
+  "limitations": {
+    "collection_errors": [],
+    "emulator_target": true,
+    "incomplete_permissions": true,
+    "missing_real_bootloader": true,
+    "missing_tee_validation": true
+  },
+  "magisk_state": {
+    "magisk_binary_present": false,
+    "magisk_path": "unknown",
+    "magisk_version": "unknown",
+    "module_context": "unknown",
+    "zygisk_visible_indicators": []
+  },
+  "mounts": {
+    "apex_mount": {
+      "classification": "tmpfs",
+      "fs_type": "tmpfs",
+      "mount_point": "/apex",
+      "options": [
+        "ro",
+        "seclabel"
+      ],
+      "raw": "tmpfs on /apex type tmpfs (ro,seclabel)"
+    },
+    "data_mount": {
+      "classification": "read-write",
+      "fs_type": "ext4",
+      "mount_point": "/data",
+      "options": [
+        "rw",
+        "seclabel",
+        "nosuid",
+        "nodev"
+      ],
+      "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)"
+    },
+    "integrity_summary": {
+      "overlay_detected": true,
+      "writable_sensitive_mounts": [
+        "/system"
+      ]
+    },
+    "odm_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/odm",
+      "options": [
+        "ro",
+        "seclabel",
+        "relatime"
+      ],
+      "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)"
+    },
+    "overlay_detected": true,
+    "product_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/product",
+      "options": [
+        "ro",
+        "seclabel",
+        "relatime"
+      ],
+      "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)"
+    },
+    "system_ext_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/system_ext",
+      "options": [
+        "ro",
+        "seclabel",
+        "relatime"
+      ],
+      "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)"
+    },
+    "system_mount": {
+      "classification": "overlay",
+      "fs_type": "overlay",
+      "mount_point": "/system",
+      "options": [
+        "rw",
+        "seclabel",
+        "relatime",
+        "lowerdir=/system",
+        "upperdir=/mnt/scratch/overlay/system/upper",
+        "workdir=/mnt/scratch/overlay/system/work"
+      ],
+      "raw": "overlay on /system type overlay (rw,seclabel,relatime,lowerdir=/system,upperdir=/mnt/scratch/overlay/system/upper,workdir=/mnt/scratch/overlay/system/work)"
+    },
+    "vendor_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/vendor",
+      "options": [
+        "ro",
+        "seclabel",
+        "relatime"
+      ],
+      "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)"
+    },
+    "writable_sensitive_mounts": [
+      "/system"
+    ]
+  },
+  "observer": {
+    "collection_method": "synthetic_writable_system_snapshot",
+    "observer_type": "adb_shell",
+    "privilege_level": "shell"
+  },
+  "process_state": {
+    "adbd_visible": true,
+    "init_visible": true,
+    "magisk_processes_visible": false,
+    "process_contexts_available": true,
+    "raw_line_count": 4,
+    "system_server_visible": true,
+    "zygote_visible": true
+  },
+  "properties": {
+    "all_count": 15,
+    "boot": {
+      "ro.boot.flash.locked": "1",
+      "ro.boot.vbmeta.device_state": "locked",
+      "ro.boot.verifiedbootstate": "green",
+      "ro.boot.veritymode": "enforcing"
+    },
+    "build": {
+      "ro.build.fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
+      "ro.build.version.release": "14",
+      "ro.build.version.sdk": "34"
+    },
+    "crypto": {},
+    "product": {
+      "ro.product.device": "generic_x86_64",
+      "ro.product.manufacturer": "Google",
+      "ro.product.model": "sdk_gphone64_x86_64"
+    },
+    "security": {
+      "ro.adb.secure": "1",
+      "ro.debuggable": "0",
+      "ro.secure": "1",
+      "sys.boot_completed": "1"
+    }
+  },
+  "raw_artifacts": [
+    "datasets/samples/writable_system_avd/raw_sample.txt"
+  ],
+  "report_id": "atl-170932c614ddfe76",
+  "root_state": {
+    "gid": "2000",
+    "root_paths": [],
+    "root_shell_available": false,
+    "su_present": false,
+    "uid": "2000"
+  },
+  "schema_version": "1.0.0",
+  "selinux": {
+    "denials_collected": false,
+    "mode": "enforcing",
+    "policy_visible": true
+  },
+  "target": {
+    "android_version": "14",
+    "build_fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
+    "device_codename": "generic_x86_64",
+    "manufacturer": "Google",
+    "model": "sdk_gphone64_x86_64",
+    "sdk": "34",
+    "target_type": "avd"
+  },
+  "verified_boot": {
+    "confidence": "low",
+    "flash_locked": "1",
+    "raw_properties": {
+      "ro.boot.flash.locked": "1",
+      "ro.boot.vbmeta.device_state": "locked",
+      "ro.boot.verifiedbootstate": "green",
+      "ro.boot.veritymode": "enforcing"
+    },
+    "vbmeta_device_state": "locked",
+    "verified_boot_state": "green",
+    "verity_mode": "enforcing"
+  }
+}

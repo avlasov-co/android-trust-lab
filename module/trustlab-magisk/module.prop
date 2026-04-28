@@ -1,0 +1,6 @@
+id=androidtrustlab
+name=Android Trust Lab Collector
+version=0.1.0
+versionCode=1
+author=Aleksander Vlasov
+description=Read-only Android trust-state collector for research experiments.

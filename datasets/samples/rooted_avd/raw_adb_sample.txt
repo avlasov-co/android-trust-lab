@@ -1,0 +1,39 @@
+=== GETPROP ===
+[ro.product.device]: [generic_x86_64]
+[ro.product.manufacturer]: [Google]
+[ro.product.model]: [sdk_gphone64_x86_64]
+[ro.build.version.release]: [14]
+[ro.build.version.sdk]: [34]
+[ro.build.fingerprint]: [google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys]
+[ro.boot.verifiedbootstate]: [green]
+[ro.boot.flash.locked]: [1]
+[ro.boot.vbmeta.device_state]: [locked]
+[ro.boot.veritymode]: [enforcing]
+[ro.debuggable]: [0]
+[ro.secure]: [1]
+[ro.adb.secure]: [1]
+[sys.boot_completed]: [1]
+[ro.kernel.qemu]: [1]
+=== MOUNT ===
+/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)
+/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)
+/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)
+/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)
+/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)
+/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)
+tmpfs on /apex type tmpfs (ro,seclabel)
+=== ID ===
+uid=2000(shell) gid=2000(shell) groups=2000(shell)
+=== GETENFORCE ===
+Enforcing
+=== CMDLINE ===
+androidboot.verifiedbootstate=green androidboot.hardware=ranchu
+=== SU_PATHS ===
+/system/xbin/su
+=== MAGISK ===
+magisk: not found in PATH
+=== PS ===
+u:r:init:s0 root 1 0 init
+u:r:adbd:s0 shell 222 1 adbd
+u:r:zygote:s0 root 333 1 zygote64
+u:r:system_server:s0 system 444 333 system_server

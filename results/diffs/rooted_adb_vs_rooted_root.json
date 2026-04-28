@@ -1,0 +1,34 @@
+{
+  "base_report": "atl-40b3dd9d667c204d",
+  "changed_dimensions": [
+    {
+      "after": "root",
+      "before": "shell",
+      "dimension": "observer_privilege",
+      "evidence_paths": [
+        "observer.privilege_level"
+      ],
+      "interpretation": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
+      "severity": "info"
+    }
+  ],
+  "compare_report": "atl-c8fa4179191f3eee",
+  "confidence_changes": [],
+  "diff_id": "atldiff-cc75e10a680d1214",
+  "missing_signals": [],
+  "new_signals": [],
+  "schema_version": "1.0.0",
+  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "unchanged_dimensions": [
+    "bootloader_lock_state",
+    "verified_boot_state",
+    "vbmeta_state",
+    "verity_mode",
+    "selinux_mode",
+    "mount_integrity",
+    "root_presence",
+    "magisk_presence",
+    "property_consistency",
+    "emulator_state"
+  ]
+}
