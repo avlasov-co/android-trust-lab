@@ -20,6 +20,11 @@ jobs:
         run: pytest -q
       - name: Check generated artifacts
         run: python tools/generate_report.py --check
+      - name: Check Magisk module package safety
+        run: python tools/package_magisk_module.py --check-only
+      - name: Check Magisk shell syntax
+        run: |
+          for f in module/trustlab-magisk/*.sh module/trustlab-magisk/scripts/*.sh; do sh -n "$f"; done
       - name: CLI smoke test
         run: |
           trustlab validate-report datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json

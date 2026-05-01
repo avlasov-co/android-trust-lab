@@ -1,0 +1,111 @@
+{
+  "project": "android-trust-lab",
+  "version": "v0.1.0",
+  "artifacts": [
+    {
+      "path": "datasets/manifest.json",
+      "type": "sample_manifest",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "8bf24b8eb4fd5fd234aaa15fef8c970b791a6dfcd48c73f5da19cf3122836543",
+      "status": "checked"
+    },
+    {
+      "path": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
+      "type": "normalized_sample_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "4cccb7393710de14d7d495f4d143f5d5a2c78f130461ec6c9b0dc167d8ac6f2e",
+      "status": "checked"
+    },
+    {
+      "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
+      "type": "normalized_sample_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "0463afc900dbbfc2f6a3f94770bbd2a0a3d414089ca5272c6187ada68f757ef0",
+      "status": "checked"
+    },
+    {
+      "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
+      "type": "normalized_sample_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "708e0965d2db20b210292b4f9cc572d160393166d1c293f006e814ac222d879a",
+      "status": "checked"
+    },
+    {
+      "path": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
+      "type": "normalized_sample_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "122c6f488827fb905c31a03e54cb917d7686ee9e74cefcb96772e8e283227496",
+      "status": "checked"
+    },
+    {
+      "path": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
+      "type": "normalized_sample_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "d4b76acc965f96dedbc12c0d9ea4bf7c038b540f925feefc973332f76b49b6f5",
+      "status": "checked"
+    },
+    {
+      "path": "results/diffs/stock_adb_vs_rooted_adb.json",
+      "type": "generated_diff",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "82c514b1c78972af3759e126985e916c10c2aaa9233c28262c0064c17004176f",
+      "status": "checked"
+    },
+    {
+      "path": "results/diffs/rooted_adb_vs_rooted_root.json",
+      "type": "generated_diff",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "4e0bef6d61bab1174077c2cad02f609bfe3ac01e7121ff8747d3fe1b27b20476",
+      "status": "checked"
+    },
+    {
+      "path": "results/diffs/stock_vs_writable_system.json",
+      "type": "generated_diff",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "98f5f4fdc6d14436e35b2946371165605c546ff427d9d784e3630f6a4d9ed670",
+      "status": "checked"
+    },
+    {
+      "path": "results/diffs/rooted_adb_vs_magisk_root_collector.json",
+      "type": "generated_diff",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "07bda4c7761f0f7c8325583f5e4ed97882f931ba8f7371e5ba4ccdf38f01bf93",
+      "status": "checked"
+    },
+    {
+      "path": "results/summary_table.md",
+      "type": "generated_table",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "826fbecf9af322f058615ae42b3a8cabb215846d94ef9388cd3f77f588aa8d5a",
+      "status": "checked"
+    },
+    {
+      "path": "results/trust_state_diffs.md",
+      "type": "generated_report",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "792cdb33dac91a275ddbb27765d0c31cdd764f547ab2fd4ea925d8d3f2bf397b",
+      "status": "checked"
+    },
+    {
+      "path": "results/figures/trust_dimensions_matrix.md",
+      "type": "generated_matrix",
+      "generated_by": "python tools/generate_report.py",
+      "sha256": "c957c22a2f39fa657329aefd6f134ca6adb5264be5701709e04d072a7daac552",
+      "status": "checked"
+    }
+  ],
+  "validation": {
+    "compileall_python_S": "pass",
+    "pytest": "not_completed_in_current_container_python_startup_timeout",
+    "report_check": "not_completed_in_current_container_python_startup_timeout",
+    "magisk_package_check_python_S": "pass",
+    "shell_syntax": "pass",
+    "release_script": "not_completed_in_current_container_python_startup_timeout"
+  },
+  "notes": [
+    "Artifact hashes cover checked-in generated outputs only.",
+    "No standalone Magisk zip is listed because it is not stored as a checked-in repository artifact.",
+    "Current sample evidence is synthetic / AVD-limited and does not claim physical-device validation.",
+    "Current container validation used source-level fallbacks because normal Python startup timed out before repo code executed."
+  ]
+}

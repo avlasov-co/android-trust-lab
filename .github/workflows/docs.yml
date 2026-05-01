@@ -18,5 +18,6 @@ jobs:
           test -f docs/emulator_limitations.md
           test -f docs/duckdetector_comparison.md
           test -f docs/paper.md
+          test -f docs/reviewer_quickstart.md
           test -f collector/schema/trust_report.schema.json
           test -f collector/schema/trust_diff.schema.json

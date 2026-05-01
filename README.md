@@ -1,5 +1,16 @@
 # Android Trust Lab
 
+## For reviewers
+
+Start here if you are evaluating the repository quickly:
+
+- Work manifest: `docs/work_manifest.md`
+- Reviewer quickstart: `docs/reviewer_quickstart.md`
+- Evidence matrix: `docs/evidence_matrix.md`
+- Reviewer packet: `docs/reviewer_packet.md`
+- Artifact manifest: `results/artifact_manifest.json`
+- One-command validation: `bash scripts/verify_release.sh`
+
 Android Trust Lab is a reproducible research harness for measuring Android trust-state transitions across controlled system configurations.
 
 It is not a root detector, bypass tool, root-hiding framework, Magisk hiding project, Play Integrity bypass project, SafetyNet bypass project, banking-app bypass project, or DuckDetector clone.
@@ -44,6 +55,36 @@ diff engine
         ↓
 trust_diff.schema.json + markdown summary
 ```
+
+## Implemented scope in this release
+
+| Capability | Status |
+|---|---|
+| Python analyzer CLI for normalize / validate / diff / summarize | implemented |
+| Raw text parsing, normalization, schema validation, and diff generation | implemented |
+| Synthetic / AVD-limited sample reports and generated result diffs | implemented |
+| Read-only Magisk root collector module | implemented |
+| Magisk module packaging safety checks | implemented through `tools/package_magisk_module.py` |
+| Android app, Gradle project, and instrumentation tests | not present |
+| Unprivileged app probe | design only |
+| APK manifest / permission analyzer | not present |
+| Physical-device validation | not collected in this release |
+
+For a reviewer-focused runbook, see `docs/reviewer_quickstart.md`.
+
+## Reviewer smoke checks
+
+From the repository root:
+
+```bash
+python -m pip install -e "analyzer[dev]"
+pytest -q
+python tools/generate_report.py --check
+python tools/package_magisk_module.py --check-only
+for f in module/trustlab-magisk/*.sh module/trustlab-magisk/scripts/*.sh; do sh -n "$f"; done
+```
+
+These checks validate analyzer tests, generated sample artifacts, and Magisk collector packaging safety constraints.
 
 ## Basic virtual-target workflow
 
