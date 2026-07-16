@@ -77,6 +77,16 @@ def test_adapter_parsing_is_deterministic(name):
     assert parse_artifact(path) == parse_artifact(path)
 
 
+def test_generic_mount_capture_uses_its_typed_source_reference():
+    result = parse_artifact(FIXTURES / "adb_manifest.json")
+
+    assert result.fragments.mount_selected_source == "mounts"
+    assert all(
+        mount["evidence_path"].startswith("captures/mounts.txt#L")
+        for mount in result.fragments.mounts
+    )
+
+
 def test_legacy_fixture_has_deliberate_compatibility_warning():
     result = parse_artifact(ROOT / "tests/fixtures/sample_raw_report.txt")
     assert result.input_kind is InputKind.LEGACY_SECTIONED_TEXT
@@ -198,6 +208,111 @@ def test_duplicate_capture_names_and_semantic_aliases_fail_closed():
         ADAPTERS[InputKind.ADB_COLLECTION_MANIFEST].parse(
             json.dumps(document), source_ref="fixture"
         )
+
+
+def test_mount_sources_are_allowed_and_selected_by_fixed_priority():
+    document = json.loads((FIXTURES / "adb_manifest.json").read_text(encoding="utf-8"))
+    fallback = next(
+        capture for capture in document["captures"] if capture["name"] == "mounts"
+    )
+    fallback.update(
+        name="proc_mounts",
+        stdout="/dev/block/dm-9 /system ext4 rw,seclabel 0 0\n",
+        source_ref="captures/proc_mounts.txt",
+    )
+    mountinfo = {
+        "name": "mountinfo",
+        "status": "observed",
+        "exit_code": 0,
+        "timed_out": False,
+        "stdout": "35 24 253:0 / /system ro - ext4 /dev/block/dm-0 rw\n",
+        "stderr": "",
+        "source_ref": "captures/mountinfo.txt",
+    }
+    document["captures"].insert(0, mountinfo)
+
+    result = ADAPTERS[InputKind.ADB_COLLECTION_MANIFEST].parse(
+        json.dumps(document), source_ref="fixture"
+    )
+
+    assert result.fragments.mount_selected_source == "mountinfo"
+    assert result.fragments.mount_selection_reason == (
+        "selected preferred mountinfo source"
+    )
+    assert result.fragments.mounts[0]["source"] == "/dev/block/dm-0"
+    assert [attempt.name for attempt in result.fragments.mount_attempts] == [
+        "mountinfo",
+        "proc_mounts",
+    ]
+
+
+def test_malformed_mountinfo_falls_back_without_losing_attempt_status():
+    document = json.loads((FIXTURES / "adb_manifest.json").read_text(encoding="utf-8"))
+    fallback = next(
+        capture for capture in document["captures"] if capture["name"] == "mounts"
+    )
+    fallback.update(
+        name="proc_mounts",
+        stdout="/dev/block/dm-9 /system ext4 ro,seclabel 0 0\n",
+        source_ref="captures/proc_mounts.txt",
+    )
+    document["captures"].append(
+        {
+            "name": "mountinfo",
+            "status": "observed",
+            "exit_code": 0,
+            "timed_out": False,
+            "stdout": "malformed mountinfo output\n",
+            "stderr": "",
+            "source_ref": "captures/mountinfo.txt",
+        }
+    )
+
+    result = ADAPTERS[InputKind.ADB_COLLECTION_MANIFEST].parse(
+        json.dumps(document), source_ref="fixture"
+    )
+
+    assert result.fragments.mount_selected_source == "proc_mounts"
+    assert "mountinfo was unavailable or unusable" in (
+        result.fragments.mount_selection_reason
+    )
+    attempts = {attempt.name: attempt for attempt in result.fragments.mount_attempts}
+    assert attempts["mountinfo"].parse_status == "malformed"
+    assert attempts["mountinfo"].malformed_line_count == 1
+    assert attempts["proc_mounts"].parse_status == "complete"
+
+
+def test_inaccessible_mountinfo_is_preserved_when_proc_mounts_is_selected():
+    document = json.loads((FIXTURES / "adb_manifest.json").read_text(encoding="utf-8"))
+    fallback = next(
+        capture for capture in document["captures"] if capture["name"] == "mounts"
+    )
+    fallback.update(
+        name="proc_mounts",
+        stdout="/dev/block/dm-9 /system ext4 ro,seclabel 0 0\n",
+        source_ref="captures/proc_mounts.txt",
+    )
+    document["captures"].append(
+        {
+            "name": "mountinfo",
+            "status": "inaccessible",
+            "exit_code": 1,
+            "timed_out": False,
+            "stdout": "",
+            "stderr": "Permission denied",
+            "source_ref": "captures/mountinfo.txt",
+        }
+    )
+
+    result = ADAPTERS[InputKind.ADB_COLLECTION_MANIFEST].parse(
+        json.dumps(document), source_ref="fixture"
+    )
+    attempts = {attempt.name: attempt for attempt in result.fragments.mount_attempts}
+
+    assert result.fragments.mount_selected_source == "proc_mounts"
+    assert attempts["mountinfo"].capture_status is CaptureStatus.INACCESSIBLE
+    assert attempts["mountinfo"].parse_status == "not_parsed"
+    assert attempts["mountinfo"].record_count == 0
 
 
 def test_observer_specific_capture_vocabulary_rejects_android_host_evidence():

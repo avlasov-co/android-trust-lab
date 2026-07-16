@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-    "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-    "schema_version": "3.0.0"
+    "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+    "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+    "schema_version": "4.0.0"
   },
   "changed_dimensions": [
     {
@@ -17,44 +17,44 @@
     }
   ],
   "compare_report": {
-    "content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
-    "report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
-    "schema_version": "3.0.0"
+    "content_digest": "32287258289a3245dd7eb9b328554f793006a92f80d76ca3e41ca8c93ab9d592",
+    "report_id": "atlrep-cd70edebbefab6773068d09dab7ea1ef",
+    "schema_version": "4.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "636e0ceaa455387f82ae280b4a1889d10a5ca907a2280e3ac92812a9e3a492a9",
-  "diff_id": "atldiff-636e0ceaa455387f82ae280b4a1889d1",
+  "content_digest": "a1a4bbb8c10e8d2fd44ff921717ca9cc07cae232ed5589d8ac620e849e836e52",
+  "diff_id": "atldiff-a1a4bbb8c10e8d2fd44ff921717ca9cc",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-        "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-        "schema_version": "3.0.0"
+        "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+        "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-      "original_document_digest": "e58ddedfe60e5f3e691d3c4f0ad038a3c01ed7131a7e115a9324dd2c88df5ebc",
-      "original_report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+      "original_document_digest": "867444ef28902fc53a582a5058742365402d0a7db5835eb4a1f55d2fca541cc7",
+      "original_report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+      "original_schema_version": "4.0.0"
     },
-    "common_report_schema_version": "3.0.0",
+    "common_report_schema_version": "4.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
-        "report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
-        "schema_version": "3.0.0"
+        "content_digest": "32287258289a3245dd7eb9b328554f793006a92f80d76ca3e41ca8c93ab9d592",
+        "report_id": "atlrep-cd70edebbefab6773068d09dab7ea1ef",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
-      "original_document_digest": "3bc765f1d77c320ac978f4766be85ba70250a9b6e1b02d3e80f450b326a668cd",
-      "original_report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "32287258289a3245dd7eb9b328554f793006a92f80d76ca3e41ca8c93ab9d592",
+      "original_document_digest": "5825099ffd89f37cdf9432d629775c40d7872595870d81ca8f236773a1906487",
+      "original_report_id": "atlrep-cd70edebbefab6773068d09dab7ea1ef",
+      "original_schema_version": "4.0.0"
     }
   },
-  "schema_version": "2.0.0",
-  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "schema_version": "2.1.0",
+  "summary": "1 dimensions changed, 13 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -62,6 +62,9 @@
     "verity_mode",
     "selinux_mode",
     "mount_integrity",
+    "system_mount_resolution",
+    "dynamic_partition_state",
+    "apex_mount_set",
     "root_presence",
     "magisk_presence",
     "property_consistency",

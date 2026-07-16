@@ -39,6 +39,7 @@ from .identity import (
 )
 from .migration_codec import encode_legacy_report, legacy_report_digest
 from .report_v3 import migrate_v2_source_reference
+from .report_v4 import report_v4_from_v3_shape
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
@@ -275,7 +276,7 @@ def validate_report(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.REPORT)
     )
-    if resource_version in {"2.0.0", "3.0.0"}:
+    if resource_version in {"2.0.0", "3.0.0", "4.0.0"}:
         _validate_canonical_document(data, artifact_name="report")
     validate_with_schema(
         data,
@@ -287,6 +288,8 @@ def validate_report(data: object) -> None:
         _validate_v2_migration_provenance(data)
     elif resource_version == "3.0.0":
         _validate_v3_report_semantics(data)
+    elif resource_version == "4.0.0":
+        _validate_v4_report_semantics(data)
 
 
 def _migration_provenance_error(detail: str) -> SchemaValidationError:
@@ -751,6 +754,339 @@ def _validate_v3_report_semantics(data: object) -> None:
     validate_report_identities(data)
 
 
+def _validate_v4_report_semantics(data: object) -> None:
+    """Validate v4 source binding, deterministic migration, and identities."""
+
+    if not isinstance(data, dict):
+        return
+    _validate_v4_mount_semantics(data["mounts"])
+    raw_artifacts = _validate_v3_raw_artifacts(data)
+    provenance = data["provenance"]
+    source_version = provenance["source_schema_version"]
+    migration_extension = data["extensions"].get("org.androidtrustlab.migration-v4")
+    if source_version == "raw":
+        if migration_extension is not None:
+            raise _migration_provenance_error(
+                "raw v4 reports must not preserve a v3 migration source"
+            )
+        _validate_v3_migration_provenance(data, raw_artifacts)
+        validate_report_identities(data)
+        return
+    if source_version != "3.0.0":
+        raise _migration_provenance_error("v4 migrations require one exact v3 source")
+    if not isinstance(migration_extension, dict) or set(migration_extension) != {
+        "encoding",
+        "source_report_json",
+        "source_sha256",
+    }:
+        raise _migration_provenance_error(
+            "the exact canonical v3 source extension is required"
+        )
+    encoded_source = migration_extension.get("source_report_json")
+    source_digest = migration_extension.get("source_sha256")
+    if (
+        migration_extension.get("encoding") != "atl-canonical-json-v1"
+        or not isinstance(encoded_source, str)
+        or not isinstance(source_digest, str)
+    ):
+        raise _migration_provenance_error("the canonical v3 source is invalid")
+    try:
+        source = parse_canonical_json(encoded_source.encode("utf-8"))
+    except ValueError as exc:
+        raise _migration_provenance_error(
+            "the preserved v3 source is not canonical JSON"
+        ) from exc
+    if (
+        not isinstance(source, dict)
+        or source.get("schema_version") != "3.0.0"
+        or canonical_json_bytes(source).decode("utf-8") != encoded_source
+        or not secrets.compare_digest(
+            hashlib.sha256(encoded_source.encode("utf-8")).hexdigest(),
+            source_digest,
+        )
+    ):
+        raise _migration_provenance_error(
+            "the preserved v3 source binding does not match"
+        )
+    validate_report(source)
+    migration_history = data["provenance"]["migration_history"]
+    if not migration_history:
+        raise _migration_provenance_error(
+            "the report-v3-to-v4 migration record is required"
+        )
+    declared_implementation_version = migration_history[-1]["implementation"]["version"]
+    expected = report_v4_from_v3_shape(
+        source,
+        add_v3_to_v4_migration=True,
+        migration_implementation_version=declared_implementation_version,
+    )
+    if data != expected:
+        raise _migration_provenance_error(
+            "the v4 report is not the deterministic migration of its v3 source"
+        )
+    validate_report_identities(data)
+
+
+def _mount_semantic_error(detail: str) -> SchemaValidationError:
+    return SchemaValidationError(f"report mount validation failed: {detail}")
+
+
+def _mount_attempt_is_usable(attempt: dict[str, Any]) -> bool:
+    return (
+        attempt["capture_status"] == "observed"
+        and attempt["record_count"] > 0
+        and attempt["parse_status"] in {"complete", "partial"}
+    )
+
+
+def _validate_mount_attempt(attempt: dict[str, Any]) -> None:
+    allowed_formats = {
+        "mountinfo": {"mountinfo"},
+        "proc_mounts": {"proc_mounts"},
+        # Historical generic MOUNT sections accepted common mount output,
+        # /proc-shaped output, and a source-ordered mixture of the two.
+        "mounts": {"mountinfo", "proc_mounts", "mount", "mixed"},
+    }
+    if attempt["format"] not in allowed_formats[attempt["name"]]:
+        raise _mount_semantic_error(
+            "mount source attempt name does not match its format"
+        )
+    if attempt["capture_status"] == "observed":
+        parse_status = attempt["parse_status"]
+        if parse_status not in {
+            "complete",
+            "partial",
+            "malformed",
+            "empty",
+        }:
+            raise _mount_semantic_error(
+                "observed mount attempts must carry a parser outcome"
+            )
+        if (attempt["record_count"] > 0) != (parse_status in {"complete", "partial"}):
+            raise _mount_semantic_error(
+                "mount attempt record count does not match parser usability"
+            )
+        if parse_status == "complete" and attempt["malformed_line_count"] != 0:
+            raise _mount_semantic_error(
+                "complete mount attempts cannot claim malformed lines"
+            )
+        return
+    expected_status = "empty" if attempt["capture_status"] == "empty" else "not_parsed"
+    if (
+        attempt["record_count"] != 0
+        or attempt["malformed_line_count"] != 0
+        or attempt["warnings"]
+        or attempt["parse_status"] != expected_status
+    ):
+        raise _mount_semantic_error(
+            "unobserved mount attempts cannot claim parsed records"
+        )
+
+
+def _validate_v4_mount_observation(
+    records: list[dict[str, Any]], observation: dict[str, Any]
+) -> dict[str, Any] | None:
+    attempts = observation["attempts"]
+    priority = {"mountinfo": 0, "proc_mounts": 1, "mounts": 2}
+    attempt_names = [attempt["name"] for attempt in attempts]
+    if len(attempt_names) != len(set(attempt_names)) or attempt_names != sorted(
+        attempt_names, key=priority.__getitem__
+    ):
+        raise _mount_semantic_error(
+            "mount source attempts must be unique and fixed-priority ordered"
+        )
+    for attempt in attempts:
+        _validate_mount_attempt(attempt)
+    selected_source = observation["selected_source"]
+    first_usable_source = next(
+        (attempt["name"] for attempt in attempts if _mount_attempt_is_usable(attempt)),
+        None,
+    )
+    if selected_source != first_usable_source:
+        raise _mount_semantic_error(
+            "selected source must be the first usable fixed-priority attempt"
+        )
+    selected_attempt = next(
+        (attempt for attempt in attempts if attempt["name"] == selected_source),
+        None,
+    )
+    if records:
+        if (
+            selected_attempt is None
+            or selected_attempt["capture_status"] != "observed"
+            or selected_attempt["record_count"] != len(records)
+            or observation["selected_format"] != selected_attempt["format"]
+            or observation["parse_status"] != selected_attempt["parse_status"]
+            or observation["parse_status"] not in {"complete", "partial"}
+        ):
+            raise _mount_semantic_error(
+                "selected source must bind the complete selected record set"
+            )
+        record_formats = {record["format"] for record in records}
+        selected_format = observation["selected_format"]
+        if selected_format == "mixed":
+            formats_match = selected_source == "mounts" and len(record_formats) > 1
+        else:
+            formats_match = record_formats == {selected_format}
+        if not formats_match:
+            raise _mount_semantic_error(
+                "selected mount records do not match their source format"
+            )
+        if observation["parse_status"] == "complete" and any(
+            record["parse_status"] != "parsed" for record in records
+        ):
+            raise _mount_semantic_error(
+                "complete mount attempts cannot contain partial records"
+            )
+    elif (
+        any(
+            value is not None
+            for value in (selected_source, observation["selected_format"])
+        )
+        or observation["parse_status"] != "not_parsed"
+    ):
+        raise _mount_semantic_error("an empty mount set cannot claim a selected source")
+    return selected_attempt
+
+
+def _expected_system_resolution(
+    records: list[dict[str, Any]], *, complete_mount_set: bool
+) -> tuple[str, str | None, list[Any]]:
+    system_indices = [
+        record["record_index"]
+        for record in records
+        if record["mount_point"] == "/system"
+    ]
+    root_indices = [
+        record["record_index"] for record in records if record["mount_point"] == "/"
+    ]
+    if len(system_indices) == 1:
+        return "explicit_system", "/system", system_indices
+    if len(system_indices) > 1:
+        return "ambiguous", None, system_indices
+    if complete_mount_set and len(root_indices) == 1:
+        return "system_as_root", "/", root_indices
+    if complete_mount_set and len(root_indices) > 1:
+        return "ambiguous", None, root_indices
+    return "unresolved", None, root_indices
+
+
+def _validate_v4_system_resolution(
+    records: list[dict[str, Any]],
+    resolution: dict[str, Any],
+    *,
+    complete_mount_set: bool,
+) -> None:
+    expected_resolution = _expected_system_resolution(
+        records,
+        complete_mount_set=complete_mount_set,
+    )
+    observed_resolution = (
+        resolution["state"],
+        resolution["system_root"],
+        resolution["record_indices"],
+    )
+    if observed_resolution != expected_resolution:
+        raise _mount_semantic_error(
+            "system resolution does not match exact /system and root records"
+        )
+
+
+def _validate_v4_dynamic_partitions(
+    records: list[dict[str, Any]],
+    dynamic: dict[str, Any],
+    *,
+    complete_mount_set: bool,
+) -> None:
+    expected_records = [
+        record
+        for record in records
+        if str(record["source"]).startswith(("/dev/block/mapper/", "/dev/block/dm-"))
+        or str(record["major_minor"]).startswith("253:")
+    ]
+    expected_state = (
+        "detected"
+        if expected_records
+        else "not_detected"
+        if complete_mount_set
+        else "unknown"
+    )
+    if (
+        dynamic["state"] != expected_state
+        or dynamic["record_indices"]
+        != [record["record_index"] for record in expected_records]
+        or dynamic["sources"]
+        != sorted({record["source"] for record in expected_records})
+    ):
+        raise _mount_semantic_error(
+            "dynamic partition aggregate does not match mount records"
+        )
+
+
+def _validate_v4_apex_set(records: list[dict[str, Any]], apex: dict[str, Any]) -> None:
+    apex_records = [
+        record
+        for record in records
+        if record["mount_point"] == "/apex"
+        or record["mount_point"].startswith("/apex/")
+    ]
+    packages = sorted(
+        {
+            record["mount_point"]
+            .removeprefix("/apex/")
+            .split("/", 1)[0]
+            .split("@", 1)[0]
+            for record in apex_records
+            if record["mount_point"] != "/apex"
+        }
+    )
+    accesses = [record["access"] for record in apex_records]
+    expected = {
+        "packages": packages,
+        "record_indices": [record["record_index"] for record in apex_records],
+        "mount_count": len(apex_records),
+        "package_count": len(packages),
+        "read_only_count": accesses.count("read_only"),
+        "writable_count": accesses.count("writable"),
+        "unknown_access_count": accesses.count("unknown"),
+        "overlay_count": sum(
+            record["overlay_state"] == "detected" for record in apex_records
+        ),
+        "bind_count": sum(
+            record["bind_state"] == "detected" for record in apex_records
+        ),
+    }
+    if apex != expected:
+        raise _mount_semantic_error("APEX aggregate does not match mount records")
+
+
+def _validate_v4_mount_semantics(mounts: dict[str, Any]) -> None:
+    records = mounts["records"]
+    observation = mounts["observation"]
+    if [record["record_index"] for record in records] != list(range(len(records))):
+        raise _mount_semantic_error("record indices must be contiguous source order")
+    expected_paths = sorted({record["evidence_path"] for record in records})
+    if observation["evidence_paths"] != expected_paths:
+        raise _mount_semantic_error(
+            "observation evidence paths must match selected records"
+        )
+    selected_attempt = _validate_v4_mount_observation(records, observation)
+    complete_mount_set = bool(
+        selected_attempt and selected_attempt["parse_status"] == "complete"
+    )
+    _validate_v4_system_resolution(
+        records,
+        mounts["system_resolution"],
+        complete_mount_set=complete_mount_set,
+    )
+    _validate_v4_dynamic_partitions(
+        records,
+        mounts["dynamic_partitions"],
+        complete_mount_set=complete_mount_set,
+    )
+    _validate_v4_apex_set(records, mounts["apex_set"])
+
+
 def validate_diff(data: object) -> None:
     version = data.get("schema_version") if isinstance(data, dict) else None
     resource_version = (
@@ -758,7 +1094,7 @@ def validate_diff(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.DIFF)
     )
-    if resource_version == "2.0.0":
+    if resource_version in {"2.0.0", "2.1.0"}:
         _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
         data,
@@ -766,8 +1102,8 @@ def validate_diff(data: object) -> None:
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
-    if resource_version == "2.0.0":
-        _validate_v2_diff_semantics(data)
+    if resource_version in {"2.0.0", "2.1.0"}:
+        _validate_v2_diff_semantics(data, schema_version=resource_version)
 
 
 def _validate_canonical_document(data: object, *, artifact_name: str) -> None:
@@ -779,7 +1115,7 @@ def _validate_canonical_document(data: object, *, artifact_name: str) -> None:
         ) from exc
 
 
-def _validate_v2_diff_semantics(data: object) -> None:
+def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
     if not isinstance(data, dict):
         return
     projection = {
@@ -790,7 +1126,7 @@ def _validate_v2_diff_semantics(data: object) -> None:
     try:
         expected_digest = framed_content_digest(
             family="diff",
-            schema_version="2.0.0",
+            schema_version=schema_version,
             value=projection,
         )
     except CanonicalJSONError as exc:
@@ -810,27 +1146,43 @@ def _validate_v2_diff_semantics(data: object) -> None:
         original_version = provenance["original_schema_version"]
         original_digest = provenance["original_content_digest"]
         migrations = provenance["applied_migrations"]
-        if (original_version == "3.0.0") != (original_digest is not None):
+        content_addressed_versions = (
+            {"3.0.0"} if schema_version == "2.0.0" else {"3.0.0", "4.0.0"}
+        )
+        if (original_version in content_addressed_versions) != (
+            original_digest is not None
+        ):
             raise SchemaValidationError(
                 "diff provenance must distinguish legacy and content identities"
             )
-        expected_migration_count = {"1.0.0": 2, "2.0.0": 1, "3.0.0": 0}.get(
-            original_version
-        )
-        if expected_migration_count is None or len(migrations) != (
-            expected_migration_count
-        ):
+        expected_steps_by_version = {
+            "2.0.0": {
+                "1.0.0": [
+                    ("report-v1-to-v2", "1.0.0", "2.0.0"),
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                ],
+                "2.0.0": [("report-v2-to-v3", "2.0.0", "3.0.0")],
+                "3.0.0": [],
+            },
+            "2.1.0": {
+                "1.0.0": [
+                    ("report-v1-to-v2", "1.0.0", "2.0.0"),
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                ],
+                "2.0.0": [
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                ],
+                "3.0.0": [("report-v3-to-v4", "3.0.0", "4.0.0")],
+                "4.0.0": [],
+            },
+        }
+        expected_steps = expected_steps_by_version[schema_version].get(original_version)
+        if expected_steps is None or len(migrations) != len(expected_steps):
             raise SchemaValidationError(
                 "diff provenance migration chain does not match the source version"
             )
-        expected_steps = {
-            "1.0.0": [
-                ("report-v1-to-v2", "1.0.0", "2.0.0"),
-                ("report-v2-to-v3", "2.0.0", "3.0.0"),
-            ],
-            "2.0.0": [("report-v2-to-v3", "2.0.0", "3.0.0")],
-            "3.0.0": [],
-        }[original_version]
         observed_steps = [
             (
                 migration["migration_id"],
@@ -844,14 +1196,15 @@ def _validate_v2_diff_semantics(data: object) -> None:
                 "diff provenance does not use the registered migration chain"
             )
         common_report = provenance["common_report"]
-        if original_version == "3.0.0" and (
+        current_report_version = "3.0.0" if schema_version == "2.0.0" else "4.0.0"
+        if original_version == current_report_version and (
             provenance["original_report_id"] != common_report["report_id"]
             or not secrets.compare_digest(
                 original_digest, common_report["content_digest"]
             )
         ):
             raise SchemaValidationError(
-                "diff provenance does not bind the original v3 report identity"
+                "diff provenance does not bind the original current report identity"
             )
 
 

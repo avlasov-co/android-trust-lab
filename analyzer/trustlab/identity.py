@@ -13,7 +13,7 @@ from typing import Any
 from .canonical_json import CanonicalJSONError, framed_content_digest
 from .exceptions import CollectionError, SchemaValidationError
 
-REPORT_SCHEMA_VERSION = "3.0.0"
+REPORT_SCHEMA_VERSION = "4.0.0"
 REDACTION_STATES = frozenset(
     {"not_required", "redacted", "verified", "withheld", "unknown"}
 )
@@ -187,9 +187,14 @@ REPORT_EVIDENCE_FIELDS = (
 def report_content_projection(report: dict[str, Any]) -> dict[str, Any]:
     """Return the documented nonvolatile evidence projection for report identity."""
 
+    source_version = report["provenance"]["source_schema_version"]
+    migrated_v2_source = source_version == "2.0.0" or (
+        source_version == "3.0.0"
+        and "org.androidtrustlab.migration-v3" in report["extensions"]
+    )
     raw_artifacts = (
         []
-        if report["provenance"]["source_schema_version"] == "2.0.0"
+        if migrated_v2_source
         else sorted(
             [
                 {
@@ -217,21 +222,26 @@ def report_content_projection(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def calculate_report_content_digest(report: dict[str, Any]) -> str:
-    """Calculate the canonical evidence-content identity for a v3 report."""
+    """Calculate the canonical evidence-content identity for a current report."""
 
     return framed_content_digest(
         family="report",
-        schema_version=REPORT_SCHEMA_VERSION,
+        schema_version=str(report.get("schema_version", REPORT_SCHEMA_VERSION)),
         value=report_content_projection(report),
     )
 
 
-def calculate_report_id(*, collection_event_id: str, content_digest: str) -> str:
+def calculate_report_id(
+    *,
+    collection_event_id: str,
+    content_digest: str,
+    schema_version: str = REPORT_SCHEMA_VERSION,
+) -> str:
     """Bind one report event to its exact evidence content with 128-bit display."""
 
     digest = framed_content_digest(
         family="report",
-        schema_version=REPORT_SCHEMA_VERSION,
+        schema_version=schema_version,
         value={
             "collection_event_id": collection_event_id,
             "content_digest": content_digest,
@@ -249,6 +259,7 @@ def finalize_report_identity(report: dict[str, Any]) -> dict[str, Any]:
     finalized["report_id"] = calculate_report_id(
         collection_event_id=finalized["collection_event_id"],
         content_digest=content_digest,
+        schema_version=str(finalized.get("schema_version", REPORT_SCHEMA_VERSION)),
     )
     return finalized
 
@@ -267,6 +278,7 @@ def validate_report_identities(report: dict[str, Any]) -> None:
     expected_report_id = calculate_report_id(
         collection_event_id=report["collection_event_id"],
         content_digest=expected_digest,
+        schema_version=str(report.get("schema_version", REPORT_SCHEMA_VERSION)),
     )
     if not secrets.compare_digest(str(report.get("report_id")), expected_report_id):
         raise SchemaValidationError(

@@ -280,12 +280,12 @@ def test_diff_identity_binds_exact_report_and_content_identities():
     assert event_diff["base_report"] == {
         "report_id": base["report_id"],
         "content_digest": base["content_digest"],
-        "schema_version": "3.0.0",
+        "schema_version": "4.0.0",
     }
     assert event_diff["compare_report"] == {
         "report_id": compare["report_id"],
         "content_digest": compare["content_digest"],
-        "schema_version": "3.0.0",
+        "schema_version": "4.0.0",
     }
     assert event_diff["diff_id"] != same_input_diff["diff_id"]
     validate_diff(event_diff)
@@ -304,7 +304,7 @@ def test_diff_validation_rejects_rehashed_provenance_misbinding():
         if key not in {"diff_id", "content_digest"}
     }
     digest = framed_content_digest(
-        family="diff", schema_version="2.0.0", value=projection
+        family="diff", schema_version=tampered["schema_version"], value=projection
     )
     tampered["content_digest"] = digest
     tampered["diff_id"] = f"atldiff-{digest[:32]}"

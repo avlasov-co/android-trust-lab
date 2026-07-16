@@ -16,6 +16,9 @@ Canonical dimensions:
 - `verity_mode`
 - `selinux_mode`
 - `mount_integrity`
+- `system_mount_resolution`
+- `dynamic_partition_state`
+- `apex_mount_set`
 - `root_presence`
 - `magisk_presence`
 - `property_consistency`
@@ -78,3 +81,6 @@ Some signals are missing, virtualized, vendor-specific, or observer-dependent. M
 - Raw evidence uses portable, non-sensitive logical names where practical.
 - Emulator evidence must carry lower confidence for hardware-backed trust dimensions.
 - A changed signal is not automatically a security failure. It is an observed transition.
+- Writable, overlay, and bind mount facts are contextual observations; no one
+  mount fact is a platform-integrity verdict without target, namespace, and
+  observer context.

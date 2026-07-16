@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-    "report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-    "schema_version": "3.0.0"
+    "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+    "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+    "schema_version": "4.0.0"
   },
   "changed_dimensions": [
     {
@@ -23,44 +23,44 @@
     }
   ],
   "compare_report": {
-    "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-    "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-    "schema_version": "3.0.0"
+    "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+    "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+    "schema_version": "4.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "bfc4ab772f67d02a2b4bc2f8f3f67869075e3a12d85ee51b14ce9c170301a921",
-  "diff_id": "atldiff-bfc4ab772f67d02a2b4bc2f8f3f67869",
+  "content_digest": "f69185b571ae047feeabec1295e47711b0cd311766556ec535bebc693c04d369",
+  "diff_id": "atldiff-f69185b571ae047feeabec1295e47711",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-        "report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-        "schema_version": "3.0.0"
+        "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+        "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-      "original_document_digest": "92e7ae612fec8fbd87d2fbe0a38d554ad3d05205ade8158e2c595d6135b21fc8",
-      "original_report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+      "original_document_digest": "9287524969a96bb659a89519ccce9d4257631c75ddb04a589db040ae513bba73",
+      "original_report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+      "original_schema_version": "4.0.0"
     },
-    "common_report_schema_version": "3.0.0",
+    "common_report_schema_version": "4.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-        "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-        "schema_version": "3.0.0"
+        "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+        "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
-      "original_document_digest": "e58ddedfe60e5f3e691d3c4f0ad038a3c01ed7131a7e115a9324dd2c88df5ebc",
-      "original_report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
+      "original_document_digest": "867444ef28902fc53a582a5058742365402d0a7db5835eb4a1f55d2fca541cc7",
+      "original_report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
+      "original_schema_version": "4.0.0"
     }
   },
-  "schema_version": "2.0.0",
-  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "schema_version": "2.1.0",
+  "summary": "1 dimensions changed, 13 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -68,6 +68,9 @@
     "verity_mode",
     "selinux_mode",
     "mount_integrity",
+    "system_mount_resolution",
+    "dynamic_partition_state",
+    "apex_mount_set",
     "magisk_presence",
     "property_consistency",
     "emulator_state",

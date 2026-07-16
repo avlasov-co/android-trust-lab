@@ -1,0 +1,2 @@
+35 24 253:0 / / ro,seclabel shared:1 - ext4 /dev/block/dm-0 rw
+36 35 0:25 / /data rw,nosuid,nodev - f2fs /dev/block/dm-5 rw

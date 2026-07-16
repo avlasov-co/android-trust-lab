@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -25,6 +25,12 @@ from .exceptions import (
     safe_path_label,
 )
 from .identity import validate_relative_artifact_path
+from .mounts import (
+    MountFormat,
+    MountSetParseStatus,
+    MountSourceFormat,
+    parse_mounts_with_diagnostics,
+)
 from .parser import (
     MAX_PARSER_WARNINGS,
     MAX_RAW_TEXT_BYTES,
@@ -79,6 +85,20 @@ class CommandCapture:
 
 
 @dataclass(frozen=True, slots=True)
+class MountSourceAttempt:
+    """Outcome of one mount-source capture, whether selected or not."""
+
+    name: str
+    format: MountSourceFormat
+    capture_status: CaptureStatus
+    parse_status: MountSetParseStatus | Literal["not_parsed"]
+    source_ref: str
+    record_count: int
+    malformed_line_count: int
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ArtifactMetadata:
     schema_version: str
     collector_version: str
@@ -120,6 +140,9 @@ class EvidenceFragments:
     properties: Mapping[str, str] = field(default_factory=dict)
     boot_state: Mapping[str, str] = field(default_factory=dict)
     mounts: tuple[ParsedMount, ...] = ()
+    mount_attempts: tuple[MountSourceAttempt, ...] = ()
+    mount_selected_source: str | None = None
+    mount_selection_reason: str = "no mount capture was usable"
     identity: ParsedIdentity = field(default_factory=_unknown_identity)
     selinux_mode: str = "unknown"
     cmdline: str = ""
@@ -424,7 +447,7 @@ def _captures(
             raise NormalizationError(f"duplicate capture name {name!r}")
         names.add(name)
         semantic = _CAPTURE_SEMANTICS.get(name)
-        if semantic is not None and semantic in semantics:
+        if semantic is not None and semantic != "mounts" and semantic in semantics:
             raise NormalizationError(
                 f"capture {name!r} duplicates an existing evidence fragment"
             )
@@ -528,12 +551,19 @@ def _observed_capture_syntax_is_valid(
         )
         return bool(lines) and len(parsed) == len(lines)
     if semantic == "mounts":
-        mounts = parse_mounts(capture.stdout)
-        return bool(mounts) and all(
-            mount["mount_point"].startswith("/")
-            and mount["fs_type"] != "unknown"
-            and bool(mount["options"])
-            for mount in mounts
+        input_format: MountFormat | Literal["auto"] = _mount_source_format(capture.name)
+        if capture.name == "mounts":
+            input_format = "auto"
+        result = parse_mounts_with_diagnostics(
+            capture.stdout,
+            input_format=input_format,
+            evidence_path=capture.source_ref,
+        )
+        return bool(result["records"]) and all(
+            isinstance(mount["mount_point"], str)
+            and mount["mount_point"].startswith("/")
+            and mount["fs_type"] is not None
+            for mount in result["records"]
         )
     if semantic == "identity":
         return parse_id(capture.stdout)["uid"] != "unknown"
@@ -618,7 +648,8 @@ def _legacy_capture_has_usable_fragments(capture: CommandCapture) -> bool:
         return bool(parse_key_values(capture.stdout))
     if semantic == "mounts":
         return any(
-            mount["mount_point"].startswith("/")
+            isinstance(mount["mount_point"], str)
+            and mount["mount_point"].startswith("/")
             for mount in parse_mounts(capture.stdout)
         )
     return _observed_capture_syntax_is_valid(capture, semantic)
@@ -629,14 +660,23 @@ def _parsed_capture_names(
 ) -> tuple[frozenset[str], tuple[str, ...]]:
     parsed: set[str] = set()
     warnings: list[str] = []
+    usable_mount_source_exists = any(
+        _CAPTURE_SEMANTICS.get(candidate.name) == "mounts"
+        and _capture_syntax_is_valid(candidate, reject_diagnostics=fail_on_malformed)
+        for candidate in captures
+    )
     for capture in captures:
         if _capture_syntax_is_valid(capture, reject_diagnostics=fail_on_malformed):
             parsed.add(capture.name)
         elif capture.status in {CaptureStatus.OBSERVED, CaptureStatus.EMPTY}:
             message = f"capture {capture.name} contained malformed observed output"
-            if fail_on_malformed:
+            is_mount_fallback_failure = (
+                _CAPTURE_SEMANTICS.get(capture.name) == "mounts"
+                and usable_mount_source_exists
+            )
+            if fail_on_malformed and not is_mount_fallback_failure:
                 raise NormalizationError(message)
-            if capture.status is CaptureStatus.OBSERVED:
+            if capture.status is CaptureStatus.OBSERVED or is_mount_fallback_failure:
                 warnings.append(message)
     return frozenset(parsed), tuple(warnings)
 
@@ -665,10 +705,137 @@ def _first_observed(captures: Sequence[CommandCapture], *names: str) -> str:
     return ""
 
 
+_MOUNT_SOURCE_PRIORITY = ("mountinfo", "proc_mounts", "mounts")
+
+
+def _mount_source_format(name: str) -> MountFormat:
+    if name == "mountinfo":
+        return "mountinfo"
+    if name == "proc_mounts":
+        return "proc_mounts"
+    return "mount"
+
+
+def _mount_fragments(
+    captures: Sequence[CommandCapture],
+) -> tuple[
+    tuple[ParsedMount, ...],
+    tuple[MountSourceAttempt, ...],
+    str | None,
+    str,
+]:
+    """Select the strongest usable mount source while preserving every attempt."""
+
+    by_name = {
+        capture.name: capture
+        for capture in captures
+        if capture.name in _MOUNT_SOURCE_PRIORITY
+    }
+    attempts: list[MountSourceAttempt] = []
+    parsed_records: dict[str, tuple[ParsedMount, ...]] = {}
+    for name in _MOUNT_SOURCE_PRIORITY:
+        capture = by_name.get(name)
+        if capture is None:
+            continue
+        input_format: MountFormat | Literal["auto"] = _mount_source_format(name)
+        # The historical generic `mounts` capture accepted both common `mount`
+        # output and /proc/mounts-shaped text.
+        if name == "mounts":
+            input_format = "auto"
+        if capture.status is CaptureStatus.OBSERVED:
+            result = parse_mounts_with_diagnostics(
+                capture.stdout,
+                input_format=input_format,
+                evidence_path=capture.source_ref,
+            )
+            records = (
+                tuple(
+                    parse_mounts(
+                        capture.stdout,
+                        evidence_path=capture.source_ref,
+                    )
+                )
+                if name == "mounts"
+                else tuple(result["records"])
+            )
+            nonempty_line_count = sum(
+                1 for line in capture.stdout.splitlines() if line.strip()
+            )
+            malformed_line_count = (
+                nonempty_line_count - len(records)
+                if name == "mounts"
+                else result["malformed_line_count"]
+            )
+            parse_status = result["parse_status"]
+            if name == "mounts":
+                if not records:
+                    parse_status = "malformed"
+                elif malformed_line_count or any(
+                    record["parse_status"] == "partial" for record in records
+                ):
+                    parse_status = "partial"
+                else:
+                    parse_status = "complete"
+            record_formats = {record["format"] for record in records}
+            attempt_format: MountSourceFormat = result["format"]
+            if len(record_formats) > 1:
+                attempt_format = "mixed"
+            parsed_records[name] = records
+            attempt = MountSourceAttempt(
+                name=name,
+                format=attempt_format,
+                capture_status=capture.status,
+                parse_status=parse_status,
+                source_ref=capture.source_ref,
+                record_count=len(records),
+                malformed_line_count=malformed_line_count,
+                warnings=(
+                    (f"mount capture omitted {malformed_line_count} malformed line(s)",)
+                    if name == "mounts" and malformed_line_count
+                    else tuple(result["warnings"])
+                ),
+            )
+        else:
+            attempt = MountSourceAttempt(
+                name=name,
+                format=_mount_source_format(name),
+                capture_status=capture.status,
+                parse_status="empty"
+                if capture.status is CaptureStatus.EMPTY
+                else "not_parsed",
+                source_ref=capture.source_ref,
+                record_count=0,
+                malformed_line_count=0,
+                warnings=(),
+            )
+        attempts.append(attempt)
+
+    selected = next(
+        (name for name in _MOUNT_SOURCE_PRIORITY if parsed_records.get(name)),
+        None,
+    )
+    if selected is None:
+        reason = "no mount capture contained a usable record"
+        return (), tuple(attempts), None, reason
+
+    higher_priority = _MOUNT_SOURCE_PRIORITY[: _MOUNT_SOURCE_PRIORITY.index(selected)]
+    if higher_priority:
+        unavailable = (
+            ", ".join(name for name in higher_priority if name in by_name)
+            or "higher-priority sources"
+        )
+        reason = f"selected {selected} after {unavailable} was unavailable or unusable"
+    else:
+        reason = "selected preferred mountinfo source"
+    return parsed_records[selected], tuple(attempts), selected, reason
+
+
 def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFragments:
     properties_text = _first_observed(captures, "properties", "getprop_selected")
     boot_text = _first_observed(captures, "boot_state")
-    mounts_text = _first_observed(captures, "mountinfo", "mounts", "proc_mounts")
+    mounts, mount_attempts, selected_mount_source, mount_selection_reason = (
+        _mount_fragments(captures)
+    )
     identity_text = _first_observed(captures, "identity", "id")
     selinux_text = _first_observed(captures, "selinux_mode", "getenforce")
     if any(
@@ -684,7 +851,10 @@ def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFrag
     return EvidenceFragments(
         properties=parse_getprop(properties_text),
         boot_state=parse_key_values(boot_text),
-        mounts=tuple(parse_mounts(mounts_text)),
+        mounts=mounts,
+        mount_attempts=mount_attempts,
+        mount_selected_source=selected_mount_source,
+        mount_selection_reason=mount_selection_reason,
         identity=parse_id(identity_text),
         selinux_mode=parse_getenforce(selinux_text),
         cmdline=cmdline_text,
@@ -707,6 +877,8 @@ class LegacySectionedTextAdapter:
         aliases = {
             "properties": ("GETPROP", "PROPS"),
             "boot_state": ("BOOT_STATE",),
+            "mountinfo": ("MOUNTINFO",),
+            "proc_mounts": ("PROC_MOUNTS",),
             "mounts": ("MOUNT", "MOUNTS"),
             "identity": ("ID",),
             "selinux_mode": ("GETENFORCE", "SELINUX"),
@@ -754,6 +926,7 @@ class LegacySectionedTextAdapter:
             capture
             for capture in captures
             if _legacy_capture_has_usable_fragments(capture)
+            or _CAPTURE_SEMANTICS.get(capture.name) == "mounts"
             or (
                 capture.name in {"selinux_mode", "getenforce"}
                 and capture.status is CaptureStatus.INACCESSIBLE
@@ -858,13 +1031,15 @@ class ManifestAdapter:
         if first_error is not None:
             raise NormalizationError(f"artifact JSON does not match {schema_name}")
         captures = _captures(document, input_kind=self.input_kind)
-        parsed_names, _ = _parsed_capture_names(captures, fail_on_malformed=True)
+        parsed_names, parse_warnings = _parsed_capture_names(
+            captures, fail_on_malformed=True
+        )
         return self._result(
             document,
             metadata,
             captures,
             parsed_names,
-            parser_warnings=parser_warnings,
+            parser_warnings=(*parser_warnings, *parse_warnings),
         )
 
     def _validate_metadata(self, metadata: ArtifactMetadata) -> None:

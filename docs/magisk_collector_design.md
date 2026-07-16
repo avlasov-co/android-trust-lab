@@ -59,7 +59,13 @@ uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
 records a pseudonymous target, and marks missing per-command results as
 `not_collected`. The host analyzer verifies the binding before parsing and
 converts `raw.txt` into the current content-addressed
-`trust_report_v3_0_0.schema.json` format.
+`trust_report_v4_0_0.schema.json` format.
+
+The mount collector records complete `/proc/self/mountinfo`, `/proc/mounts`, and
+common `mount` output in separate sections. The analyzer prefers mountinfo but
+retains every fallback outcome. Collection is not filtered to a small path list,
+because doing so would discard mount topology, system-as-root context, dynamic
+partition sources, APEX package mounts, and namespace propagation fields.
 
 The pseudonymous target is a randomly generated 64-bit token stored once as
 `/data/adb/android-trust-lab/target_pseudonym` with mode `0600`. Reusing that

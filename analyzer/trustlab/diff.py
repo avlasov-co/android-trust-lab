@@ -22,6 +22,9 @@ DIMENSION_PATHS = {
     "verity_mode": ["verified_boot", "verity_mode"],
     "selinux_mode": ["selinux", "mode"],
     "mount_integrity": ["mounts", "integrity_summary"],
+    "system_mount_resolution": ["mounts", "system_resolution"],
+    "dynamic_partition_state": ["mounts", "dynamic_partitions"],
+    "apex_mount_set": ["mounts", "apex_set"],
     "root_presence": ["root_state", "su_present"],
     "magisk_presence": ["magisk_state", "magisk_binary_present"],
     "property_consistency": ["properties", "security"],
@@ -51,15 +54,20 @@ def get_path(obj: dict[str, Any], path: list[str]) -> Any:
 
 def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     original_id = report.get("report_id", "unknown")
-    original_version = report.get("schema_version")
+    original_version = str(report.get("schema_version", "unknown"))
     validate_report(report)
     common = migrate_report_to_current(report)
-    if original_version == "1.0.0":
-        migrations = common["provenance"]["migration_history"]
-    elif original_version == "2.0.0":
-        migrations = common["provenance"]["migration_history"][-1:]
-    else:
-        migrations = []
+    applied_count = {
+        "1.0.0": 3,
+        "2.0.0": 2,
+        "3.0.0": 1,
+        "4.0.0": 0,
+    }.get(original_version, 0)
+    migrations = (
+        common["provenance"]["migration_history"][-applied_count:]
+        if applied_count
+        else []
+    )
     common_identity = {
         "report_id": common["report_id"],
         "content_digest": common["content_digest"],
@@ -69,7 +77,7 @@ def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, 
         "original_report_id": original_id,
         "original_schema_version": original_version,
         "original_content_digest": report.get("content_digest")
-        if original_version == "3.0.0"
+        if original_version in {"3.0.0", "4.0.0"}
         else None,
         "original_document_digest": legacy_report_digest(encode_legacy_report(report)),
         "common_report": common_identity,
@@ -83,6 +91,9 @@ def interpretation(dimension: str) -> str:
         "root_presence": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
         "magisk_presence": "Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it.",
         "mount_integrity": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
+        "system_mount_resolution": "The resolved Android system root changed. Review the referenced mount records and source quality.",
+        "dynamic_partition_state": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
+        "apex_mount_set": "The observed APEX package mount set changed. Review capture completeness and package mount records.",
         "selinux_mode": "SELinux mode changed. This affects runtime MAC boundary interpretation.",
         "verified_boot_state": "Verified boot property evidence changed. Emulator evidence remains limited for hardware-backed conclusions.",
         "vbmeta_state": "vbmeta device-state evidence changed. Interpret according to target class and observer.",

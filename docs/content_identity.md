@@ -11,9 +11,9 @@ interchangeable identities.
 | Raw artifact `sha256` | One exact source byte sequence | SHA-256 over the bytes before UTF-8 decoding or parsing |
 | `collection_id` | Collector-assigned collection key | Manifest value, or a deterministic 128-bit fallback derived from event metadata and the raw digest |
 | `collection_event_id` | One collection occurrence | `atlevent-` plus 128 bits of a framed canonical digest over collection ID, timestamp, experiment, target class, observer, method, and—when present—the exact canonical collection-manifest digest |
-| `content_digest` | Path-independent normalized evidence identity | Full SHA-256 of the report v3 evidence projection using ATL Canonical JSON v1 |
+| `content_digest` | Path-independent normalized evidence identity | Full SHA-256 of the report v4 evidence projection using ATL Canonical JSON v1 |
 | `report_id` | One event's report for exact evidence | `atlrep-` plus 128 bits of a framed canonical digest over `collection_event_id` and `content_digest` |
-| Diff `content_digest` | Exact canonical diff payload identity | Full SHA-256 over the diff v2 payload, including both report and content identities |
+| Diff `content_digest` | Exact canonical diff payload identity | Full SHA-256 over the diff v2.1 payload, including both report and content identities |
 | `diff_id` | Compact diff identifier | `atldiff-` plus the first 128 bits of the diff content digest |
 
 The 128-bit displayed event, report, and diff identifiers are
@@ -23,7 +23,7 @@ raw digest and event metadata and never include a filesystem path.
 
 ## Structured raw references
 
-Report v3 replaces string-only `raw_artifacts` entries with closed objects. Each
+Report v3 introduced closed `raw_artifacts` objects, retained by report v4. Each
 entry records:
 
 - logical ID;
@@ -48,7 +48,7 @@ order but has no external expected digest unless the caller supplies one.
 
 ## Report content projection
 
-The report v3 `content_digest` includes these normalized evidence fields in
+The report v4 `content_digest` includes these normalized evidence fields in
 their entirety:
 
 - `target`;
@@ -99,7 +99,7 @@ raw reference preserves all three identities. Editing a relative path inside a
 bound collection manifest preserves `content_digest` but changes the manifest
 digest, `collection_event_id`, and `report_id`. A provenance-only document
 change can preserve `report_id`; where exact whole-document distinction is
-needed, diff v2 also records a deterministic `original_document_digest`.
+needed, diff v2.1 also records a deterministic `original_document_digest`.
 
 ## ATL Canonical JSON v1
 
@@ -127,8 +127,8 @@ vectors are tested before recursive JSON Schema evaluation.
 
 ## Migrations and diffs
 
-Report v1 and v2 remain readable. Migration is explicit and validated at every
-step: `1.0.0` → `2.0.0` → `3.0.0`. V2-to-v3 migration preserves the complete
+Report v1, v2, and v3 remain readable. Migration is explicit and validated at
+every step: `1.0.0` → `2.0.0` → `3.0.0` → `4.0.0`. V2-to-v3 migration preserves the complete
 ATL-canonical v2 source and digest in
 `org.androidtrustlab.migration-v3`, creates a structured source reference, and
 records the migration implementation. It never overwrites the historical input.
@@ -138,14 +138,15 @@ publication. It also fails closed for recognizable unredacted host absolute
 paths in carried free text and for legacy strings (such as isolated UTF-16
 surrogates) outside the bounded canonical v3 model. The historical report
 remains readable under its original schema even when publication as v3 is
-refused.
+refused. V3-to-v4 preserves the exact canonical v3 source and represents the
+new structured mount model as unavailable instead of reconstructing evidence.
 
-Diff v2 validates each input first, migrates readable legacy reports in memory
-to report v3, and records, for each side:
+Diff v2.1 validates each input first, migrates readable historical reports in memory
+to report v4, and records, for each side:
 
 - original report ID and schema version;
 - deterministic original-document digest;
-- original content digest when the input is v3;
+- original content digest when the input is v3 or v4;
 - exact common report ID, content digest, and schema version;
 - applied migration chain and implementation versions.
 

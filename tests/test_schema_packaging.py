@@ -264,8 +264,10 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "trustlab/schemas/trust_report_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v2_0_0.schema.json",
         "trustlab/schemas/trust_report_v3_0_0.schema.json",
+        "trustlab/schemas/trust_report_v4_0_0.schema.json",
         "trustlab/schemas/trust_diff.schema.json",
         "trustlab/schemas/trust_diff_v2_0_0.schema.json",
+        "trustlab/schemas/trust_diff_v2_1_0.schema.json",
     }
     with zipfile.ZipFile(wheel) as archive:
         assert expected <= set(archive.namelist())

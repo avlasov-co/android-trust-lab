@@ -1,0 +1,1 @@
+/source/path on /product type none (rw,bind)

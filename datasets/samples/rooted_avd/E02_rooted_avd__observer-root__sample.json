@@ -23,7 +23,7 @@
   },
   "collection_event_id": "atlevent-a7183482b0296965db640dee0367b85d",
   "collection_timestamp": "2026-04-25T15:07:51Z",
-  "content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
+  "content_digest": "32287258289a3245dd7eb9b328554f793006a92f80d76ca3e41ca8c93ab9d592",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -52,6 +52,16 @@
         {
           "name": "boot_state",
           "source_ref": "legacy-sections/BOOT_STATE",
+          "status": "not_collected"
+        },
+        {
+          "name": "mountinfo",
+          "source_ref": "legacy-sections/MOUNTINFO",
+          "status": "not_collected"
+        },
+        {
+          "name": "proc_mounts",
+          "source_ref": "legacy-sections/PROC_MOUNTS",
           "status": "not_collected"
         },
         {
@@ -146,6 +156,19 @@
       "reason": null,
       "status": "observed"
     },
+    "apex_set": {
+      "bind_count": 0,
+      "mount_count": 1,
+      "overlay_count": 0,
+      "package_count": 0,
+      "packages": [],
+      "read_only_count": 1,
+      "record_indices": [
+        6
+      ],
+      "unknown_access_count": 0,
+      "writable_count": 0
+    },
     "data_mount": {
       "classification": "read-write",
       "fs_type": "ext4",
@@ -160,6 +183,31 @@
       "reason": null,
       "status": "observed"
     },
+    "dynamic_partitions": {
+      "record_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": [
+        "/dev/block/dm-1",
+        "/dev/block/dm-2",
+        "/dev/block/dm-3",
+        "/dev/block/dm-4",
+        "/dev/block/dm-5",
+        "/dev/block/dm-6"
+      ],
+      "state": "detected"
+    },
+    "integrity_context": {
+      "assessment": "not_assessed",
+      "bind_mounts_detected": 0,
+      "reason": "mount access is contextual evidence, not an integrity verdict",
+      "unknown_sensitive_mounts": []
+    },
     "integrity_summary": {
       "overlay_detected": {
         "reason": "collection completed and the signal was absent",
@@ -171,6 +219,54 @@
         "status": "observed_absent",
         "value": []
       }
+    },
+    "observation": {
+      "attempts": [
+        {
+          "capture_status": "not_collected",
+          "format": "mountinfo",
+          "malformed_line_count": 0,
+          "name": "mountinfo",
+          "parse_status": "not_parsed",
+          "record_count": 0,
+          "source_ref": "legacy-sections/MOUNTINFO",
+          "warnings": []
+        },
+        {
+          "capture_status": "not_collected",
+          "format": "proc_mounts",
+          "malformed_line_count": 0,
+          "name": "proc_mounts",
+          "parse_status": "not_parsed",
+          "record_count": 0,
+          "source_ref": "legacy-sections/PROC_MOUNTS",
+          "warnings": []
+        },
+        {
+          "capture_status": "observed",
+          "format": "mount",
+          "malformed_line_count": 0,
+          "name": "mounts",
+          "parse_status": "complete",
+          "record_count": 7,
+          "source_ref": "legacy-sections/MOUNT",
+          "warnings": []
+        }
+      ],
+      "evidence_paths": [
+        "legacy-sections/MOUNT#L1",
+        "legacy-sections/MOUNT#L2",
+        "legacy-sections/MOUNT#L3",
+        "legacy-sections/MOUNT#L4",
+        "legacy-sections/MOUNT#L5",
+        "legacy-sections/MOUNT#L6",
+        "legacy-sections/MOUNT#L7"
+      ],
+      "parse_status": "complete",
+      "scope": "observer_self",
+      "selected_format": "mount",
+      "selected_source": "mounts",
+      "selection_reason": "selected mounts after mountinfo, proc_mounts was unavailable or unusable"
     },
     "odm_mount": {
       "classification": "read-only",
@@ -198,6 +294,232 @@
       "reason": null,
       "status": "observed"
     },
+    "records": [
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L1",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel",
+          "relatime"
+        ],
+        "mount_point": "/system",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)",
+        "record_index": 0,
+        "root": null,
+        "source": "/dev/block/dm-1",
+        "source_line": 1,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L2",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel",
+          "relatime"
+        ],
+        "mount_point": "/vendor",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)",
+        "record_index": 1,
+        "root": null,
+        "source": "/dev/block/dm-2",
+        "source_line": 2,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L3",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel",
+          "relatime"
+        ],
+        "mount_point": "/product",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)",
+        "record_index": 2,
+        "root": null,
+        "source": "/dev/block/dm-3",
+        "source_line": 3,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L4",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel",
+          "relatime"
+        ],
+        "mount_point": "/system_ext",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)",
+        "record_index": 3,
+        "root": null,
+        "source": "/dev/block/dm-4",
+        "source_line": 4,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L5",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel",
+          "relatime"
+        ],
+        "mount_point": "/odm",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)",
+        "record_index": 4,
+        "root": null,
+        "source": "/dev/block/dm-5",
+        "source_line": 5,
+        "super_options": []
+      },
+      {
+        "access": "writable",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L6",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "rw",
+          "seclabel",
+          "nosuid",
+          "nodev"
+        ],
+        "mount_point": "/data",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)",
+        "record_index": 5,
+        "root": null,
+        "source": "/dev/block/dm-6",
+        "source_line": 6,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "legacy-sections/MOUNT#L7",
+        "format": "mount",
+        "fs_type": "tmpfs",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro",
+          "seclabel"
+        ],
+        "mount_point": "/apex",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "tmpfs on /apex type tmpfs (ro,seclabel)",
+        "record_index": 6,
+        "root": null,
+        "source": "tmpfs",
+        "source_line": 7,
+        "super_options": []
+      }
+    ],
     "system_ext_mount": {
       "classification": "read-only",
       "fs_type": "ext4",
@@ -223,6 +545,14 @@
       "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)",
       "reason": null,
       "status": "observed"
+    },
+    "system_resolution": {
+      "reason": "one exact /system mount was observed",
+      "record_indices": [
+        0
+      ],
+      "state": "explicit_system",
+      "system_root": "/system"
     },
     "vendor_mount": {
       "classification": "read-only",
@@ -347,6 +677,20 @@
         "timed_out": false
       },
       {
+        "command_id": "mountinfo",
+        "detail": null,
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      },
+      {
+        "command_id": "proc_mounts",
+        "detail": null,
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      },
+      {
         "command_id": "mounts",
         "detail": null,
         "exit_code": null,
@@ -421,7 +765,7 @@
       "status": "observed"
     }
   ],
-  "report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
+  "report_id": "atlrep-cd70edebbefab6773068d09dab7ea1ef",
   "root_state": {
     "gid": {
       "reason": null,
@@ -451,7 +795,7 @@
       "value": "0"
     }
   },
-  "schema_version": "3.0.0",
+  "schema_version": "4.0.0",
   "selinux": {
     "denials_collected": {
       "reason": "SELinux denials were not collected",

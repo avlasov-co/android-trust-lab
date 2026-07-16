@@ -29,6 +29,8 @@ standalone observer ID in the current report schema or analyzer registry.
 
 - property spoofing or divergence
 - mount namespace differences
+- incomplete or fallback mount sources that omit topology
+- system-as-root and stacked mounts misread as legacy `/system` layouts
 - SELinux context visibility differences
 - emulator behavior
 - vendor-specific behavior

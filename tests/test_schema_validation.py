@@ -38,16 +38,18 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
         "dataset_source_v1_0_0.schema.json",
         "trust_diff.schema.json",
         "trust_diff_v2_0_0.schema.json",
+        "trust_diff_v2_1_0.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
         "trust_report_v3_0_0.schema.json",
+        "trust_report_v4_0_0.schema.json",
     )
 
 
-def test_v3_report_and_v2_diff_schemas_are_closed_and_required_complete():
+def test_current_report_and_diff_schemas_are_closed_and_required_complete():
     for name in (
-        "trust_report_v3_0_0.schema.json",
-        "trust_diff_v2_0_0.schema.json",
+        "trust_report_v4_0_0.schema.json",
+        "trust_diff_v2_1_0.schema.json",
     ):
         schema = load_schema(name)
         assert set(schema["required"]) == set(schema["properties"])
@@ -122,6 +124,27 @@ def test_v2_schema_declares_required_defs_and_closes_structured_objects():
         "limitations",
     }
     for name in strict_objects:
+        definition = definitions[name]
+        assert definition["type"] == "object"
+        assert definition["additionalProperties"] is False
+        assert set(definition["required"]) == set(definition["properties"])
+
+
+def test_v4_mount_schema_closes_every_structured_mount_object():
+    definitions = load_schema("trust_report_v4_0_0.schema.json")["$defs"]
+    strict_mount_objects = {
+        "mountSourceAttempt",
+        "mountObservationSet",
+        "mountPropagation",
+        "mountRecord",
+        "systemMountResolution",
+        "dynamicPartitionState",
+        "apexMountSet",
+        "mountIntegrityContext",
+        "mountState",
+    }
+
+    for name in strict_mount_objects:
         definition = definitions[name]
         assert definition["type"] == "object"
         assert definition["additionalProperties"] is False

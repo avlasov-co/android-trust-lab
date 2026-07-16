@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-    "report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-    "schema_version": "3.0.0"
+    "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+    "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+    "schema_version": "4.0.0"
   },
   "changed_dimensions": [
     {
@@ -34,53 +34,99 @@
       ],
       "interpretation": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
       "severity": "high"
+    },
+    {
+      "after": {
+        "record_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "sources": [
+          "/dev/block/dm-2",
+          "/dev/block/dm-3",
+          "/dev/block/dm-4",
+          "/dev/block/dm-5",
+          "/dev/block/dm-6"
+        ],
+        "state": "detected"
+      },
+      "before": {
+        "record_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "sources": [
+          "/dev/block/dm-1",
+          "/dev/block/dm-2",
+          "/dev/block/dm-3",
+          "/dev/block/dm-4",
+          "/dev/block/dm-5",
+          "/dev/block/dm-6"
+        ],
+        "state": "detected"
+      },
+      "dimension": "dynamic_partition_state",
+      "evidence_paths": [
+        "mounts.dynamic_partitions"
+      ],
+      "interpretation": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
+      "severity": "low"
     }
   ],
   "compare_report": {
-    "content_digest": "aa83519717e0e28386a644c294ea9ba21974c24e8638918db76a891d140fade8",
-    "report_id": "atlrep-23fe1b377cc98782ea9ab314ceb407a6",
-    "schema_version": "3.0.0"
+    "content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
+    "report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
+    "schema_version": "4.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "21db132f8d5526c83953b2fd4d5cf57a71441639708fd66ae43ba7841dd0427e",
-  "diff_id": "atldiff-21db132f8d5526c83953b2fd4d5cf57a",
+  "content_digest": "ec4564161ac336fc2fb546c3ff4fbb2027db8ed6f1ffed8e457dc1355acf77b0",
+  "diff_id": "atldiff-ec4564161ac336fc2fb546c3ff4fbb20",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-        "report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-        "schema_version": "3.0.0"
+        "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+        "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "b574b026accbd0b534e7dfafd1a11ecdfa978b30ce7e491784a7dcd0cb68c8a4",
-      "original_document_digest": "92e7ae612fec8fbd87d2fbe0a38d554ad3d05205ade8158e2c595d6135b21fc8",
-      "original_report_id": "atlrep-f3df5e71553905d2757b9fc9a510f86e",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
+      "original_document_digest": "9287524969a96bb659a89519ccce9d4257631c75ddb04a589db040ae513bba73",
+      "original_report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
+      "original_schema_version": "4.0.0"
     },
-    "common_report_schema_version": "3.0.0",
+    "common_report_schema_version": "4.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "aa83519717e0e28386a644c294ea9ba21974c24e8638918db76a891d140fade8",
-        "report_id": "atlrep-23fe1b377cc98782ea9ab314ceb407a6",
-        "schema_version": "3.0.0"
+        "content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
+        "report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
+        "schema_version": "4.0.0"
       },
-      "original_content_digest": "aa83519717e0e28386a644c294ea9ba21974c24e8638918db76a891d140fade8",
-      "original_document_digest": "be827bf1e7723ec458ee957ae17ed5d5712eaaf979630517ce787a0d2b0e8ea8",
-      "original_report_id": "atlrep-23fe1b377cc98782ea9ab314ceb407a6",
-      "original_schema_version": "3.0.0"
+      "original_content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
+      "original_document_digest": "5ba4eb693a6c3e396eb6d876153ba2874bbc74efbec31a21b367a9ebe32280a9",
+      "original_report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
+      "original_schema_version": "4.0.0"
     }
   },
-  "schema_version": "2.0.0",
-  "summary": "1 dimensions changed, 10 dimensions unchanged.",
+  "schema_version": "2.1.0",
+  "summary": "2 dimensions changed, 12 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
     "vbmeta_state",
     "verity_mode",
     "selinux_mode",
+    "system_mount_resolution",
+    "apex_mount_set",
     "root_presence",
     "magisk_presence",
     "property_consistency",

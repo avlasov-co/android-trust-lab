@@ -2,7 +2,7 @@
 
 Report schema `2.0.0` is a frozen readable compatibility contract. Its canonical
 packaged resource is `trust_report_v2_0_0.schema.json`; frozen `1.0.0` remains a
-read-only input at `trust_report_v1_0_0.schema.json`, while report `3.0.0` is the
+read-only input at `trust_report_v1_0_0.schema.json`, while report `4.0.0` is the
 sole current writer. All resources ship in wheels and
 source distributions and are resolved locally by the exact compatibility
 registry—never by a network or `latest` lookup.
@@ -55,7 +55,7 @@ observed. Confidence is independently constrained to `low`, `medium`, `high`, or
 Migration does not read the clock, network, environment, or filesystem identity,
 and it never mutates or replaces the source. Re-running it over the same v1 JSON
 produces byte-equivalent canonical JSON. `trustlab migrate-report` continues
-through the registered v2-to-v3 step and publishes current report v3.
+through the registered v2-to-v3 and v3-to-v4 steps and publishes current report v4.
 Cross-version diffing invokes the complete explicit chain and refuses unsupported
 inputs. Diff provenance records each original report/document identity, the
 common report/content identity, and the exact migration chain applied to each
@@ -67,7 +67,7 @@ was never recorded. A v1 negative or empty value without equivalent provenance
 remains `not_collected`; migration never promotes it to affirmative absence or
 access denial.
 
-Generator-owned synthetic reports were deliberately regenerated as v3 from
+Generator-owned synthetic reports were deliberately regenerated as v4 from
 their checked-in raw inputs. `tests/fixtures/report_v1_historical.json` and
 `tests/fixtures/report_v2_historical.json` remain immutable historical inputs.
-See [Report Schema v3](report_schema_v3.md) for the current contract.
+See [Report Schema v4](report_schema_v4.md) for the current contract.

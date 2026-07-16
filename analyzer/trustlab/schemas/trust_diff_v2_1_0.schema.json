@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/diff/2.1.0",
+  "title": "Android Trust Lab Trust Diff v2.1",
+  "description": "Strict trust-state diff binding exact report events and canonical evidence identities.",
+  "type": "object",
+  "required": [
+    "diff_id",
+    "content_digest",
+    "schema_version",
+    "base_report",
+    "compare_report",
+    "changed_dimensions",
+    "unchanged_dimensions",
+    "new_signals",
+    "missing_signals",
+    "confidence_changes",
+    "summary",
+    "provenance"
+  ],
+  "properties": {
+    "diff_id": {
+      "type": "string",
+      "pattern": "^atldiff-[a-f0-9]{32}$"
+    },
+    "content_digest": {
+      "$ref": "#/$defs/contentDigest"
+    },
+    "schema_version": {
+      "const": "2.1.0"
+    },
+    "base_report": {
+      "$ref": "#/$defs/reportIdentity"
+    },
+    "compare_report": {
+      "$ref": "#/$defs/reportIdentity"
+    },
+    "changed_dimensions": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/changedDimension"
+      }
+    },
+    "unchanged_dimensions": {
+      "$ref": "#/$defs/signalPaths"
+    },
+    "new_signals": {
+      "$ref": "#/$defs/signalPaths"
+    },
+    "missing_signals": {
+      "$ref": "#/$defs/signalPaths"
+    },
+    "confidence_changes": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/confidenceChange"
+      }
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "contentDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "reportIdentity": {
+      "type": "object",
+      "required": [
+        "report_id",
+        "content_digest",
+        "schema_version"
+      ],
+      "properties": {
+        "report_id": {
+          "type": "string",
+          "pattern": "^atlrep-[a-f0-9]{32}$"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/contentDigest"
+        },
+        "schema_version": {
+          "const": "4.0.0"
+        }
+      },
+      "additionalProperties": false
+    },
+    "signalPath": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$",
+      "maxLength": 512
+    },
+    "signalPaths": {
+      "type": "array",
+      "maxItems": 512,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/signalPath"
+      }
+    },
+    "canonicalValue": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "string",
+          "maxLength": 65536
+        },
+        {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/canonicalValue"
+          }
+        },
+        {
+          "type": "object",
+          "maxProperties": 4096,
+          "additionalProperties": {
+            "$ref": "#/$defs/canonicalValue"
+          }
+        }
+      ]
+    },
+    "changedDimension": {
+      "type": "object",
+      "required": [
+        "dimension",
+        "before",
+        "after",
+        "severity",
+        "interpretation",
+        "evidence_paths"
+      ],
+      "properties": {
+        "dimension": {
+          "$ref": "#/$defs/signalPath"
+        },
+        "before": {
+          "$ref": "#/$defs/canonicalValue"
+        },
+        "after": {
+          "$ref": "#/$defs/canonicalValue"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "interpretation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "evidence_paths": {
+          "$ref": "#/$defs/signalPaths"
+        }
+      },
+      "additionalProperties": false
+    },
+    "confidenceChange": {
+      "type": "object",
+      "required": [
+        "path",
+        "before",
+        "after"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/signalPath"
+        },
+        "before": {
+          "$ref": "#/$defs/canonicalValue"
+        },
+        "after": {
+          "$ref": "#/$defs/canonicalValue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "productIdentity": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.dev[0-9]+)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "migrationRecord": {
+      "type": "object",
+      "required": [
+        "migration_id",
+        "source_schema_version",
+        "target_schema_version",
+        "implementation"
+      ],
+      "properties": {
+        "migration_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "source_schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "target_schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "implementation": {
+          "$ref": "#/$defs/productIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reportInputProvenance": {
+      "type": "object",
+      "required": [
+        "original_report_id",
+        "original_schema_version",
+        "original_content_digest",
+        "original_document_digest",
+        "common_report",
+        "applied_migrations"
+      ],
+      "properties": {
+        "original_report_id": {
+          "type": "string",
+          "maxLength": 65536
+        },
+        "original_schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "original_content_digest": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/contentDigest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "original_document_digest": {
+          "$ref": "#/$defs/contentDigest"
+        },
+        "common_report": {
+          "$ref": "#/$defs/reportIdentity"
+        },
+        "applied_migrations": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/migrationRecord"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "common_report_schema_version",
+        "base",
+        "compare"
+      ],
+      "properties": {
+        "common_report_schema_version": {
+          "const": "4.0.0"
+        },
+        "base": {
+          "$ref": "#/$defs/reportInputProvenance"
+        },
+        "compare": {
+          "$ref": "#/$defs/reportInputProvenance"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

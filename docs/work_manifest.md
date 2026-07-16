@@ -132,15 +132,15 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 56 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 32 analyzer and tool modules |
-| Unit tests | Gate step 5 | 485 passed on the development runtime; CI covers Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 91.97% statements; 81.97% branches; floors 85%/80% |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 60 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 34 analyzer and tool modules |
+| Unit tests | Gate step 5 | 524 passed on the development runtime; CI covers Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 92.18% statements; 82.24% branches; floors 85%/80% |
 | Tools coverage | Gate step 5 | 87.05% statements; 74.56% branches; floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
-| Schema and checked-in artifacts | Gate step 10 | 11 schemas, 8 reports, 6 diffs, 1 collection manifest, 3 dataset manifests, and 1 dataset source validated |
+| Schema and checked-in artifacts | Gate step 10 | 13 schemas, 8 reports, 6 diffs, 1 collection manifest, 3 dataset manifests, and 1 dataset source validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk package safety | Gate step 12 | Pass |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
@@ -156,9 +156,9 @@ from an activated environment containing `analyzer[dev]`.
 schema versions, canonical evidence states, exact registry lookup, migration and
 cross-version diff rules, canonical JSON identity, deprecation windows, and
 sample-retention policy. The supported-version table and schema-resource
-registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1
-and v2 are read-only compatibility inputs, report v3 is the current validated
-writer, diff v1 is read-only, and diff v2 is the current writer. Strict
+registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1,
+v2, and v3 are read-only compatibility inputs, report v4 is the current validated
+writer, diff v1/v2 are read-only, and diff v2.1 is the current writer. Strict
 collection manifest v1 is readable and writable. Dataset manifest v1 remains
 readable, strict dataset manifest v2
 is the sole verified writer format, and dataset source v1 drives deterministic

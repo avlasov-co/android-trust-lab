@@ -37,12 +37,14 @@ require_path collector/schema/artifact_collection_manifest_v1_0_0.schema.json
 require_path collector/schema/trust_report_v1_0_0.schema.json
 require_path collector/schema/trust_report_v2_0_0.schema.json
 require_path collector/schema/trust_report_v3_0_0.schema.json
+require_path collector/schema/trust_report_v4_0_0.schema.json
 require_path collector/schema/collection_manifest_v1_0_0.schema.json
 require_path collector/schema/dataset_manifest_v1_0_0.schema.json
 require_path collector/schema/dataset_manifest_v2_0_0.schema.json
 require_path collector/schema/dataset_source_v1_0_0.schema.json
 require_path collector/schema/trust_diff.schema.json
 require_path collector/schema/trust_diff_v2_0_0.schema.json
+require_path collector/schema/trust_diff_v2_1_0.schema.json
 require_path datasets/manifest.json
 require_path datasets/source.json
 require_path results/artifact_manifest.json

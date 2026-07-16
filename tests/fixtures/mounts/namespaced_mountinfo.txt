@@ -1,0 +1,2 @@
+70 35 253:0 / /system ro shared:12 master:4 propagate_from:3 - ext4 /dev/block/dm-0 rw
+71 70 253:0 /system_ext /system_ext ro unbindable - ext4 /dev/block/dm-0 rw

@@ -19,6 +19,8 @@ adb shell getprop ro.debuggable
 adb shell getprop ro.secure
 adb shell getprop ro.adb.secure
 adb shell getprop sys.boot_completed
+adb shell cat /proc/self/mountinfo
+adb shell cat /proc/mounts
 adb shell mount
 adb shell id
 adb shell getenforce
@@ -51,6 +53,10 @@ Use section markers:
 ```text
 === GETPROP ===
 [key]: [value]
+=== MOUNTINFO ===
+...complete /proc/self/mountinfo output...
+=== PROC_MOUNTS ===
+...complete /proc/mounts output...
 === MOUNT ===
 ...
 === ID ===
@@ -58,3 +64,9 @@ uid=2000(shell) gid=2000(shell)
 === GETENFORCE ===
 Enforcing
 ```
+
+Keep each mount source separate and retain its command outcome. The analyzer
+prefers mountinfo, then `/proc/mounts`, then common `mount` output regardless of
+manifest array order. Do not filter to only familiar paths: system-as-root,
+dynamic partitions, APEX package sets, bind/overlay context, propagation, and
+mount-namespace topology depend on complete records.

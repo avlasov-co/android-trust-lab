@@ -28,7 +28,7 @@ def rehash_diff(document):
         if key not in {"diff_id", "content_digest"}
     }
     digest = framed_content_digest(
-        family="diff", schema_version="2.0.0", value=projection
+        family="diff", schema_version=document["schema_version"], value=projection
     )
     document["content_digest"] = digest
     document["diff_id"] = f"atldiff-{digest[:32]}"
@@ -113,10 +113,10 @@ def test_cross_version_diff_uses_explicit_migration_chain():
 
     diff = make_diff(v1, v2)
     assert diff["changed_dimensions"] == []
-    assert len(diff["unchanged_dimensions"]) == 11
+    assert len(diff["unchanged_dimensions"]) == 14
     current = migrate_report_to_current(v2)
     provenance = diff["provenance"]
-    assert provenance["common_report_schema_version"] == "3.0.0"
+    assert provenance["common_report_schema_version"] == "4.0.0"
     assert provenance["base"]["original_schema_version"] == "1.0.0"
     assert provenance["compare"]["original_schema_version"] == "2.0.0"
     assert (
@@ -131,17 +131,17 @@ def test_cross_version_diff_uses_explicit_migration_chain():
         == {
             "report_id": current["report_id"],
             "content_digest": current["content_digest"],
-            "schema_version": "3.0.0",
+            "schema_version": "4.0.0",
         }
     )
     assert [
         migration["migration_id"]
         for migration in provenance["base"]["applied_migrations"]
-    ] == ["report-v1-to-v2", "report-v2-to-v3"]
+    ] == ["report-v1-to-v2", "report-v2-to-v3", "report-v3-to-v4"]
     assert [
         migration["migration_id"]
         for migration in provenance["compare"]["applied_migrations"]
-    ] == ["report-v2-to-v3"]
+    ] == ["report-v2-to-v3", "report-v3-to-v4"]
     validate_diff(diff)
 
 
@@ -159,11 +159,11 @@ def test_diff_validation_rejects_rehashed_unregistered_migration_chain():
 
 
 @pytest.mark.parametrize("field", ["original_report_id", "original_content_digest"])
-def test_diff_validation_rejects_rehashed_forged_original_v3_identity(field):
+def test_diff_validation_rejects_rehashed_forged_original_v4_identity(field):
     current = load_report("tests/fixtures/sample_normalized_report.json")
     forged = make_diff(current, current)
     forged["provenance"]["base"][field] = "0" * 64
     rehash_diff(forged)
 
-    with pytest.raises(SchemaValidationError, match="original v3 report identity"):
+    with pytest.raises(SchemaValidationError, match="original current report identity"):
         validate_diff(forged)

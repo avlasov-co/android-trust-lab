@@ -1,0 +1,3 @@
+35 24 253:0 / / ro,seclabel shared:1 - ext4 /dev/block/dm-0 rw
+36 35 253:1 / /vendor ro,seclabel - ext4 /dev/block/mapper/vendor_a rw
+37 35 253:2 / /product ro,seclabel - ext4 /dev/block/mapper/product_a rw

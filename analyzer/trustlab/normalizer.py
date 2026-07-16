@@ -15,6 +15,7 @@ from .artifacts import (
     CommandCapture,
     EvidenceFragments,
     InputKind,
+    MountSourceAttempt,
     parse_artifact_text,
     parse_collection_payload_text,
 )
@@ -43,6 +44,7 @@ from .observers import observer_spec
 from .parser import KNOWN_SECTION_NAMES, MAX_RAW_TEXT_BYTES
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import report_v3_from_v2_shape
+from .report_v4 import report_v4_from_v3_shape
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -102,12 +104,9 @@ def select_mount(
 ) -> dict[str, Any]:
     exact = [m for m in mounts if m.get("mount_point") == mount_point]
     if exact:
+        # Retain the legacy summary's last-observation behavior. The v4
+        # system_resolution field separately records stacked mounts as ambiguous.
         return dict(exact[-1])
-    nested = [
-        m for m in mounts if str(m.get("mount_point", "")).startswith(mount_point + "/")
-    ]
-    if nested:
-        return dict(nested[-1])
     return unknown_mount(mount_point)
 
 
@@ -164,27 +163,234 @@ def detect_emulator(props: dict[str, str], target_type: str) -> dict[str, Any]:
     return {"is_emulator": is_emulator, "indicators": sorted(set(indicators))}
 
 
-def normalize_mounts(mounts: Sequence[Mapping[str, object]]) -> dict[str, Any]:
+def _mount_attempt(attempt: MountSourceAttempt) -> dict[str, Any]:
+    return {
+        "name": attempt.name,
+        "format": attempt.format,
+        "capture_status": attempt.capture_status.value,
+        "parse_status": attempt.parse_status,
+        "source_ref": attempt.source_ref,
+        "record_count": attempt.record_count,
+        "malformed_line_count": attempt.malformed_line_count,
+        "warnings": list(attempt.warnings),
+    }
+
+
+def _string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _record_index(record: Mapping[str, object]) -> int:
+    value = record.get("record_index")
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+
+def _mount_record(record: Mapping[str, object]) -> dict[str, Any]:
+    propagation = record.get("propagation", {})
+    if not isinstance(propagation, Mapping):
+        propagation = {}
+    return {
+        "record_index": record.get("record_index", 0),
+        "source_line": record.get("source_line", 0),
+        "format": record.get("format", "mount"),
+        "mount_id": record.get("mount_id"),
+        "parent_id": record.get("parent_id"),
+        "major_minor": record.get("major_minor"),
+        "root": record.get("root"),
+        "mount_point": record.get("mount_point"),
+        "mount_options": _string_list(record.get("mount_options")),
+        "optional_fields": _string_list(record.get("optional_fields")),
+        "fs_type": record.get("fs_type"),
+        "source": record.get("source"),
+        "super_options": _string_list(record.get("super_options")),
+        "propagation": dict(propagation),
+        "access": record.get("access", "unknown"),
+        "overlay_state": record.get("overlay_state", "unknown"),
+        "bind_state": record.get("bind_state", "unknown"),
+        "parse_status": record.get("parse_status", "partial"),
+        "raw": record.get("raw", ""),
+        "evidence_path": record.get("evidence_path", "unknown"),
+    }
+
+
+def _system_mount_resolution(
+    mounts: Sequence[Mapping[str, object]],
+    *,
+    complete: bool,
+) -> dict[str, Any]:
+    system_records = [
+        _record_index(mount)
+        for mount in mounts
+        if mount.get("mount_point") == "/system"
+    ]
+    root_records = [
+        _record_index(mount) for mount in mounts if mount.get("mount_point") == "/"
+    ]
+    if len(system_records) == 1:
+        return {
+            "state": "explicit_system",
+            "system_root": "/system",
+            "record_indices": system_records,
+            "reason": "one exact /system mount was observed",
+        }
+    if len(system_records) > 1:
+        return {
+            "state": "ambiguous",
+            "system_root": None,
+            "record_indices": system_records,
+            "reason": "multiple exact /system mounts were observed",
+        }
+    if complete and len(root_records) == 1:
+        return {
+            "state": "system_as_root",
+            "system_root": "/",
+            "record_indices": root_records,
+            "reason": "no /system mount was observed; one root mount is the system root",
+        }
+    if complete and len(root_records) > 1:
+        return {
+            "state": "ambiguous",
+            "system_root": None,
+            "record_indices": root_records,
+            "reason": "multiple root mounts were observed without an exact /system mount",
+        }
+    if root_records:
+        return {
+            "state": "unresolved",
+            "system_root": None,
+            "record_indices": root_records,
+            "reason": "partial evidence cannot establish that /system is absent",
+        }
+    return {
+        "state": "unresolved",
+        "system_root": None,
+        "record_indices": [],
+        "reason": "neither an exact /system mount nor a root mount was observed",
+    }
+
+
+def _apex_mount_set(mounts: Sequence[Mapping[str, object]]) -> dict[str, Any]:
+    apex_records = [
+        mount
+        for mount in mounts
+        if mount.get("mount_point") == "/apex"
+        or str(mount.get("mount_point", "")).startswith("/apex/")
+    ]
+    packages = sorted(
+        {
+            str(mount["mount_point"])
+            .removeprefix("/apex/")
+            .split("/", 1)[0]
+            .split("@", 1)[0]
+            for mount in apex_records
+            if mount.get("mount_point") not in {None, "/apex"}
+        }
+    )
+    accesses = [mount.get("access", "unknown") for mount in apex_records]
+    return {
+        "packages": packages,
+        "record_indices": [_record_index(mount) for mount in apex_records],
+        "mount_count": len(apex_records),
+        "package_count": len(packages),
+        "read_only_count": accesses.count("read_only"),
+        "writable_count": accesses.count("writable"),
+        "unknown_access_count": accesses.count("unknown"),
+        "overlay_count": sum(
+            mount.get("overlay_state") == "detected" for mount in apex_records
+        ),
+        "bind_count": sum(
+            mount.get("bind_state") == "detected" for mount in apex_records
+        ),
+    }
+
+
+def normalize_mounts(
+    mounts: Sequence[Mapping[str, object]],
+    *,
+    attempts: Sequence[MountSourceAttempt] = (),
+    selected_source: str | None = None,
+    selection_reason: str = "no mount capture was usable",
+) -> dict[str, Any]:
     result: dict[str, Any] = {
         field: select_mount(mounts, path) for path, field in SENSITIVE_MOUNTS.items()
     }
     result["overlay_detected"] = any(
-        m.get("classification") == "overlay" for m in mounts
+        mount.get("overlay_state") == "detected" for mount in mounts
     )
     writable = []
     for path, field in SENSITIVE_MOUNTS.items():
         mount = result[field]
-        raw_options = mount.get("options", [])
-        options = set(raw_options if isinstance(raw_options, list) else [])
-        if path != "/data" and (
-            mount.get("classification") in {"read-write", "overlay"} or "rw" in options
-        ):
+        if path != "/data" and mount.get("access") == "writable":
             writable.append(path)
     result["writable_sensitive_mounts"] = writable
     result["integrity_summary"] = {
         "overlay_detected": result["overlay_detected"],
         "writable_sensitive_mounts": writable,
+        "bind_mounts_detected": sum(
+            mount.get("bind_state") == "detected" for mount in mounts
+        ),
+        "unknown_sensitive_mounts": sorted(
+            path
+            for path, field in SENSITIVE_MOUNTS.items()
+            if result[field].get("classification") == "unknown"
+        ),
+        "assessment": "not_assessed",
+        "reason": "mount access is contextual evidence, not an integrity verdict",
     }
+    selected_attempt = next(
+        (attempt for attempt in attempts if attempt.name == selected_source), None
+    )
+    result["observation"] = {
+        "scope": "observer_self",
+        "selected_source": selected_source,
+        "selected_format": selected_attempt.format if selected_attempt else None,
+        "parse_status": selected_attempt.parse_status
+        if selected_attempt
+        else "not_parsed",
+        "selection_reason": selection_reason,
+        "attempts": [_mount_attempt(attempt) for attempt in attempts],
+        "evidence_paths": sorted(
+            {
+                str(mount.get("evidence_path"))
+                for mount in mounts
+                if mount.get("evidence_path")
+            }
+        ),
+    }
+    result["records"] = [_mount_record(mount) for mount in mounts]
+    complete_mount_set = bool(
+        selected_attempt and selected_attempt.parse_status == "complete"
+    )
+    result["system_resolution"] = _system_mount_resolution(
+        mounts,
+        complete=complete_mount_set,
+    )
+    dynamic_records = [
+        mount
+        for mount in mounts
+        if str(mount.get("source", "")).startswith(
+            ("/dev/block/mapper/", "/dev/block/dm-")
+        )
+        or str(mount.get("major_minor", "")).startswith("253:")
+    ]
+    result["dynamic_partitions"] = {
+        "state": "detected"
+        if dynamic_records
+        else "not_detected"
+        if complete_mount_set
+        else "unknown",
+        "record_indices": [_record_index(mount) for mount in dynamic_records],
+        "sources": sorted(
+            {
+                str(mount["source"])
+                for mount in dynamic_records
+                if mount.get("source") is not None
+            }
+        ),
+    }
+    result["apex_set"] = _apex_mount_set(mounts)
     return result
 
 
@@ -315,6 +521,12 @@ def build_report(
         }.items()
         if observed
     )
+    modern_mounts = normalize_mounts(
+        mounts,
+        attempts=fragments.mount_attempts,
+        selected_source=fragments.mount_selected_source,
+        selection_reason=fragments.mount_selection_reason,
+    )
 
     legacy_shape = {
         "report_id": "atl-" + "0" * 16,
@@ -355,7 +567,7 @@ def build_report(
         },
         "verified_boot": verified_boot_state(props, target_type, boot_state_raw),
         "selinux": normalize_selinux(fragments.selinux_mode),
-        "mounts": normalize_mounts(mounts),
+        "mounts": modern_mounts,
         "properties": normalize_properties(props),
         "root_state": root_state(fragments),
         "magisk_state": magisk_state(fragments),
@@ -375,13 +587,14 @@ def build_report(
         preserve_legacy_source=False,
         observed_probes=observed_probes,
     )
-    report = report_v3_from_v2_shape(
+    report_v3 = report_v3_from_v2_shape(
         report_v2,
         raw_artifacts=[raw_artifact],
         collection_event_id=collection_event_id,
         source_schema_version="raw",
         generator_name=generator_name,
     )
+    report = report_v4_from_v3_shape(report_v3, modern_mounts=modern_mounts)
     report["provenance"]["command_results"] = [
         _capture_command_result(capture) for capture in parsed.captures
     ]

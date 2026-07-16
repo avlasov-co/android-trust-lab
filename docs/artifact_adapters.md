@@ -64,13 +64,17 @@ Every adapter implements the `ArtifactAdapter` protocol and returns an immutable
   timeout, stdout, stderr, and a portable relative source reference;
 - separate warning and error tuples;
 - `EvidenceFragments` containing only constrained syntactic properties, boot
-  key/value facts, mounts, identity fields, SELinux text, command line, `su`
-  paths, Magisk text, and process facts.
+  key/value facts, selected mount records plus every mount-source attempt,
+  identity fields, SELinux text, command line, `su` paths, Magisk text, and
+  process facts.
 
 Only coherent, syntactically parsed `observed` captures and deliberately empty
 captures contribute parser fragments. Successful statuses require a zero or
 absent exit code and no timeout; aliases and duplicate semantic captures are
-rejected. Observer-specific capture vocabularies prevent host evidence from
+rejected except for the deliberate mountinfo, `/proc/mounts`, and `mount`
+fallback set. Mount selection uses fixed source priority rather than manifest
+order, and malformed preferred-source attempts remain recorded when a usable
+fallback exists. Observer-specific capture vocabularies prevent host evidence from
 populating Android target dimensions.
 Failed, inaccessible, timed-out, unsupported, and uncollected captures remain
 visible in report command-result provenance and never have their stdout

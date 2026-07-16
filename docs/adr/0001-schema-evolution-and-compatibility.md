@@ -25,8 +25,8 @@ of them, and matching numeric values do not imply compatibility.
 |---|---|---|
 | Analyzer package version | Python distribution and CLI implementation release | PEP 440 `0.3.0.dev0` |
 | Collector version | Magisk collector implementation release plus monotonic Android `versionCode` | `0.3.0-dev0`, code `300` |
-| Report-schema version | Normalized trust-report contract | `3.0.0` writable; `1.0.0`, `2.0.0`, and `3.0.0` readable |
-| Diff-schema version | Trust-diff output contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
+| Report-schema version | Normalized trust-report contract | `4.0.0` writable; `1.0.0` through `4.0.0` readable |
+| Diff-schema version | Trust-diff output contract | `2.1.0` writable; `1.0.0`, `2.0.0`, and `2.1.0` readable |
 | Dataset-manifest version | Dataset index and integrity contract | `2.0.0` writable; frozen `1.0.0` and strict `2.0.0` readable |
 | Collection-manifest version | Portable collection/provenance contract | `1.0.0` readable and writable |
 | Experiment-spec version | Machine-readable experiment contract | no supported version; `1.0.0` planned |
@@ -189,8 +189,9 @@ Historical v1/v2 `report_id` and v1 `diff_id` values are legacy event/derived
 identifiers, not canonical content identities: report IDs can include
 filename-derived input, and diff IDs hash an unframed subset. They remain
 supported for read compatibility but are not represented as path-independent
-content digests. Report v3 adds a separate event identity and content digest;
-diff v2 binds the exact original and canonical report identities. The complete
+content digests. Report v3 added a separate event identity and content digest;
+report v4 binds structured mount evidence, and diff v2.1 binds the exact original
+and canonical report identities. The complete
 projection and exclusions are defined in
 [Content provenance and identity](../content_identity.md).
 
@@ -224,5 +225,5 @@ continues through the full window.
 The support boundary is reviewable in code, evidence failures retain their real
 semantics, and later schema work has explicit compatibility rules. The cost is
 maintaining validators, migration fixtures, and deprecation notes for every
-readable major. The implemented report v3, diff v2, and manifest contracts apply
-these rules while keeping their version domains independent.
+readable major. The implemented report v4, diff v2.1, and manifest contracts
+apply these rules while keeping their version domains independent.

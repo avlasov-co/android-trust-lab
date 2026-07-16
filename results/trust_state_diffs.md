@@ -4,7 +4,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E01 stock AVD ADB observer vs E02 rooted AVD ADB observer
 
-1 dimensions changed, 10 dimensions unchanged.
+1 dimensions changed, 13 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -12,7 +12,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E02 rooted AVD ADB observer vs E02 rooted AVD root observer
 
-1 dimensions changed, 10 dimensions unchanged.
+1 dimensions changed, 13 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -20,15 +20,16 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E01 stock AVD vs E03 writable-system AVD
 
-1 dimensions changed, 10 dimensions unchanged.
+2 dimensions changed, 12 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
 | mount_integrity | high | `{"overlay_detected": {"status": "observed_absent", "value": false}, "writable_sensitive_mounts": {"status": "observed_absent", "value": []}}` | `{"overlay_detected": {"status": "observed", "value": true}, "writable_sensitive_mounts": {"status": "observed", "value": ["/system"]}}` | Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion. |
+| dynamic_partition_state | low | `{"record_indices": [0, 1, 2, 3, 4, 5], "sources": ["/dev/block/dm-1", "/dev/block/dm-2", "/dev/block/dm-3", "/dev/block/dm-4", "/dev/block/dm-5", "/dev/block/dm-6"], "state": "detected"}` | `{"record_indices": [1, 2, 3, 4, 5], "sources": ["/dev/block/dm-2", "/dev/block/dm-3", "/dev/block/dm-4", "/dev/block/dm-5", "/dev/block/dm-6"], "state": "detected"}` | Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict. |
 
 ## E02 rooted ADB observer vs E05 Magisk root collector fixture
 
-2 dimensions changed, 9 dimensions unchanged.
+2 dimensions changed, 12 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|

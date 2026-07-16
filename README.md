@@ -61,11 +61,11 @@ collection manifest + integrity-bound raw artifacts
         ↓
 typed artifact adapter + parser
         ↓
-content-addressed trust-report v3 JSON
+content-addressed trust-report v4 JSON
         ↓
 diff engine
         ↓
-trust-diff v2 JSON + markdown summary
+trust-diff v2.1 JSON + markdown summary
 ```
 
 ## Implemented scope in this release
@@ -76,7 +76,7 @@ trust-diff v2 JSON + markdown summary
 | Strict portable collection-manifest v1 for every observer class | implemented |
 | Typed, versioned artifact adapters for legacy / ADB / host / app / root inputs | implemented |
 | Strict verifiable dataset-manifest v2 with deterministic freshness checks | implemented |
-| Content-addressed report v3 and exact-input diff v2 identities | implemented |
+| Content-addressed report v4 and exact-input diff v2.1 identities | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |

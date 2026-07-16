@@ -9,6 +9,18 @@ from typing import Literal, TypedDict
 
 from .bounded_io import read_bounded_regular_file
 from .exceptions import CollectionError, NormalizationError, safe_path_label
+from .mounts import (
+    ParsedMount as ParsedMount,
+)
+from .mounts import (
+    classify_mount as classify_mount,
+)
+from .mounts import (
+    parse_mount_line as parse_mount_line,
+)
+from .mounts import (
+    parse_mounts as parse_mounts,
+)
 
 MAX_RAW_TEXT_BYTES = 8 * 1024 * 1024
 MAX_LINE_BYTES = 256 * 1024
@@ -17,16 +29,6 @@ MAX_SECTION_NAME_CHARS = 64
 MAX_ENTRIES_PER_SECTION = 4096
 MAX_PARSER_WARNINGS = 256
 PARSER_WARNING_LIMIT_MESSAGE = "additional parser warnings omitted after limit"
-
-
-class ParsedMount(TypedDict):
-    """Syntactic mount fields produced before trust interpretation."""
-
-    raw: str
-    mount_point: str
-    fs_type: str
-    options: list[str]
-    classification: str
 
 
 class ParsedIdentity(TypedDict):
@@ -76,7 +78,9 @@ KNOWN_SECTION_NAMES = frozenset(
         "PROPS",
         "BOOT_STATE",
         "MOUNT",
+        "MOUNTINFO",
         "MOUNTS",
+        "PROC_MOUNTS",
         "ID",
         "GETENFORCE",
         "SELINUX",
@@ -354,64 +358,6 @@ def parse_getenforce(text: str) -> str:
     if "permission denied" in value:
         return "inaccessible"
     return "unknown"
-
-
-def parse_mount_line(line: str) -> ParsedMount:
-    raw = line.strip()
-    if not raw:
-        return {
-            "raw": raw,
-            "mount_point": "unknown",
-            "fs_type": "unknown",
-            "options": [],
-            "classification": "unknown",
-        }
-
-    mount_point = "unknown"
-    fs_type = "unknown"
-    options: list[str] = []
-
-    # Common Android/Linux format: device on /path type ext4 (ro,seclabel,...)
-    m = re.search(r"\s+on\s+(\S+)\s+type\s+(\S+)\s+\(([^)]*)\)", raw)
-    if m:
-        mount_point = m.group(1)
-        fs_type = m.group(2)
-        options = [part.strip() for part in m.group(3).split(",") if part.strip()]
-    else:
-        # /proc/mounts style: device mountpoint fstype opts ...
-        parts = raw.split()
-        if len(parts) >= 4:
-            mount_point = parts[1]
-            fs_type = parts[2]
-            options = [part.strip() for part in parts[3].split(",") if part.strip()]
-
-    classification = classify_mount(fs_type, options)
-    return {
-        "raw": raw,
-        "mount_point": mount_point,
-        "fs_type": fs_type,
-        "options": options,
-        "classification": classification,
-    }
-
-
-def classify_mount(fs_type: str, options: list[str]) -> str:
-    opts = set(options)
-    if fs_type == "overlay":
-        return "overlay"
-    if fs_type == "tmpfs":
-        return "tmpfs"
-    if "bind" in opts or "rbind" in opts:
-        return "bind mount"
-    if "rw" in opts:
-        return "read-write"
-    if "ro" in opts:
-        return "read-only"
-    return "unknown"
-
-
-def parse_mounts(text: str) -> list[ParsedMount]:
-    return [parse_mount_line(line) for line in text.splitlines() if line.strip()]
 
 
 def classify_shell_diagnostic(

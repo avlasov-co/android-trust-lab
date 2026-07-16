@@ -666,7 +666,7 @@ def test_verifier_regenerates_outputs_instead_of_trusting_rehashed_bytes(
             if key not in {"diff_id", "content_digest"}
         }
         content_digest = framed_content_digest(
-            family="diff", schema_version="2.0.0", value=projection
+            family="diff", schema_version=document["schema_version"], value=projection
         )
         document["content_digest"] = content_digest
         document["diff_id"] = f"atldiff-{content_digest[:32]}"
