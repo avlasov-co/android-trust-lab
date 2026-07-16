@@ -75,6 +75,10 @@ def test_current_normalized_snapshot_is_generator_owned():
         collection_method="raw_artifact",
         collection_timestamp="2026-04-25T15:06:21Z",
         raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
+        raw_artifact_id="fixture-sample-raw-report",
+        collector_name="trustlab-fixture-authors",
+        collector_version="1.0.0",
+        redaction_state="not_required",
     )
     expected = json.loads(
         (fixture_dir / "sample_normalized_report.json").read_text(encoding="utf-8")
@@ -92,7 +96,7 @@ def test_default_raw_artifact_reference_does_not_embed_host_path(tmp_path):
         encoding="utf-8",
     )
     report = normalize_raw_file(raw, collection_timestamp="2026-04-25T15:06:21Z")
-    assert report["raw_artifacts"] == ["raw.txt"]
+    assert report["raw_artifacts"][0]["relative_path"] == "raw.txt"
     assert str(tmp_path) not in str(report)
 
 
@@ -142,9 +146,15 @@ def test_default_provenance_distinguishes_same_named_artifacts(tmp_path):
         second, collection_timestamp="2026-04-25T15:06:21Z"
     )
 
+    assert {
+        first_report["raw_artifacts"][0]["relative_path"],
+        second_report["raw_artifacts"][0]["relative_path"],
+    } == {"raw.txt"}
     assert (
-        first_report["raw_artifacts"] == second_report["raw_artifacts"] == ["raw.txt"]
+        first_report["raw_artifacts"][0]["sha256"]
+        != second_report["raw_artifacts"][0]["sha256"]
     )
+    assert first_report["content_digest"] != second_report["content_digest"]
     assert first_report["report_id"] != second_report["report_id"]
     assert str(tmp_path) not in str(first_report)
     assert str(tmp_path) not in str(second_report)

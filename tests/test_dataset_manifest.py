@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 
 from trustlab import cli
+from trustlab.canonical_json import framed_content_digest
+from trustlab.collection_manifest import CollectionManifest
 from trustlab.dataset_manifest import (
     MAX_DATASET_ARTIFACT_BYTES,
     parse_dataset_json,
@@ -23,7 +25,11 @@ from trustlab.exceptions import (
     SchemaValidationError,
     UnsupportedSchemaVersionError,
 )
-from trustlab.normalizer import normalize_raw_bytes
+from trustlab.identity import finalize_report_identity
+from trustlab.normalizer import (
+    normalize_collection_manifest,
+    normalize_collection_payload,
+)
 from trustlab.report_writer import load_json
 from trustlab.validators import validate_dataset_manifest, validate_dataset_source
 
@@ -130,15 +136,10 @@ def make_captured_bundle(tmp_path: Path, origin: str) -> Path:
     write_json(collection_path, collection)
 
     report_artifact = artifacts[sample["normalized_report_artifact_id"]]
-    report = normalize_raw_bytes(
+    report = normalize_collection_payload(
         raw_payload,
+        CollectionManifest.from_dict(collection),
         label=raw_path.name,
-        experiment_id=sample["experiment_id"],
-        target_type=sample["target_type"],
-        observer_type=sample["observer_type"],
-        collection_method=sample["collection_method"],
-        collection_timestamp=sample["collection_timestamp"],
-        raw_artifact_ref=f"datasets/{raw_artifact['relative_path']}",
     )
     write_json(bundle / report_artifact["relative_path"], report)
     write_json(bundle / "source.json", source)
@@ -171,6 +172,25 @@ def test_current_dataset_verifies_as_a_closed_fresh_bundle():
     assert result.diff_count == 4
 
 
+def test_observed_manifest_dataset_report_uses_the_exact_manifest_normalization():
+    manifest_path = (
+        ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
+    )
+    report_path = (
+        ROOT / "datasets/samples/magisk_collector/"
+        "E05_magisk_collector__observer-root__sample.json"
+    )
+
+    checked = load_json(report_path)
+    expected = normalize_collection_manifest(manifest_path)
+    assert checked == expected
+    assert checked["raw_artifacts"][0]["collector_name"] == "trustlab-magisk"
+    assert (
+        "collection manifest completion status: partial"
+        in checked["limitations"]["collection_errors"]
+    )
+
+
 @pytest.mark.parametrize("origin", ["avd_captured", "physical_captured"])
 def test_captured_origin_bundles_verify_end_to_end(tmp_path, origin):
     bundle = make_captured_bundle(tmp_path, origin)
@@ -201,6 +221,30 @@ def test_frozen_historical_manifest_remains_readable_but_is_not_verifiable():
 
     with pytest.raises(UnsupportedSchemaVersionError, match="requires.*2.0.0"):
         verify_dataset_manifest(historical)
+
+
+def test_frozen_prior_v2_artifact_profile_remains_readable():
+    historical = ROOT / "tests/fixtures/dataset_manifest_v2_historical.json"
+
+    assert (
+        hashlib.sha256(historical.read_bytes()).hexdigest()
+        == "5a000a270739f2195e9818218bd7c2178651b4863ba65fbc659da64983dc29c6"  # pragma: allowlist secret
+    )
+    validate_dataset_manifest(load_json(historical))
+
+
+def test_dataset_source_writer_requires_current_artifact_profile():
+    source = load_json(SOURCE)
+    source["artifact_schema_versions"]["normalized_report"] = "2.0.0"
+    source["artifact_schema_versions"]["derived_diff"] = "1.0.0"
+    for artifact in source["artifacts"]:
+        if artifact["role"] == "normalized_report":
+            artifact["schema_version"] = "2.0.0"
+        elif artifact["role"] == "derived_diff":
+            artifact["schema_version"] = "1.0.0"
+
+    with pytest.raises(SchemaValidationError, match="current artifact schema profile"):
+        validate_dataset_source(source)
 
 
 @pytest.mark.parametrize(
@@ -613,8 +657,19 @@ def test_verifier_regenerates_outputs_instead_of_trusting_rehashed_bytes(
         document[field]["missing_tee_validation"] = not document[field][
             "missing_tee_validation"
         ]
+        document = finalize_report_identity(document)
     else:
         document[field] = value
+        projection = {
+            key: item
+            for key, item in document.items()
+            if key not in {"diff_id", "content_digest"}
+        }
+        content_digest = framed_content_digest(
+            family="diff", schema_version="2.0.0", value=projection
+        )
+        document["content_digest"] = content_digest
+        document["diff_id"] = f"atldiff-{content_digest[:32]}"
     write_json(artifact_path, document)
     rebind_artifact(manifest, bundle, artifact["artifact_id"])
     write_json(manifest_path, manifest)

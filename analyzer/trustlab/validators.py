@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import secrets
 from fractions import Fraction
 from importlib.resources import files
 from pathlib import PurePosixPath
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError as JSONSchemaSchemaError
 from jsonschema.exceptions import ValidationError as JSONSchemaValidationError
 
+from .canonical_json import (
+    CanonicalJSONError,
+    canonical_json_bytes,
+    framed_content_digest,
+    parse_canonical_json,
+)
 from .compatibility import (
     SchemaFamily,
     current_write_version,
@@ -25,7 +32,13 @@ from .exceptions import (
     SchemaValidationError,
     UnsupportedSchemaVersionError,
 )
+from .identity import (
+    REPORT_EVIDENCE_FIELDS,
+    collection_event_identity,
+    validate_report_identities,
+)
 from .migration_codec import encode_legacy_report, legacy_report_digest
+from .report_v3 import migrate_v2_source_reference
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
@@ -222,7 +235,12 @@ def validate_with_schema(
     schema = load_schema(schema_name)
     check_schema(schema, schema_name=schema_name)
     validator = Draft202012Validator(schema, format_checker=FORMAT_CHECKER)
-    errors = sorted(validator.iter_errors(data), key=_error_sort_key)
+    try:
+        errors = sorted(validator.iter_errors(data), key=_error_sort_key)
+    except RecursionError as exc:
+        raise SchemaValidationError(
+            f"{artifact_name} schema validation exceeded the nesting limit"
+        ) from exc
     if errors:
         issues = tuple(
             SchemaIssue(
@@ -257,6 +275,8 @@ def validate_report(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.REPORT)
     )
+    if resource_version in {"2.0.0", "3.0.0"}:
+        _validate_canonical_document(data, artifact_name="report")
     validate_with_schema(
         data,
         schema_resource_name(SchemaFamily.REPORT, resource_version),
@@ -265,6 +285,8 @@ def validate_report(data: object) -> None:
     )
     if resource_version == "2.0.0":
         _validate_v2_migration_provenance(data)
+    elif resource_version == "3.0.0":
+        _validate_v3_report_semantics(data)
 
 
 def _migration_provenance_error(detail: str) -> SchemaValidationError:
@@ -345,6 +367,390 @@ def _validate_v2_migration_provenance(data: object) -> None:
     )
 
 
+def _validate_v3_raw_artifacts(data: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_artifacts = cast(list[dict[str, Any]], data["raw_artifacts"])
+    logical_ids = [artifact["logical_id"] for artifact in raw_artifacts]
+    relative_paths = [artifact["relative_path"] for artifact in raw_artifacts]
+    if len(logical_ids) != len(set(logical_ids)):
+        raise SchemaValidationError("report raw artifact logical IDs must be unique")
+    if len(relative_paths) != len(set(relative_paths)):
+        raise SchemaValidationError("report raw artifact paths must be unique")
+    for path in relative_paths:
+        pure = PurePosixPath(path)
+        if (
+            pure.is_absolute()
+            or path != pure.as_posix()
+            or "\\" in path
+            or ":" in path
+            or any(part in {"", ".", ".."} for part in pure.parts)
+            or any(ord(character) < 32 or ord(character) == 127 for character in path)
+        ):
+            raise SchemaValidationError(
+                "report raw artifact paths must be normalized and relative"
+            )
+    if len({artifact["collection_id"] for artifact in raw_artifacts}) != 1:
+        raise SchemaValidationError(
+            "report raw artifacts must belong to one collection event"
+        )
+    if (
+        len(
+            {
+                (artifact["collector_name"], artifact["collector_version"])
+                for artifact in raw_artifacts
+            }
+        )
+        != 1
+    ):
+        raise SchemaValidationError(
+            "report raw artifacts must identify one collector implementation"
+        )
+    ordering = [
+        (artifact["logical_id"], artifact["relative_path"], artifact["sha256"])
+        for artifact in raw_artifacts
+    ]
+    if ordering != sorted(ordering):
+        raise SchemaValidationError(
+            "report raw artifacts must use canonical logical ID and path order"
+        )
+    return raw_artifacts
+
+
+def _validate_v3_migration_provenance(
+    data: dict[str, Any], raw_artifacts: list[dict[str, Any]]
+) -> None:
+    provenance = data["provenance"]
+    history = provenance["migration_history"]
+    source_version = provenance["source_schema_version"]
+    migration_extension = data["extensions"].get("org.androidtrustlab.migration-v3")
+    if source_version == "raw":
+        if (
+            history
+            or migration_extension is not None
+            or "org.androidtrustlab.migration" in data["extensions"]
+        ):
+            raise _migration_provenance_error(
+                "raw v3 reports must not claim migration history or a v2 source"
+            )
+        collection_manifest_digest = _validate_v3_collection_extension(
+            data, raw_artifacts
+        )
+        expected_event_id = collection_event_identity(
+            collection_id=raw_artifacts[0]["collection_id"],
+            timestamp=data["collection_timestamp"],
+            experiment_id=data["experiment_id"],
+            target_type=data["target"]["target_type"],
+            observer_type=data["observer"]["observer_type"],
+            collection_method=data["observer"]["collection_method"],
+            collection_manifest_sha256=collection_manifest_digest,
+        )
+        if not secrets.compare_digest(data["collection_event_id"], expected_event_id):
+            raise _migration_provenance_error(
+                "the raw collection event identity does not match its provenance"
+            )
+    else:
+        expected_tail = {
+            "migration_id": "report-v2-to-v3",
+            "source_schema_version": "2.0.0",
+            "target_schema_version": "3.0.0",
+        }
+        if (
+            source_version != "2.0.0"
+            or not history
+            or any(
+                history[-1].get(key) != value for key, value in expected_tail.items()
+            )
+        ):
+            raise _migration_provenance_error(
+                "the registered v2-to-v3 migration must terminate the chain"
+            )
+        if len(history) == 2 and {
+            key: history[0].get(key)
+            for key in (
+                "migration_id",
+                "source_schema_version",
+                "target_schema_version",
+            )
+        } != {
+            "migration_id": "report-v1-to-v2",
+            "source_schema_version": "1.0.0",
+            "target_schema_version": "2.0.0",
+        }:
+            raise _migration_provenance_error(
+                "the historical v1-to-v2 migration record is invalid"
+            )
+        if len(history) not in {1, 2}:
+            raise _migration_provenance_error(
+                "the registered report migration chain is required"
+            )
+        if not isinstance(migration_extension, dict) or set(migration_extension) != {
+            "encoding",
+            "source_report_json",
+            "source_sha256",
+        }:
+            raise _migration_provenance_error(
+                "the exact canonical v2 source extension is required"
+            )
+        encoded_source = migration_extension.get("source_report_json")
+        source_digest = migration_extension.get("source_sha256")
+        if (
+            migration_extension.get("encoding") != "atl-canonical-json-v1"
+            or not isinstance(encoded_source, str)
+            or not isinstance(source_digest, str)
+        ):
+            raise _migration_provenance_error("the canonical v2 source is invalid")
+        try:
+            source = parse_canonical_json(encoded_source.encode("utf-8"))
+        except ValueError as exc:
+            raise _migration_provenance_error(
+                "the preserved v2 source is not canonical JSON"
+            ) from exc
+        if (
+            not isinstance(source, dict)
+            or canonical_json_bytes(source).decode("utf-8") != encoded_source
+            or not secrets.compare_digest(
+                hashlib.sha256(encoded_source.encode("utf-8")).hexdigest(),
+                source_digest,
+            )
+        ):
+            raise _migration_provenance_error(
+                "the preserved v2 source binding does not match"
+            )
+        validate_with_schema(
+            source,
+            schema_resource_name(SchemaFamily.REPORT, "2.0.0"),
+            artifact_name="preserved source report",
+            supported_versions=frozenset({"2.0.0"}),
+        )
+        _validate_v2_migration_provenance(source)
+        if len(raw_artifacts) != 1 or any(
+            (
+                raw_artifacts[0]["sha256"] != source_digest,
+                raw_artifacts[0]["byte_size"] != len(encoded_source.encode("utf-8")),
+                raw_artifacts[0]["media_type"] != "application/json",
+                raw_artifacts[0]["status"] != "observed",
+            )
+        ):
+            raise _migration_provenance_error(
+                "the structured source reference must bind the canonical v2 report"
+            )
+        _validate_v3_migrated_payload(data, raw_artifacts, source)
+
+
+def _validate_v3_migrated_payload(
+    data: dict[str, Any],
+    raw_artifacts: list[dict[str, Any]],
+    source: dict[str, Any],
+) -> None:
+    """Prove that v3 evidence and provenance are the declared v2 migration."""
+
+    expected_reference, expected_event_id, expected_extension = (
+        migrate_v2_source_reference(source)
+    )
+    if raw_artifacts != [expected_reference.to_dict()]:
+        raise _migration_provenance_error(
+            "the structured source reference does not match the canonical v2 source"
+        )
+    if data["collection_event_id"] != expected_event_id:
+        raise _migration_provenance_error(
+            "the collection event does not bind the canonical v2 source"
+        )
+    copied_fields = (
+        "collection_timestamp",
+        "experiment_id",
+        *REPORT_EVIDENCE_FIELDS,
+    )
+    if any(data[field] != source[field] for field in copied_fields):
+        raise _migration_provenance_error(
+            "the report evidence does not match the canonical v2 source"
+        )
+    provenance = data["provenance"]
+    if (
+        provenance["normalizer"] != source["provenance"]["normalizer"]
+        or provenance["command_results"] != source["provenance"]["command_results"]
+    ):
+        raise _migration_provenance_error(
+            "the report provenance does not preserve the canonical v2 source"
+        )
+    generator = provenance["generator"]
+    if generator["name"] != "trustlab-migration":
+        raise _migration_provenance_error(
+            "the v2-to-v3 generator must identify the migration implementation"
+        )
+    historical_version = source["provenance"]["normalizer"]["version"]
+    expected_history = [
+        {
+            **record,
+            "implementation": {
+                "name": "trustlab-migration",
+                "version": historical_version,
+            },
+        }
+        for record in source["provenance"]["migration_history"]
+    ]
+    expected_history.append(
+        {
+            "migration_id": "report-v2-to-v3",
+            "source_schema_version": "2.0.0",
+            "target_schema_version": "3.0.0",
+            "implementation": generator,
+        }
+    )
+    if provenance["migration_history"] != expected_history:
+        raise _migration_provenance_error(
+            "the report migration history does not match the canonical v2 source"
+        )
+    expected_extensions = {
+        **source["extensions"],
+        **expected_extension,
+    }
+    if data["extensions"] != expected_extensions:
+        raise _migration_provenance_error(
+            "the report extensions do not preserve the canonical v2 source"
+        )
+
+
+def _validate_v3_collection_extension(
+    data: dict[str, Any], raw_artifacts: list[dict[str, Any]]
+) -> str | None:
+    extension = data["extensions"].get("org.androidtrustlab.collection")
+    if extension is None:
+        return None
+    if not isinstance(extension, dict) or set(extension) != {
+        "canonicalization",
+        "canonical_manifest_sha256",
+        "manifest",
+    }:
+        raise SchemaValidationError(
+            "report collection provenance must use the exact manifest binding"
+        )
+    canonicalization = extension["canonicalization"]
+    declared_digest = extension["canonical_manifest_sha256"]
+    if (
+        canonicalization != "atl-canonical-json-v1"
+        or not isinstance(declared_digest, str)
+        or re.fullmatch(r"[a-f0-9]{64}", declared_digest) is None
+    ):
+        raise SchemaValidationError(
+            "report collection manifest digest metadata is invalid"
+        )
+    manifest = extension["manifest"]
+    validate_collection_manifest(manifest)
+    expected_digest = hashlib.sha256(canonical_json_bytes(manifest)).hexdigest()
+    if not secrets.compare_digest(declared_digest, expected_digest):
+        raise SchemaValidationError(
+            "report collection manifest digest does not match its provenance"
+        )
+    manifest_artifacts = {
+        artifact["logical_name"]: artifact for artifact in manifest["artifacts"]
+    }
+    selected_sources = [
+        artifact
+        for artifact in manifest["artifacts"]
+        if artifact["logical_name"] == "raw_report"
+        and artifact["media_type"] == "text/plain"
+        and artifact["status"] == "observed"
+    ]
+    if (
+        len(raw_artifacts) != 1
+        or len(selected_sources) != 1
+        or raw_artifacts[0]["logical_id"] != selected_sources[0]["logical_name"]
+    ):
+        raise SchemaValidationError(
+            "report collection provenance must bind its unique observed raw_report"
+        )
+    for raw_reference in raw_artifacts:
+        manifest_artifact = manifest_artifacts.get(raw_reference["logical_id"])
+        expected_artifact = {
+            "relative_path": raw_reference["relative_path"],
+            "sha256": raw_reference["sha256"],
+            "byte_size": raw_reference["byte_size"],
+            "media_type": raw_reference["media_type"],
+            "status": raw_reference["status"],
+            "redaction_state": raw_reference["redaction_state"],
+        }
+        if manifest_artifact is None or any(
+            manifest_artifact[field] != value
+            for field, value in expected_artifact.items()
+        ):
+            raise SchemaValidationError(
+                "report raw artifact does not match its collection manifest"
+            )
+        if (
+            raw_reference["collection_id"] != manifest["collection_id"]
+            or raw_reference["collector_name"] != manifest["collector"]["name"]
+            or raw_reference["collector_version"] != manifest["collector"]["version"]
+        ):
+            raise SchemaValidationError(
+                "report raw artifact collector does not match its collection manifest"
+            )
+    raw_reference = raw_artifacts[0]
+    expected_report_metadata = (
+        (manifest["collection_id"], raw_reference["collection_id"]),
+        (manifest["collector"]["name"], raw_reference["collector_name"]),
+        (manifest["collector"]["version"], raw_reference["collector_version"]),
+        (manifest["ended_at"], data["collection_timestamp"]),
+        (manifest["experiment_id"], data["experiment_id"]),
+        (manifest["target"]["target_type"], data["target"]["target_type"]),
+        (manifest["observer"]["observer_type"], data["observer"]["observer_type"]),
+        (
+            manifest["observer"]["collection_method"],
+            data["observer"]["collection_method"],
+        ),
+    )
+    if any(observed != expected for observed, expected in expected_report_metadata):
+        raise SchemaValidationError(
+            "report metadata does not match its collection manifest"
+        )
+    expected_command_results = [
+        {
+            "command_id": artifact["probe_id"],
+            "status": artifact["status"],
+            "exit_code": artifact["exit_code"],
+            "timed_out": artifact["timed_out"],
+            "detail": artifact["detail"],
+        }
+        for artifact in manifest["artifacts"]
+    ]
+    if data["provenance"]["command_results"] != expected_command_results:
+        raise SchemaValidationError(
+            "report command results do not match its collection manifest"
+        )
+    expected_collection_errors: list[str] = []
+    if manifest["completion_status"] != "complete":
+        expected_collection_errors.append(
+            f"collection manifest completion status: {manifest['completion_status']}"
+        )
+    expected_collection_errors.extend(
+        f"collection warning: {warning}"[:1024] for warning in manifest["warnings"]
+    )
+    for artifact in manifest["artifacts"]:
+        if artifact["status"] in {"observed", "observed_absent"}:
+            continue
+        detail = f": {artifact['detail']}" if artifact["detail"] else ""
+        expected_collection_errors.append(
+            f"probe {artifact['probe_id']}: {artifact['status']}{detail}"[:1024]
+        )
+    report_errors = data["limitations"]["collection_errors"]
+    if any(
+        error not in report_errors
+        for error in dict.fromkeys(expected_collection_errors)
+    ):
+        raise SchemaValidationError(
+            "report limitations do not retain its collection manifest outcomes"
+        )
+    return declared_digest
+
+
+def _validate_v3_report_semantics(data: object) -> None:
+    """Validate v3 source bindings, migration claims, and both identities."""
+
+    if not isinstance(data, dict):
+        return
+    raw_artifacts = _validate_v3_raw_artifacts(data)
+    _validate_v3_migration_provenance(data, raw_artifacts)
+    validate_report_identities(data)
+
+
 def validate_diff(data: object) -> None:
     version = data.get("schema_version") if isinstance(data, dict) else None
     resource_version = (
@@ -352,12 +758,101 @@ def validate_diff(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.DIFF)
     )
+    if resource_version == "2.0.0":
+        _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
         data,
         schema_resource_name(SchemaFamily.DIFF, resource_version),
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
+    if resource_version == "2.0.0":
+        _validate_v2_diff_semantics(data)
+
+
+def _validate_canonical_document(data: object, *, artifact_name: str) -> None:
+    try:
+        canonical_json_bytes(data)
+    except CanonicalJSONError as exc:
+        raise SchemaValidationError(
+            f"{artifact_name} is outside the bounded canonical JSON model"
+        ) from exc
+
+
+def _validate_v2_diff_semantics(data: object) -> None:
+    if not isinstance(data, dict):
+        return
+    projection = {
+        key: value
+        for key, value in data.items()
+        if key not in {"diff_id", "content_digest"}
+    }
+    try:
+        expected_digest = framed_content_digest(
+            family="diff",
+            schema_version="2.0.0",
+            value=projection,
+        )
+    except CanonicalJSONError as exc:
+        raise SchemaValidationError(
+            "diff payload is outside the canonical identity model"
+        ) from exc
+    if not secrets.compare_digest(data["content_digest"], expected_digest):
+        raise SchemaValidationError("diff content digest does not match its payload")
+    if data["diff_id"] != f"atldiff-{expected_digest[:32]}":
+        raise SchemaValidationError("diff ID does not bind its canonical content")
+    for side in ("base", "compare"):
+        provenance = data["provenance"][side]
+        if provenance["common_report"] != data[f"{side}_report"]:
+            raise SchemaValidationError(
+                "diff provenance does not bind the exact common report identities"
+            )
+        original_version = provenance["original_schema_version"]
+        original_digest = provenance["original_content_digest"]
+        migrations = provenance["applied_migrations"]
+        if (original_version == "3.0.0") != (original_digest is not None):
+            raise SchemaValidationError(
+                "diff provenance must distinguish legacy and content identities"
+            )
+        expected_migration_count = {"1.0.0": 2, "2.0.0": 1, "3.0.0": 0}.get(
+            original_version
+        )
+        if expected_migration_count is None or len(migrations) != (
+            expected_migration_count
+        ):
+            raise SchemaValidationError(
+                "diff provenance migration chain does not match the source version"
+            )
+        expected_steps = {
+            "1.0.0": [
+                ("report-v1-to-v2", "1.0.0", "2.0.0"),
+                ("report-v2-to-v3", "2.0.0", "3.0.0"),
+            ],
+            "2.0.0": [("report-v2-to-v3", "2.0.0", "3.0.0")],
+            "3.0.0": [],
+        }[original_version]
+        observed_steps = [
+            (
+                migration["migration_id"],
+                migration["source_schema_version"],
+                migration["target_schema_version"],
+            )
+            for migration in migrations
+        ]
+        if observed_steps != expected_steps:
+            raise SchemaValidationError(
+                "diff provenance does not use the registered migration chain"
+            )
+        common_report = provenance["common_report"]
+        if original_version == "3.0.0" and (
+            provenance["original_report_id"] != common_report["report_id"]
+            or not secrets.compare_digest(
+                original_digest, common_report["content_digest"]
+            )
+        ):
+            raise SchemaValidationError(
+                "diff provenance does not bind the original v3 report identity"
+            )
 
 
 def _collection_manifest_semantic_error(detail: str) -> SchemaValidationError:
@@ -660,7 +1155,9 @@ def _validate_unique_strings(values: list[str], label: str) -> None:
         raise _dataset_semantic_error(f"{label} must be unique")
 
 
-def _validate_dataset_artifact_contract(data: dict[str, Any]) -> dict[str, Any]:
+def _validate_dataset_artifact_contract(
+    data: dict[str, Any], *, require_current_profile: bool
+) -> dict[str, Any]:
     artifacts = data["artifacts"]
     artifact_ids = [artifact["artifact_id"] for artifact in artifacts]
     artifact_paths = [artifact["relative_path"] for artifact in artifacts]
@@ -698,7 +1195,7 @@ def _validate_dataset_artifact_contract(data: dict[str, Any]) -> dict[str, Any]:
         "normalized_report": ("report", "application/json", {"generator"}),
         "derived_diff": ("diff", "application/json", {"generator"}),
     }
-    expected_versions = {
+    current_versions = {
         "declarative_source": "1.0.0",
         "raw_artifact": "1.0.0",
         "collection_manifest": current_write_version(SchemaFamily.COLLECTION_MANIFEST),
@@ -706,7 +1203,21 @@ def _validate_dataset_artifact_contract(data: dict[str, Any]) -> dict[str, Any]:
         "derived_diff": current_write_version(SchemaFamily.DIFF),
     }
     schema_profile = data["artifact_schema_versions"]
-    if schema_profile != expected_versions:
+    readable_versions = {
+        "declarative_source": frozenset({"1.0.0"}),
+        "raw_artifact": frozenset({"1.0.0"}),
+        "collection_manifest": SUPPORTED_COLLECTION_MANIFEST_SCHEMA_VERSIONS,
+        "normalized_report": SUPPORTED_REPORT_SCHEMA_VERSIONS,
+        "derived_diff": SUPPORTED_DIFF_SCHEMA_VERSIONS,
+    }
+    if require_current_profile and schema_profile != current_versions:
+        raise _dataset_semantic_error(
+            "dataset source must use the current artifact schema profile"
+        )
+    if set(schema_profile) != set(readable_versions) or any(
+        schema_profile[role] not in versions
+        for role, versions in readable_versions.items()
+    ):
         raise _dataset_semantic_error(
             "dataset artifact schema profile contains unsupported versions"
         )
@@ -920,10 +1431,14 @@ def _validate_dataset_sample_contract(
     return referenced
 
 
-def _validate_dataset_contract_semantics(data: object) -> None:
+def _validate_dataset_contract_semantics(
+    data: object, *, require_current_profile: bool
+) -> None:
     if not isinstance(data, dict):
         return
-    artifacts_by_id = _validate_dataset_artifact_contract(data)
+    artifacts_by_id = _validate_dataset_artifact_contract(
+        data, require_current_profile=require_current_profile
+    )
     referenced = _validate_dataset_sample_contract(data, artifacts_by_id)
 
     derivations = data["derived_diffs"]
@@ -974,7 +1489,7 @@ def validate_dataset_source(data: object) -> None:
         artifact_name="dataset source",
         supported_versions=SUPPORTED_DATASET_SOURCE_SCHEMA_VERSIONS,
     )
-    _validate_dataset_contract_semantics(data)
+    _validate_dataset_contract_semantics(data, require_current_profile=True)
 
 
 def validate_dataset_manifest(data: object) -> None:
@@ -1000,4 +1515,4 @@ def validate_dataset_manifest(data: object) -> None:
         supported_versions=SUPPORTED_DATASET_MANIFEST_SCHEMA_VERSIONS,
     )
     if resource_version == "2.0.0":
-        _validate_dataset_contract_semantics(data)
+        _validate_dataset_contract_semantics(data, require_current_profile=False)

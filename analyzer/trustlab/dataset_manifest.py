@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .collection_manifest import CollectionManifest
 from .diff import make_diff
 from .exceptions import (
     CollectionError,
@@ -20,7 +21,7 @@ from .exceptions import (
     UnsupportedSchemaVersionError,
     safe_path_label,
 )
-from .normalizer import normalize_raw_bytes
+from .normalizer import normalize_collection_payload, normalize_raw_bytes
 from .validators import (
     validate_collection_manifest,
     validate_dataset_manifest,
@@ -333,20 +334,40 @@ def _validate_freshness(
     manifest: dict[str, Any],
     artifacts: dict[str, dict[str, Any]],
     payloads: dict[str, bytes],
+    documents: dict[str, dict[str, Any]],
 ) -> None:
     reports: dict[str, dict[str, Any]] = {}
     for sample in manifest["samples"]:
         raw = artifacts[sample["raw_artifact_id"]]
-        expected = normalize_raw_bytes(
-            payloads[raw["artifact_id"]],
-            label=PurePosixPath(raw["relative_path"]).name,
-            experiment_id=sample["experiment_id"],
-            target_type=sample["target_type"],
-            observer_type=sample["observer_type"],
-            collection_method=sample["collection_method"],
-            collection_timestamp=sample["collection_timestamp"],
-            raw_artifact_ref=f"datasets/{raw['relative_path']}",
-        )
+        collection_relationship = sample["collection_manifest"]
+        if collection_relationship["status"] == "observed":
+            collection = CollectionManifest.from_dict(
+                documents[collection_relationship["artifact_id"]]
+            )
+            expected = normalize_collection_payload(
+                payloads[raw["artifact_id"]],
+                collection,
+                label=PurePosixPath(raw["relative_path"]).name,
+            )
+        else:
+            expected = normalize_raw_bytes(
+                payloads[raw["artifact_id"]],
+                label=PurePosixPath(raw["relative_path"]).name,
+                experiment_id=sample["experiment_id"],
+                target_type=sample["target_type"],
+                observer_type=sample["observer_type"],
+                collection_method=sample["collection_method"],
+                collection_timestamp=sample["collection_timestamp"],
+                raw_artifact_ref=f"datasets/{raw['relative_path']}",
+                raw_artifact_id=raw["artifact_id"],
+                collector_name=raw["producer"]["name"],
+                collector_version=raw["producer"]["version"],
+                collection_id=None,
+                redaction_state=raw["redaction_state"],
+                media_type=raw["media_type"],
+                expected_sha256=raw["sha256"],
+                expected_byte_size=raw["byte_size"],
+            )
         validate_report(expected)
         report_id = sample["normalized_report_artifact_id"]
         producer = artifacts[report_id]["producer"]
@@ -458,7 +479,7 @@ def verify_dataset_manifest(path: str | Path) -> DatasetVerification:
     if _source_as_manifest(source, payloads) != manifest:
         raise CollectionError("dataset manifest is stale relative to its source")
     validate_dataset_collection_relationships(manifest, artifacts, documents)
-    _validate_freshness(manifest, artifacts, payloads)
+    _validate_freshness(manifest, artifacts, payloads, documents)
     _validate_no_unbound_evidence(bundle_root, manifest)
     return DatasetVerification(
         dataset_id=manifest["dataset_id"],

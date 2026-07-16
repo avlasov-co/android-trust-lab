@@ -109,7 +109,7 @@ def test_repository_tool_entry_points_pass(capsys):
     output = capsys.readouterr().out
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
-    assert "validated 7 schemas" in output
+    assert "validated 9 schemas, 8 reports, 6 diffs" in output
     assert "1 collection manifest" in output
     assert "Magisk module safety checks passed" in output
 
@@ -297,7 +297,7 @@ def test_generator_validates_collection_sources_before_writing(
         document = json.loads(collection_path.read_text(encoding="utf-8"))
         document["artifacts"][0]["sha256"] = "0" * 64
         collection_path.write_bytes(stable_pretty_json_bytes(document))
-        expected_error = SchemaValidationError
+        expected_error = CollectionError
     else:
         document = json.loads(collection_path.read_text(encoding="utf-8"))
         extra = document["artifacts"][0].copy()

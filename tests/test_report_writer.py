@@ -7,6 +7,7 @@ import pytest
 
 from trustlab import report_writer
 from trustlab.exceptions import (
+    CollectionError,
     InvalidJSONError,
     OutputWriteError,
     SchemaValidationError,
@@ -95,10 +96,34 @@ def test_load_json_rejects_invalid_utf8(tmp_path):
         report_writer.load_json(path)
 
 
+def test_load_json_rejects_over_limit_input_before_parsing(tmp_path, monkeypatch):
+    path = tmp_path / "large.json"
+    path.write_bytes(b"{" + (b" " * 8) + b"}")
+    monkeypatch.setattr(report_writer, "MAX_JSON_INPUT_BYTES", 8)
+
+    with pytest.raises(CollectionError, match="exceeds the byte limit"):
+        report_writer.load_json(path)
+
+
 def test_load_json_rejects_non_object(tmp_path):
     path = tmp_path / "array.json"
     path.write_text("[]\n", encoding="utf-8")
     with pytest.raises(SchemaValidationError, match="must be an object"):
+        report_writer.load_json(path)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"schema_version":"3.0.0","schema_version":"3.0.0"}',
+        '{"outer":{"value":1,"value":2}}',
+    ],
+)
+def test_load_json_rejects_duplicate_members_at_every_depth(tmp_path, payload):
+    path = tmp_path / "duplicate.json"
+    path.write_text(payload, encoding="utf-8")
+
+    with pytest.raises(InvalidJSONError, match="invalid JSON"):
         report_writer.load_json(path)
 
 

@@ -29,8 +29,10 @@ SCHEMA_IDS = {
         f"{REPOSITORY_URL}/schema/dataset-source/1.0.0"
     ),
     "trust_diff.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_diff.schema.json",
+    "trust_diff_v2_0_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.0.0",
     "trust_report_v1_0_0.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_report.schema.json",
     "trust_report_v2_0_0.schema.json": f"{REPOSITORY_URL}/schema/report/2.0.0",
+    "trust_report_v3_0_0.schema.json": f"{REPOSITORY_URL}/schema/report/3.0.0",
 }
 CANONICAL_IDENTIFIERS = {
     "distribution": "android-trust-lab-analyzer",

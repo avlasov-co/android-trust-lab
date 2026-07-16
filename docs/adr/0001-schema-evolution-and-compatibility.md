@@ -25,8 +25,8 @@ of them, and matching numeric values do not imply compatibility.
 |---|---|---|
 | Analyzer package version | Python distribution and CLI implementation release | PEP 440 `0.3.0.dev0` |
 | Collector version | Magisk collector implementation release plus monotonic Android `versionCode` | `0.3.0-dev0`, code `300` |
-| Report-schema version | Normalized trust-report contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
-| Diff-schema version | Trust-diff output contract | `1.0.0` readable and writable |
+| Report-schema version | Normalized trust-report contract | `3.0.0` writable; `1.0.0`, `2.0.0`, and `3.0.0` readable |
+| Diff-schema version | Trust-diff output contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
 | Dataset-manifest version | Dataset index and integrity contract | `2.0.0` writable; frozen `1.0.0` and strict `2.0.0` readable |
 | Collection-manifest version | Portable collection/provenance contract | `1.0.0` readable and writable |
 | Experiment-spec version | Machine-readable experiment contract | no supported version; `1.0.0` planned |
@@ -141,9 +141,10 @@ Diff-schema versions remain independent of both input report-schema versions.
 
 ### Canonical JSON and content identity
 
-`ATL Canonical JSON v1` is the prospective Step 15 identity representation for
-JSON artifacts. Canonicalization first parses JSON while rejecting duplicate
-object member names, then serializes the resulting data model as follows:
+`ATL Canonical JSON v1` is the implemented identity representation for current
+report, diff, and collection-event identities. Canonicalization first parses
+JSON while rejecting duplicate object member names, then serializes the
+resulting data model as follows:
 
 - UTF-8 without BOM and without Unicode normalization;
 - object keys sorted lexicographically by Unicode scalar-value sequence;
@@ -161,13 +162,17 @@ object member names, then serializes the resulting data model as follows:
 - values limited to objects, arrays, strings, integers, booleans, and `null`;
 - floats, `NaN`, and infinities rejected.
 
-Human-readable files may use deterministic pretty printing. Step 15 content IDs
-will hash this unambiguous byte frame, where `len` is the ASCII decimal byte
-length of `canonical-json` without leading zeroes, `schema-version` is its strict
-SemVer ASCII spelling, and `family` is exactly the corresponding
-`SchemaFamily.value`: `report`, `diff`, `dataset_manifest`,
-`collection_manifest`, or `experiment_spec`. The underscore-bearing frame token
-is intentionally distinct from the hyphenated `$id` path spelling:
+The analyzer's bounded ATL-v1 profile additionally limits canonical input/output
+to 64 MiB, nesting to 64 non-empty container levels with root at depth zero, and
+the iterative walk to 100,000 visited values including root and empty
+containers. Values outside this resource profile are rejected before recursive
+schema evaluation; they do not acquire a project content identity.
+
+Human-readable files may use deterministic pretty printing. Content IDs hash
+this unambiguous byte frame, where `len` is the ASCII decimal byte length of
+`canonical-json` without leading zeroes, `schema-version` is its strict SemVer
+ASCII spelling, and `family` is one of the registered identity domains
+`report`, `diff`, or `collection_event`:
 
 ```text
 ATL-CONTENT-ID\0v1\0{family}\0{schema-version}\0{len}:{canonical-json}
@@ -177,14 +182,17 @@ The displayed `\0` is one zero byte, and all other framing characters are the
 shown ASCII bytes. The digest is lowercase hexadecimal SHA-256 of the complete
 frame. Repository path, absolute path, filename, modification time, current
 time, and host environment are excluded. Moving identical content must preserve
-identity; changing canonical content must change it. Canonical test vectors and
-cross-order/path tests are mandatory when Step 15 implements this scheme.
+identity; changing canonical content must change it. Frozen canonical vectors
+and cross-order, path, byte, and timestamp tests verify the implementation.
 
-Current v1 `report_id` and `diff_id` values are legacy event/derived identifiers,
-not canonical content identities: report IDs can include filename-derived input,
-and diff IDs hash an unframed subset. They remain supported for v1 compatibility
-but must not be represented as path-independent content digests. Step 15 adds a
-separate `content_digest` and updates diff provenance.
+Historical v1/v2 `report_id` and v1 `diff_id` values are legacy event/derived
+identifiers, not canonical content identities: report IDs can include
+filename-derived input, and diff IDs hash an unframed subset. They remain
+supported for read compatibility but are not represented as path-independent
+content digests. Report v3 adds a separate event identity and content digest;
+diff v2 binds the exact original and canonical report identities. The complete
+projection and exclusions are defined in
+[Content provenance and identity](../content_identity.md).
 
 ### Deprecation and removal
 
@@ -214,8 +222,7 @@ continues through the full window.
 ## Consequences
 
 The support boundary is reviewable in code, evidence failures retain their real
-semantics, and future v2 work has explicit compatibility rules. The cost is
+semantics, and later schema work has explicit compatibility rules. The cost is
 maintaining validators, migration fixtures, and deprecation notes for every
-readable major. This ADR defines those rules but intentionally does not redesign
-all schemas; strict v2 report, manifest, and experiment contracts follow in
-separate steps.
+readable major. The implemented report v3, diff v2, and manifest contracts apply
+these rules while keeping their version domains independent.

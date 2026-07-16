@@ -1,8 +1,9 @@
 # Report Schema v2
 
-Report schema `2.0.0` is the current writer contract. Its canonical packaged
-resource is `trust_report_v2_0_0.schema.json`; frozen `1.0.0` remains a read-only
-input at `trust_report_v1_0_0.schema.json`. Both resources ship in wheels and
+Report schema `2.0.0` is a frozen readable compatibility contract. Its canonical
+packaged resource is `trust_report_v2_0_0.schema.json`; frozen `1.0.0` remains a
+read-only input at `trust_report_v1_0_0.schema.json`, while report `3.0.0` is the
+sole current writer. All resources ship in wheels and
 source distributions and are resolved locally by the exact compatibility
 registry—never by a network or `latest` lookup.
 
@@ -39,8 +40,7 @@ observed. Confidence is independently constrained to `low`, `medium`, `high`, or
 
 ## V1 migration
 
-`migrate_report_v1_to_v2` and `trustlab migrate-report` implement the sole
-registered v1-to-v2 path:
+`migrate_report_v1_to_v2` implements the pinned historical v1-to-v2 step:
 
 1. require declared source version `1.0.0`;
 2. validate the source against the frozen v1 schema;
@@ -54,10 +54,12 @@ registered v1-to-v2 path:
 
 Migration does not read the clock, network, environment, or filesystem identity,
 and it never mutates or replaces the source. Re-running it over the same v1 JSON
-produces byte-equivalent canonical JSON. Cross-version diffing invokes this exact
-path and refuses unsupported inputs.
-Diff provenance records each original report ID and schema version, the common
-comparison version, and the exact migration chain applied to each input.
+produces byte-equivalent canonical JSON. `trustlab migrate-report` continues
+through the registered v2-to-v3 step and publishes current report v3.
+Cross-version diffing invokes the complete explicit chain and refuses unsupported
+inputs. Diff provenance records each original report/document identity, the
+common report/content identity, and the exact migration chain applied to each
+input.
 
 Fresh normalization uses the presence of raw command sections—including empty
 sections—to distinguish a successful probe that found nothing from a probe that
@@ -65,7 +67,7 @@ was never recorded. A v1 negative or empty value without equivalent provenance
 remains `not_collected`; migration never promotes it to affirmative absence or
 access denial.
 
-Generator-owned synthetic reports were deliberately regenerated as v2 from
-their checked-in raw inputs. `tests/fixtures/report_v1_historical.json` remains
-an immutable historical input, with independently hashed expectations under
-`tests/golden/`.
+Generator-owned synthetic reports were deliberately regenerated as v3 from
+their checked-in raw inputs. `tests/fixtures/report_v1_historical.json` and
+`tests/fixtures/report_v2_historical.json` remain immutable historical inputs.
+See [Report Schema v3](report_schema_v3.md) for the current contract.

@@ -22,9 +22,9 @@ versions remain independent and must not be synchronized mechanically:
 
 | Contract | Current version source | Current value |
 |---|---|---|
-| Trust report schema | compatibility registry and versioned schemas | `2.0.0` writes; `1.0.0` and `2.0.0` reads |
-| Trust diff schema | compatibility registry and diff schema | `1.0.0` |
-| Dataset manifest | compatibility registry and report generator | legacy `1.0.0` |
+| Trust report schema | compatibility registry and versioned schemas | `3.0.0` writes; `1.0.0`, `2.0.0`, and `3.0.0` read |
+| Trust diff schema | compatibility registry and versioned schemas | `2.0.0` writes; `1.0.0` and `2.0.0` read |
+| Dataset manifest | compatibility registry and report generator | `2.0.0` writes; `1.0.0` and `2.0.0` read |
 | Collection manifest | compatibility registry | `1.0.0` readable and writable |
 | Experiment spec | compatibility registry | none; current Markdown is unversioned |
 

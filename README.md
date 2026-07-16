@@ -55,11 +55,11 @@ collection manifest + integrity-bound raw artifacts
         ↓
 parser
         ↓
-normalized versioned trust-report JSON
+content-addressed trust-report v3 JSON
         ↓
 diff engine
         ↓
-trust_diff.schema.json + markdown summary
+trust-diff v2 JSON + markdown summary
 ```
 
 ## Implemented scope in this release
@@ -69,6 +69,7 @@ trust_diff.schema.json + markdown summary
 | Python analyzer CLI for normalize / migrate / collection and dataset validation / diff / summarize | implemented |
 | Strict portable collection-manifest v1 for every observer class | implemented |
 | Strict verifiable dataset-manifest v2 with deterministic freshness checks | implemented |
+| Content-addressed report v3 and exact-input diff v2 identities | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |
@@ -78,7 +79,8 @@ trust_diff.schema.json + markdown summary
 | APK manifest / permission analyzer | not present |
 | Physical-device validation | not collected in this release |
 
-For a reviewer-focused runbook, see `docs/reviewer_quickstart.md`.
+For a reviewer-focused runbook, see `docs/reviewer_quickstart.md`. The identity
+projection and volatile exclusions are specified in `docs/content_identity.md`.
 
 ## Reviewer smoke checks
 

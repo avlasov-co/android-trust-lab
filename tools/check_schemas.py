@@ -3,10 +3,8 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
@@ -23,25 +21,20 @@ from trustlab.validators import (  # noqa: E402
 )
 
 
-def load_object(path: Path) -> dict[str, Any]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise TypeError(f"expected a JSON object: {path.relative_to(ROOT)}")
-    return data
-
-
 def main() -> int:
     schema_names = check_project_schemas()
 
-    manifest = load_object(ROOT / "datasets" / "manifest.json")
+    manifest = load_json(ROOT / "datasets" / "manifest.json")
     validate_dataset_manifest(manifest)
     verify_dataset_manifest(ROOT / "datasets" / "manifest.json")
-    source = load_object(ROOT / "datasets" / "source.json")
+    source = load_json(ROOT / "datasets" / "source.json")
     validate_dataset_source(source)
-    legacy_manifest = load_object(
-        ROOT / "tests" / "fixtures" / "dataset_manifest_v1_historical.json"
-    )
-    validate_dataset_manifest(legacy_manifest)
+    historical_manifest_paths = [
+        ROOT / "tests" / "fixtures" / "dataset_manifest_v1_historical.json",
+        ROOT / "tests" / "fixtures" / "dataset_manifest_v2_historical.json",
+    ]
+    for path in historical_manifest_paths:
+        validate_dataset_manifest(load_json(path))
 
     artifact_paths = {
         artifact["artifact_id"]: ROOT / "datasets" / artifact["relative_path"]
@@ -53,10 +46,12 @@ def main() -> int:
     ]
     report_paths.append(ROOT / "tests" / "fixtures" / "sample_normalized_report.json")
     report_paths.append(ROOT / "tests" / "fixtures" / "report_v1_historical.json")
+    report_paths.append(ROOT / "tests" / "fixtures" / "report_v2_historical.json")
     for path in report_paths:
         validate_report(load_json(path))
 
     diff_paths = [ROOT / "tests" / "fixtures" / "sample_diff.json"]
+    diff_paths.append(ROOT / "tests" / "fixtures" / "diff_v1_historical.json")
     diff_paths.extend(
         artifact_paths[derivation["artifact_id"]]
         for derivation in manifest["derived_diffs"]
@@ -75,7 +70,8 @@ def main() -> int:
     print(
         f"validated {len(schema_names)} schemas, "
         f"{len(report_paths)} reports, {len(diff_paths)} diffs, and "
-        f"{len(collection_manifest_paths)} collection manifest, 2 dataset manifests, "
+        f"{len(collection_manifest_paths)} collection manifest, "
+        f"{len(historical_manifest_paths) + 1} dataset manifests, "
         "and 1 dataset source"
     )
     return 0

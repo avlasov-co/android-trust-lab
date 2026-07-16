@@ -57,8 +57,9 @@ collector_manifest.json
 The strict collection-manifest v1 document is not a normalized trust report. It
 uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
 records a pseudonymous target, and marks missing per-command results as
-`not_collected`. The host analyzer verifies the binding and converts `raw.txt`
-into the current `trust_report_v2_0_0.schema.json` format.
+`not_collected`. The host analyzer verifies the binding before parsing and
+converts `raw.txt` into the current content-addressed
+`trust_report_v3_0_0.schema.json` format.
 
 The pseudonymous target is a randomly generated 64-bit token stored once as
 `/data/adb/android-trust-lab/target_pseudonym` with mode `0600`. Reusing that

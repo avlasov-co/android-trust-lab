@@ -29,8 +29,8 @@
     "declarative_source": "1.0.0",
     "raw_artifact": "1.0.0",
     "collection_manifest": "1.0.0",
-    "normalized_report": "2.0.0",
-    "derived_diff": "1.0.0"
+    "normalized_report": "3.0.0",
+    "derived_diff": "2.0.0"
   },
   "aggregate_limitations": [
     "Schema-only fixture."
@@ -71,7 +71,7 @@
       "relative_path": "sample/report.json",
       "media_type": "application/json",
       "schema_family": "report",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "producer": {
         "kind": "generator",
         "name": "trustlab",

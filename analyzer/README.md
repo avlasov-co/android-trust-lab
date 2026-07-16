@@ -1,8 +1,8 @@
 # Analyzer
 
-The analyzer parses raw Android Trust Lab artifacts, writes strict report v2,
-validates versioned JSON schemas, explicitly migrates v1 reports, computes diffs,
-and writes summaries.
+The analyzer parses raw Android Trust Lab artifacts, writes content-addressed
+report v3, validates versioned JSON schemas, explicitly migrates v1/v2 reports,
+computes exact-input diff v2 documents, and writes summaries.
 
 ## Install
 
@@ -31,6 +31,12 @@ readable only. `trustlab dataset verify` validates the complete portable graph,
 all byte bindings, collection relationships, and deterministic report/diff
 freshness from any current directory.
 
+Report `3.0.0` is the sole writer; report v1/v2 remain readable through the
+validated `1.0.0` → `2.0.0` → `3.0.0` chain. Source bytes are hashed before
+normalization, reports distinguish collection-event and evidence-content
+identity, and diff v2 binds both exact report/content identities. See
+`docs/content_identity.md` from the repository root.
+
 ## Commands
 
 ```bash
@@ -38,7 +44,7 @@ trustlab normalize --input ../tests/fixtures/sample_raw_report.txt --output /tmp
 trustlab normalize --manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json --output /tmp/manifest-report.json
 trustlab validate-collection-manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json
 trustlab dataset verify ../datasets/manifest.json
-trustlab migrate-report --input ../tests/fixtures/report_v1_historical.json --output /tmp/migrated-v2.json
+trustlab migrate-report --input ../tests/fixtures/report_v1_historical.json --output /tmp/migrated-v3.json
 trustlab validate-report /tmp/report.json
 trustlab diff --base ../datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --output /tmp/diff.json
 trustlab diff --base ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json --output /tmp/observer_diff.json

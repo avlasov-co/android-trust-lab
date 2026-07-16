@@ -8,18 +8,29 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from .bounded_io import read_bounded_regular_file
+from .canonical_json import MAX_CANONICAL_BYTES
 from .exceptions import (
-    CollectionError,
     InvalidJSONError,
-    MissingFileError,
     OutputWriteError,
     SchemaValidationError,
     safe_path_label,
 )
 
+MAX_JSON_INPUT_BYTES = MAX_CANONICAL_BYTES
+
 
 def _reject_nonstandard_json_constant(value: str) -> None:
     raise ValueError(f"non-standard JSON constant: {value}")
+
+
+def _reject_duplicate_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("duplicate JSON object member")
+        value[key] = item
+    return value
 
 
 def write_json(data: dict[str, Any], path: str | Path) -> None:
@@ -78,21 +89,26 @@ def load_json(path: str | Path) -> dict[str, Any]:
     p = Path(path)
     label = safe_path_label(p)
     try:
-        text = p.read_text(encoding="utf-8")
-    except FileNotFoundError as exc:
-        raise MissingFileError(f"input file not found: {label}") from exc
+        payload = read_bounded_regular_file(
+            p,
+            limit=MAX_JSON_INPUT_BYTES,
+            subject="JSON input",
+        )
+        text = payload.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise InvalidJSONError(f"invalid UTF-8 JSON: {label}") from exc
-    except OSError as exc:
-        raise CollectionError(f"could not read input: {label}") from exc
 
     try:
-        data = json.loads(text, parse_constant=_reject_nonstandard_json_constant)
+        data = json.loads(
+            text,
+            parse_constant=_reject_nonstandard_json_constant,
+            object_pairs_hook=_reject_duplicate_members,
+        )
     except json.JSONDecodeError as exc:
         raise InvalidJSONError(
             f"invalid JSON: {label} (line {exc.lineno}, column {exc.colno})"
         ) from exc
-    except ValueError as exc:
+    except (RecursionError, ValueError) as exc:
         raise InvalidJSONError(f"invalid JSON: {label}") from exc
     if not isinstance(data, dict):
         raise SchemaValidationError("JSON document must be an object")

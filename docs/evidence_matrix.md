@@ -8,7 +8,7 @@
 | Safety boundaries | `SECURITY.md`, `docs/work_manifest.md`, `tools/package_magisk_module.py` | Prevents the repo from reading like offensive tooling |
 | Empirical discipline | `datasets/source.json`, `datasets/manifest.json`, `datasets/samples/`, `datasets/derived/diffs/`, `results/trust_state_diffs.md` | Separates source evidence from derived output and binds every artifact |
 | Generated artifacts | `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md` | Gives reviewers concrete artifacts to compare and regenerate |
-| Schema discipline | versioned v1/v2 report schemas, `collector/schema/trust_diff.schema.json`, and migration/schema tests | Prevents report shape drift and unverifiable output formats |
+| Schema discipline | report v1/v2/v3 and diff v1/v2 schemas, content identities, and migration/schema tests | Prevents report shape drift and unverifiable output formats |
 | Maintainability | `tests/`, `.github/workflows/ci.yml`, `.github/workflows/docs.yml`, `CONTRIBUTING.md` | Shows the project can be changed without relying on vibes and caffeine fumes |
 | Honest limitations | `docs/work_manifest.md`, `docs/reviewer_quickstart.md`, `experiments/E99_physical_device_template.md` | Makes missing Android app, Gradle, instrumentation, and physical-device scope explicit |
 | Public artifact value | `README.md`, `docs/reviewer_packet.md`, `docs/reviewer_quickstart.md`, `docs/evidence_matrix.md` | Lets a technical reviewer understand what to inspect first |

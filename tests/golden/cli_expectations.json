@@ -1,6 +1,8 @@
 {
   "normalize": {
-    "report_id": "atl-4f360e670e68448a",
+    "report_id": "atlrep-a643ef4bedb741a479cfc26b3448affe",
+    "collection_event_id": "atlevent-7b188e7fcb6a15f6ef6153f5553179a3",
+    "content_digest": "7f940f9345440edcfb724e1942656737e40361d8041e4d973de376456b9e4b52",
     "collection_timestamp": "2026-01-02T03:04:05Z",
     "experiment_id": "E10_golden",
     "target": {
@@ -36,11 +38,22 @@
       "root_paths": []
     },
     "raw_artifacts": [
-      "tests/golden/raw_observation.txt"
+      {
+        "logical_id": "raw-ea2417e7662b689924ccb6cd21d55e39",
+        "relative_path": "tests/golden/raw_observation.txt",
+        "sha256": "ea2417e7662b689924ccb6cd21d55e394cf405d7d5905858ec920a07c87a74c6",
+        "byte_size": 1316,
+        "media_type": "text/plain",
+        "collector_name": "unknown",
+        "collector_version": "unknown",
+        "collection_id": "atlcol-b52dfddcd1226ad6e5615e2db45dbf38",
+        "status": "observed",
+        "redaction_state": "unknown"
+      }
     ]
   },
   "diff": {
-    "diff_id": "atldiff-1a26aee0d8935f88",
+    "diff_id": "atldiff-690ee2eada9f90171d90e873f075547a",
     "summary": "1 dimensions changed, 10 dimensions unchanged.",
     "changed_dimensions": [
       {

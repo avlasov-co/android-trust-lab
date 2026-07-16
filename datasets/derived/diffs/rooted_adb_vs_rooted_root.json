@@ -1,5 +1,9 @@
 {
-  "base_report": "atl-40b3dd9d667c204d",
+  "base_report": {
+    "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
+    "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
+    "schema_version": "3.0.0"
+  },
   "changed_dimensions": [
     {
       "after": "root",
@@ -12,27 +16,44 @@
       "severity": "info"
     }
   ],
-  "compare_report": "atl-c8fa4179191f3eee",
+  "compare_report": {
+    "content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
+    "report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
+    "schema_version": "3.0.0"
+  },
   "confidence_changes": [],
-  "diff_id": "atldiff-a49a10b93d61033a",
+  "content_digest": "21a380601c483aa23df81bbc3bda49bd599a5471e7fdd43c4c50264f330ccc34",
+  "diff_id": "atldiff-21a380601c483aa23df81bbc3bda49bd",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
-      "common_report_id": "atl-40b3dd9d667c204d",
-      "original_report_id": "atl-40b3dd9d667c204d",
-      "original_schema_version": "2.0.0"
+      "common_report": {
+        "content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
+        "report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
+        "schema_version": "3.0.0"
+      },
+      "original_content_digest": "0fd044c406150c92acf79a357b10c227f6194cebf671896427957e2df6881be6",
+      "original_document_digest": "876e4e85b945c622ebedb54d907e7a48a9e9111b2b2f08ecb5d998507b49c0f6",
+      "original_report_id": "atlrep-8e68f79d8a18593d5bb93799e1e45dee",
+      "original_schema_version": "3.0.0"
     },
-    "common_report_schema_version": "2.0.0",
+    "common_report_schema_version": "3.0.0",
     "compare": {
       "applied_migrations": [],
-      "common_report_id": "atl-c8fa4179191f3eee",
-      "original_report_id": "atl-c8fa4179191f3eee",
-      "original_schema_version": "2.0.0"
+      "common_report": {
+        "content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
+        "report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
+        "schema_version": "3.0.0"
+      },
+      "original_content_digest": "8a7c0db75c2e0faa22dfa8d1abe44b3d0d89c4e1fbea6eb1f247bfe36a5e36d9",
+      "original_document_digest": "b09a851ace7a1ef8790e590671a04c129d2d99e17ac3a8d11d0da6a5bc47c3ca",
+      "original_report_id": "atlrep-f26cc5a7be2955a686b8573919221f97",
+      "original_schema_version": "3.0.0"
     }
   },
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "summary": "1 dimensions changed, 10 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

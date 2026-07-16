@@ -21,7 +21,9 @@
       "value": "_a"
     }
   },
+  "collection_event_id": "atlevent-5b84cbd5d65d430d71aa1c72ed50a8c6",
   "collection_timestamp": "2026-04-25T15:50:00Z",
+  "content_digest": "07af6f9526c11ebcae1efb779e4f4f07f632d1559cbbdc844879f7a6afc8cc2e",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -39,9 +41,88 @@
     }
   },
   "experiment_id": "E05_magisk_collector",
-  "extensions": {},
+  "extensions": {
+    "org.androidtrustlab.collection": {
+      "canonical_manifest_sha256": "71ab54224911190815bf91f2192615b3c9a7da6e77a595b151ed6634ac3c9b77",
+      "canonicalization": "atl-canonical-json-v1",
+      "manifest": {
+        "artifacts": [
+          {
+            "byte_size": 1751,
+            "detail": "Consolidated read-only raw observation.",
+            "exit_code": 0,
+            "logical_name": "raw_report",
+            "media_type": "text/plain",
+            "probe_id": "magisk.readonly_snapshot",
+            "redaction_state": "redacted",
+            "relative_path": "raw_sample.txt",
+            "sensitivity": "sensitive",
+            "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
+            "status": "observed",
+            "timed_out": false
+          },
+          {
+            "byte_size": null,
+            "detail": "The legacy fixture did not retain per-command results.",
+            "exit_code": null,
+            "logical_name": "command_results",
+            "media_type": "application/json",
+            "probe_id": "magisk.command_results",
+            "redaction_state": "withheld",
+            "relative_path": null,
+            "sensitivity": "internal",
+            "sha256": null,
+            "status": "not_collected",
+            "timed_out": false
+          }
+        ],
+        "collection_id": "atlcol-b7e7f4381ab857f2",
+        "collector": {
+          "name": "trustlab-magisk",
+          "version": "0.3.0-dev0"
+        },
+        "completion_status": "partial",
+        "ended_at": "2026-04-25T15:50:00Z",
+        "environment": {
+          "execution_context": "magisk_module",
+          "platform": "android",
+          "transport": "on_device"
+        },
+        "experiment_id": "E05_magisk_collector",
+        "observer": {
+          "collection_method": "magisk_module_manual",
+          "observer_type": "root_collector",
+          "privilege_level": "root"
+        },
+        "redaction_policy": {
+          "direct_identifiers_removed": true,
+          "policy_id": "atl_portable_v1",
+          "redaction_state": "applied",
+          "secrets_removed": true,
+          "serials_removed": true
+        },
+        "schema_version": "1.0.0",
+        "started_at": "2026-04-25T15:49:58Z",
+        "target": {
+          "pseudonymous_id": "target-a6c2b5ce9178d304",
+          "target_type": "avd"
+        },
+        "tool_versions": {
+          "android_shell": "toybox",
+          "trustlab_magisk": "0.3.0-dev0"
+        },
+        "warnings": [
+          "Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture."
+        ]
+      }
+    }
+  },
   "limitations": {
-    "collection_errors": [],
+    "collection_errors": [
+      "collection manifest completion status: partial",
+      "collection warning: Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture.",
+      "probe magisk.command_results: not_collected: The legacy fixture did not retain per-command results."
+    ],
     "emulator_target": true,
     "incomplete_permissions": false,
     "missing_real_bootloader": true,
@@ -274,7 +355,26 @@
     }
   },
   "provenance": {
-    "command_results": [],
+    "command_results": [
+      {
+        "command_id": "magisk.readonly_snapshot",
+        "detail": "Consolidated read-only raw observation.",
+        "exit_code": 0,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "magisk.command_results",
+        "detail": "The legacy fixture did not retain per-command results.",
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      }
+    ],
+    "generator": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
     "migration_history": [],
     "normalizer": {
       "name": "trustlab",
@@ -283,9 +383,20 @@
     "source_schema_version": "raw"
   },
   "raw_artifacts": [
-    "datasets/samples/magisk_collector/raw_sample.txt"
+    {
+      "byte_size": 1751,
+      "collection_id": "atlcol-b7e7f4381ab857f2",
+      "collector_name": "trustlab-magisk",
+      "collector_version": "0.3.0-dev0",
+      "logical_id": "raw_report",
+      "media_type": "text/plain",
+      "redaction_state": "redacted",
+      "relative_path": "raw_sample.txt",
+      "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
+      "status": "observed"
+    }
   ],
-  "report_id": "atl-f08292bce61027ec",
+  "report_id": "atlrep-ad3e349f684fc5837dab3cfcd7c3bbd8",
   "root_state": {
     "gid": {
       "reason": null,
@@ -315,7 +426,7 @@
       "value": "0"
     }
   },
-  "schema_version": "2.0.0",
+  "schema_version": "3.0.0",
   "selinux": {
     "denials_collected": {
       "reason": "SELinux denials were not collected",

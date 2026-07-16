@@ -20,7 +20,7 @@ from .exceptions import (
     TrustLabError,
     UnsupportedSchemaVersionError,
 )
-from .migrations import migrate_report_v1_to_v2
+from .migrations import migrate_report_to_current
 from .normalizer import normalize_collection_manifest_with_inputs, normalize_raw_file
 from .observers import OBSERVER_REGISTRY
 from .report_writer import diff_to_markdown, load_json, report_to_markdown, write_json
@@ -120,7 +120,7 @@ def cmd_diff(args: argparse.Namespace) -> int:
 
 def cmd_migrate_report(args: argparse.Namespace) -> int:
     source = load_json(args.input)
-    migrated = migrate_report_v1_to_v2(source)
+    migrated = migrate_report_to_current(source)
     _require_distinct_output(args.output, args.input)
     write_json(migrated, args.output)
     return 0
@@ -218,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
     diff.set_defaults(func=cmd_diff)
 
     migrate = sub.add_parser(
-        "migrate-report", help="Migrate a trust report from schema v1 to v2"
+        "migrate-report", help="Migrate a readable trust report to the current schema"
     )
     migrate.add_argument("--input", required=True)
     migrate.add_argument("--output", required=True)

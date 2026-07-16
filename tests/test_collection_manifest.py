@@ -23,7 +23,12 @@ from trustlab.exceptions import (
     NormalizationError,
     SchemaValidationError,
 )
-from trustlab.normalizer import normalize_collection_manifest, normalize_raw_file
+from trustlab.identity import finalize_report_identity
+from trustlab.normalizer import (
+    normalize_collection_manifest,
+    normalize_collection_payload,
+    normalize_raw_file,
+)
 from trustlab.report_writer import load_json
 from trustlab.validators import (
     load_schema,
@@ -117,6 +122,109 @@ def test_manifest_artifact_binding_and_normalization_match_legacy_raw_flow():
         collection["canonical_manifest_sha256"] == hashlib.sha256(canonical).hexdigest()
     )
     validate_report(from_manifest)
+
+
+def test_manifest_path_change_preserves_content_but_changes_event_binding():
+    payload = (SAMPLE.parent / "raw_sample.txt").read_bytes()
+    original = CollectionManifest.from_dict(sample_document())
+    moved_document = sample_document()
+    moved_document["artifacts"][0]["relative_path"] = "moved/raw_sample.txt"
+    moved = CollectionManifest.from_dict(moved_document)
+
+    first = normalize_collection_payload(payload, original, label="raw_sample.txt")
+    second = normalize_collection_payload(payload, moved, label="raw_sample.txt")
+
+    assert first["content_digest"] == second["content_digest"]
+    assert first["collection_event_id"] != second["collection_event_id"]
+    assert first["report_id"] != second["report_id"]
+
+
+@pytest.mark.parametrize("invalid_digest", [None, 0, [], "not-a-digest"])
+def test_report_rejects_invalid_collection_extension_digest_type(invalid_digest):
+    report = normalize_collection_manifest(SAMPLE)
+    report["extensions"]["org.androidtrustlab.collection"][
+        "canonical_manifest_sha256"
+    ] = invalid_digest
+
+    with pytest.raises(SchemaValidationError, match="digest metadata is invalid"):
+        validate_report(report)
+
+
+def test_report_binds_all_command_results_and_manifest_limitations():
+    report = normalize_collection_manifest(SAMPLE)
+
+    forged_result = copy.deepcopy(report)
+    forged_result["provenance"]["command_results"][1].update(
+        {"status": "observed", "exit_code": 0, "detail": "success"}
+    )
+    with pytest.raises(SchemaValidationError, match="command results do not match"):
+        validate_report(forged_result)
+
+    reordered = copy.deepcopy(report)
+    reordered["provenance"]["command_results"].reverse()
+    with pytest.raises(SchemaValidationError, match="command results do not match"):
+        validate_report(reordered)
+
+    omitted_limitation = copy.deepcopy(report)
+    omitted_limitation["limitations"]["collection_errors"].remove(
+        "collection manifest completion status: partial"
+    )
+    omitted_limitation = finalize_report_identity(omitted_limitation)
+    with pytest.raises(SchemaValidationError, match="limitations do not retain"):
+        validate_report(omitted_limitation)
+
+
+def test_report_rejects_unbound_additional_manifest_raw_reference():
+    report = normalize_collection_manifest(SAMPLE)
+    forged = copy.deepcopy(report)
+    extra = copy.deepcopy(forged["raw_artifacts"][0])
+    extra["logical_id"] = "zz-unbound-source"
+    extra["relative_path"] = "zz-unbound-source.txt"
+    forged["raw_artifacts"].append(extra)
+    forged = finalize_report_identity(forged)
+
+    with pytest.raises(SchemaValidationError, match="unique observed raw_report"):
+        validate_report(forged)
+
+
+def test_report_rejects_substitution_with_another_bound_manifest_artifact():
+    document = sample_document()
+    document["artifacts"].append(
+        {
+            "logical_name": "other_observed_artifact",
+            "relative_path": "other.json",
+            "media_type": "application/json",
+            "byte_size": 1,
+            "sha256": "0" * 64,
+            "probe_id": "magisk.other_observed_artifact",
+            "status": "observed",
+            "exit_code": 0,
+            "timed_out": False,
+            "sensitivity": "internal",
+            "redaction_state": "redacted",
+            "detail": None,
+        }
+    )
+    manifest = CollectionManifest.from_dict(document)
+    payload = (SAMPLE.parent / "raw_sample.txt").read_bytes()
+    forged = normalize_collection_payload(payload, manifest, label="raw_sample.txt")
+    other = document["artifacts"][-1]
+    raw_reference = forged["raw_artifacts"][0]
+    raw_reference.update(
+        {
+            "logical_id": other["logical_name"],
+            "relative_path": other["relative_path"],
+            "sha256": other["sha256"],
+            "byte_size": other["byte_size"],
+            "media_type": other["media_type"],
+            "status": other["status"],
+            "redaction_state": other["redaction_state"],
+        }
+    )
+    forged = finalize_report_identity(forged)
+
+    with pytest.raises(SchemaValidationError, match="unique observed raw_report"):
+        validate_report(forged)
 
 
 @pytest.mark.parametrize(
@@ -440,7 +548,20 @@ def test_collection_manifest_cli_validation_and_normalization(tmp_path, capsys):
     )
     report = json.loads(output.read_text(encoding="utf-8"))
     assert report["observer"]["observer_type"] == "root_collector"
-    assert report["raw_artifacts"] == ["raw_sample.txt"]
+    assert report["raw_artifacts"] == [
+        {
+            "logical_id": "raw_report",
+            "relative_path": "raw_sample.txt",
+            "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
+            "byte_size": 1751,
+            "media_type": "text/plain",
+            "collector_name": "trustlab-magisk",
+            "collector_version": "0.3.0-dev0",
+            "collection_id": "atlcol-b7e7f4381ab857f2",
+            "status": "observed",
+            "redaction_state": "redacted",
+        }
+    ]
     validate_report(report)
 
 

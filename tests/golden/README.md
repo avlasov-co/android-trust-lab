@@ -14,14 +14,12 @@ documented Markdown CLI contract. Its stable IDs are fixed test vectors for the
 explicit timestamp, experiment, provenance reference, and comparison report
 used by `test_installed_cli.py`; they are not refreshed automatically.
 
-The stable identifiers can be reproduced without importing project code. The
-first 16 hexadecimal characters of each digest are prefixed with `atl-` or
-`atldiff-`:
-
-```bash
-printf '%s' 'E10_golden:adb_shell:2026-01-02T03:04:05Z:tests/golden/raw_observation.txt' | shasum -a 256
-printf '%s' '{"base_report":"atl-4f360e670e68448a","changed_dimensions":[{"after":{"status":"observed","value":true},"before":{"status":"observed_absent","value":false},"dimension":"root_presence","evidence_paths":["root_state.su_present"],"interpretation":"Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.","severity":"medium"}],"compare_report":"atl-40b3dd9d667c204d","confidence_changes":[],"provenance":{"base":{"applied_migrations":[],"common_report_id":"atl-4f360e670e68448a","original_report_id":"atl-4f360e670e68448a","original_schema_version":"2.0.0"},"common_report_schema_version":"2.0.0","compare":{"applied_migrations":[],"common_report_id":"atl-40b3dd9d667c204d","original_report_id":"atl-40b3dd9d667c204d","original_schema_version":"2.0.0"}},"unchanged_dimensions":["bootloader_lock_state","verified_boot_state","vbmeta_state","verity_mode","selinux_mode","mount_integrity","magisk_presence","property_consistency","emulator_state","observer_privilege"]}' | shasum -a 256
-```
+Current identifiers use the report-v3 and diff-v2 ATL canonical frames:
+`atlrep-`/`atldiff-` plus 32 hexadecimal characters, with a separate full
+`content_digest`. The independently reproducible canonical bytes and full digest
+vector are frozen in `tests/test_content_identity.py`; the exact projection and
+framing rules are documented in `docs/content_identity.md`. This file does not
+duplicate a second, easily stale serialization recipe.
 
 The adversarial suite constructs invalid UTF-8 and a one-megabyte line at test
 time so the repository does not contain an opaque binary or oversized fixture.

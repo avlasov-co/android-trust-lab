@@ -55,7 +55,9 @@ Manifest-backed reports retain every artifact outcome in
 also surfaced under `limitations.collection_errors`. The complete validated
 manifest and a SHA-256 digest of its canonical JSON form are retained under the
 strict `org.androidtrustlab.collection` extension, so the report remains bound to
-its collection provenance.
+its collection provenance. Report v3 also carries the raw entry as a structured
+reference with its logical ID, relative path, size, digest, media type, collector
+version, collection ID, status, and redaction state.
 
 The manually authored Magisk sample demonstrates an honest `partial` legacy
 capture: its consolidated `raw_report` is integrity-bound, while missing

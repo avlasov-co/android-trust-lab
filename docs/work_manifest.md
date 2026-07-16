@@ -23,7 +23,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `datasets/derived/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
-| JSON schemas and migration | Implemented | `collector/schema/trust_report_v1_0_0.schema.json`, `collector/schema/trust_report_v2_0_0.schema.json`, `analyzer/trustlab/migrations.py`, `tests/test_report_migration.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_report_migration.py` |
+| JSON schemas, identity, and migration | Implemented | report v1/v2/v3 and diff v1/v2 schemas, `analyzer/trustlab/identity.py`, `analyzer/trustlab/migrations.py`, `tests/test_content_identity.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_content_identity.py tests/test_report_migration.py` |
 | Portable collection manifests | Implemented | `collector/schema/collection_manifest_v1_0_0.schema.json`, `analyzer/trustlab/collection_manifest.py`, `tests/test_collection_manifest.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_collection_manifest.py` |
 | Verifiable dataset manifest | Implemented | `datasets/source.json`, `datasets/manifest.json`, `docs/dataset_manifest_v2.md`, `analyzer/trustlab/dataset_manifest.py` | `trustlab dataset verify datasets/manifest.json` |
 | Sample reports | Implemented | `datasets/samples/`, `datasets/manifest.json` | `python tools/generate_report.py --check` |
@@ -138,7 +138,7 @@ Latest validation for this evidence packet:
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
-| Schema and checked-in artifacts | Gate step 10 | 7 schemas, 7 reports, 5 diffs, 1 collection manifest, 2 dataset manifests, and 1 dataset source validated |
+| Schema and checked-in artifacts | Gate step 10 | 9 schemas, 8 reports, 6 diffs, 1 collection manifest, 3 dataset manifests, and 1 dataset source validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk package safety | Gate step 12 | Pass |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
@@ -155,9 +155,10 @@ schema versions, canonical evidence states, exact registry lookup, migration and
 cross-version diff rules, canonical JSON identity, deprecation windows, and
 sample-retention policy. The supported-version table and schema-resource
 registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1
-is a read-only compatibility input, report v2 is the current validated writer
-format, diff v1 remains current, and strict collection manifest v1 is readable
-and writable. Dataset manifest v1 remains readable, strict dataset manifest v2
+and v2 are read-only compatibility inputs, report v3 is the current validated
+writer, diff v1 is read-only, and diff v2 is the current writer. Strict
+collection manifest v1 is readable and writable. Dataset manifest v1 remains
+readable, strict dataset manifest v2
 is the sole verified writer format, and dataset source v1 drives deterministic
 generation. Experiment specs remain planned rather than falsely advertised as
 supported.

@@ -3,8 +3,9 @@
 The `trustlab` CLI validates authoritative JSON artifacts before publishing them.
 Normalize validates its in-memory report before writing. Diff always validates
 both input reports and the generated diff before writing.
-`migrate-report` accepts only validated report v1 input, validates its v2 result,
-and publishes a separate output without replacing the historical source.
+`migrate-report` accepts any readable report version, validates every registered
+migration step to current report v3, and publishes a separate output without
+replacing the historical source. Current v3 input is validated and copied.
 `validate-collection-manifest` validates the strict portable manifest contract.
 Normalize with `--manifest` verifies every observed artifact binding before it
 parses the declared `raw_report`.
@@ -23,10 +24,10 @@ filesystem. Failed validation creates no output. A failed write preserves an
 existing destination and removes its ordinary temporary file.
 
 New and replaced reports are intentionally private (`0600`) because reports can
-contain device metadata. Portable raw-artifact references default to the input
-basename; a non-published digest of parsed evidence prevents same-name report-ID
-collisions. Use `--raw-artifact-ref` for a stable non-sensitive logical
-reference.
+contain device metadata. Portable structured raw-artifact references default to
+the input basename and bind the exact pre-parse bytes by size and SHA-256.
+Collection-event, content, and report identities exclude absolute host paths.
+Use `--raw-artifact-ref` for a stable non-sensitive relative reference.
 
 ## Exit codes
 

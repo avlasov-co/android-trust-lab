@@ -21,7 +21,9 @@
       "value": null
     }
   },
+  "collection_event_id": "atlevent-de5e7e106b075e9bba3467ca0b0e5537",
   "collection_timestamp": "2026-04-25T15:08:21Z",
+  "content_digest": "aa83519717e0e28386a644c294ea9ba21974c24e8638918db76a891d140fade8",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -278,6 +280,10 @@
   },
   "provenance": {
     "command_results": [],
+    "generator": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
     "migration_history": [],
     "normalizer": {
       "name": "trustlab",
@@ -286,9 +292,20 @@
     "source_schema_version": "raw"
   },
   "raw_artifacts": [
-    "datasets/samples/writable_system_avd/raw_sample.txt"
+    {
+      "byte_size": 1412,
+      "collection_id": "atlcol-039ba607342c824bde68984ef00b9571",
+      "collector_name": "trustlab-fixture-authors",
+      "collector_version": "1.0.0",
+      "logical_id": "raw-writable-system-avd-adb",
+      "media_type": "text/plain",
+      "redaction_state": "redacted",
+      "relative_path": "datasets/samples/writable_system_avd/raw_sample.txt",
+      "sha256": "3fd82b190c748dd57db9a4122a5cb934db57c38dcba675080e32ba78e966a75d",
+      "status": "observed"
+    }
   ],
-  "report_id": "atl-170932c614ddfe76",
+  "report_id": "atlrep-23fe1b377cc98782ea9ab314ceb407a6",
   "root_state": {
     "gid": {
       "reason": null,
@@ -316,7 +333,7 @@
       "value": "2000"
     }
   },
-  "schema_version": "2.0.0",
+  "schema_version": "3.0.0",
   "selinux": {
     "denials_collected": {
       "reason": "SELinux denials were not collected",

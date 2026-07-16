@@ -64,7 +64,14 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
     expected_report = GOLDEN["normalize"]
-    for key in ("report_id", "collection_timestamp", "experiment_id", "observer"):
+    for key in (
+        "report_id",
+        "collection_event_id",
+        "content_digest",
+        "collection_timestamp",
+        "experiment_id",
+        "observer",
+    ):
         assert report[key] == expected_report[key]
     target = {"target_type": report["target"]["target_type"]}
     target.update(
@@ -163,10 +170,9 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     assert migrate.returncode == 0, migrate.stderr
     assert migrate.stdout == migrate.stderr == ""
     assert v1_source.read_bytes() == before
-    assert (
-        json.loads(migrated_path.read_text(encoding="utf-8"))["schema_version"]
-        == "2.0.0"
-    )
+    migrated = json.loads(migrated_path.read_text(encoding="utf-8"))
+    assert migrated["schema_version"] == "3.0.0"
+    assert len(migrated["provenance"]["migration_history"]) == 2
 
     collection_manifest = (
         ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
@@ -212,6 +218,8 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
 def test_installed_entry_point_failure_paths_are_stable(tmp_path):
     invalid = tmp_path / "invalid.json"
     invalid.write_text('{"schema_version": "1.0.0"}\n', encoding="utf-8")
+    unsupported = tmp_path / "unsupported.json"
+    unsupported.write_text('{"schema_version": "4.0.0"}\n', encoding="utf-8")
     missing = tmp_path / "missing.raw"
     valid_report = ROOT / "tests/fixtures/sample_normalized_report.json"
     output = tmp_path / "unused.json"
@@ -243,12 +251,12 @@ def test_installed_entry_point_failure_paths_are_stable(tmp_path):
             (
                 "migrate-report",
                 "--input",
-                str(valid_report),
+                str(unsupported),
                 "--output",
                 str(output),
             ),
             5,
-            "error: report migration requires schema version 1.0.0\n",
+            "error: unsupported report schema version\n",
         ),
         (
             ("validate-diff", str(invalid)),

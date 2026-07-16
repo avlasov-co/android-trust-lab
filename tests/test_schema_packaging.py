@@ -55,6 +55,42 @@ def test_frozen_v1_report_schema_has_reviewed_literal_digest():
         assert hashlib.sha256(schema.read_bytes()).hexdigest() == expected
 
 
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        (
+            "trust_report_v2_0_0.schema.json",
+            "15ec46f78ee0807d52971e6c85480a4e79ad207b4db6fd43d6f51e27da4e8d69",  # pragma: allowlist secret
+        ),
+        (
+            "trust_diff.schema.json",
+            "ccf5690ea4a57a23753a5243659bc679bdbdeb45ad44285144f74a0f044f5685",  # pragma: allowlist secret
+        ),
+    ],
+)
+def test_frozen_legacy_schema_has_reviewed_literal_digest(name, expected):
+    for schema in (CANONICAL / name, COMPATIBILITY / name):
+        assert hashlib.sha256(schema.read_bytes()).hexdigest() == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        (
+            "report_v2_historical.json",
+            "94071f0fe2b12f1a80f0a353c641cfa167b82fd65831727c56754b60f6e93fae",  # pragma: allowlist secret
+        ),
+        (
+            "diff_v1_historical.json",
+            "87034810c7d837ca695b71b018ebf670dbf3ce3be33c329699174c67fe11a1b0",  # pragma: allowlist secret
+        ),
+    ],
+)
+def test_frozen_legacy_fixture_has_reviewed_literal_digest(name, expected):
+    fixture = ROOT / "tests/fixtures" / name
+    assert hashlib.sha256(fixture.read_bytes()).hexdigest() == expected
+
+
 def test_schema_consistency_detects_byte_drift(tmp_path):
     canonical = tmp_path / "canonical"
     compatibility = tmp_path / "compatibility"
@@ -225,7 +261,9 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "trustlab/schemas/dataset_source_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v2_0_0.schema.json",
+        "trustlab/schemas/trust_report_v3_0_0.schema.json",
         "trustlab/schemas/trust_diff.schema.json",
+        "trustlab/schemas/trust_diff_v2_0_0.schema.json",
     }
     with zipfile.ZipFile(wheel) as archive:
         assert expected <= set(archive.namelist())

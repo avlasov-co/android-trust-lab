@@ -37,12 +37,12 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_supported_version_table_is_complete_and_exact():
     assert dict(SCHEMA_SUPPORT) == {
         SchemaFamily.REPORT: SchemaSupport(
-            current_write_version="2.0.0",
-            readable_versions=frozenset({"1.0.0", "2.0.0"}),
+            current_write_version="3.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0", "3.0.0"}),
         ),
         SchemaFamily.DIFF: SchemaSupport(
-            current_write_version="1.0.0",
-            readable_versions=frozenset({"1.0.0"}),
+            current_write_version="2.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0"}),
         ),
         SchemaFamily.DATASET_MANIFEST: SchemaSupport(
             current_write_version="2.0.0",
@@ -72,7 +72,9 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
     assert dict(SCHEMA_RESOURCE_REGISTRY) == {
         (SchemaFamily.REPORT, "1.0.0"): "trust_report_v1_0_0.schema.json",
         (SchemaFamily.REPORT, "2.0.0"): "trust_report_v2_0_0.schema.json",
+        (SchemaFamily.REPORT, "3.0.0"): "trust_report_v3_0_0.schema.json",
         (SchemaFamily.DIFF, "1.0.0"): "trust_diff.schema.json",
+        (SchemaFamily.DIFF, "2.0.0"): "trust_diff_v2_0_0.schema.json",
         (SchemaFamily.DATASET_MANIFEST, "1.0.0"): (
             "dataset_manifest_v1_0_0.schema.json"
         ),
@@ -88,7 +90,7 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
         == "trust_report_v1_0_0.schema.json"
     )
     with pytest.raises(UnsupportedSchemaVersionError):
-        schema_resource_name(SchemaFamily.REPORT, "3.0.0")
+        schema_resource_name(SchemaFamily.REPORT, "4.0.0")
     assert schema_resource_name(SchemaFamily.DATASET_MANIFEST, "2.0.0") == (
         "dataset_manifest_v2_0_0.schema.json"
     )
@@ -106,18 +108,18 @@ def test_schema_registries_and_support_records_are_immutable():
         cast(Any, report_support).current_write_version = "3.0.0"
     with pytest.raises(AttributeError):
         cast(Any, report_support.readable_versions).add("3.0.0")
-    assert current_write_version(SchemaFamily.REPORT) == "2.0.0"
+    assert current_write_version(SchemaFamily.REPORT) == "3.0.0"
 
 
 def test_supported_schema_versions_do_not_imply_planned_support():
     assert supported_schema_versions(SchemaFamily.REPORT) == frozenset(
-        {"1.0.0", "2.0.0"}
+        {"1.0.0", "2.0.0", "3.0.0"}
     )
     assert supported_schema_versions(SchemaFamily.COLLECTION_MANIFEST) == frozenset(
         {"1.0.0"}
     )
     assert supported_schema_versions(SchemaFamily.EXPERIMENT_SPEC) == frozenset()
-    assert current_write_version(SchemaFamily.REPORT) == "2.0.0"
+    assert current_write_version(SchemaFamily.REPORT) == "3.0.0"
     assert current_write_version(SchemaFamily.COLLECTION_MANIFEST) == "1.0.0"
 
 
@@ -134,8 +136,8 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         "diff": diff["schema_version"],
         "dataset_manifest": dataset_manifest["schema_version"],
     } == {
-        "report": "2.0.0",
-        "diff": "1.0.0",
+        "report": "3.0.0",
+        "diff": "2.0.0",
         "dataset_manifest": "2.0.0",
     }
     assert report["schema_version"] == current_write_version(SchemaFamily.REPORT)
@@ -151,7 +153,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         (
             validate_report,
             "tests/fixtures/sample_normalized_report.json",
-            "trust_report_v2_0_0.schema.json",
+            "trust_report_v3_0_0.schema.json",
         ),
         (
             validate_report,
@@ -159,8 +161,18 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
             "trust_report_v1_0_0.schema.json",
         ),
         (
+            validate_report,
+            "tests/fixtures/report_v2_historical.json",
+            "trust_report_v2_0_0.schema.json",
+        ),
+        (
             validate_diff,
             "tests/fixtures/sample_diff.json",
+            "trust_diff_v2_0_0.schema.json",
+        ),
+        (
+            validate_diff,
+            "tests/fixtures/diff_v1_historical.json",
             "trust_diff.schema.json",
         ),
         (

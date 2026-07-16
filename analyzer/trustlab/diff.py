@@ -2,23 +2,14 @@
 
 from __future__ import annotations
 
-import hashlib
 from typing import Any
 
+from .canonical_json import framed_content_digest
 from .compatibility import SchemaFamily, current_write_version
-from .migrations import migrate_report_v1_to_v2
+from .migration_codec import encode_legacy_report, legacy_report_digest
+from .migrations import migrate_report_to_current
 from .trust_dimensions import severity_for_dimension
 from .validators import validate_report
-
-
-def json_like_for_hash(value: Any) -> str:
-    """Return a stable string representation for deterministic diff IDs."""
-    import json
-
-    return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
-    )
-
 
 # Default dimensions must represent actual measured trust-state fields.
 # App-visible/root-visible dimensions are intentionally not included here until
@@ -61,23 +52,27 @@ def get_path(obj: dict[str, Any], path: list[str]) -> Any:
 def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     original_id = report.get("report_id", "unknown")
     original_version = report.get("schema_version")
+    validate_report(report)
+    common = migrate_report_to_current(report)
     if original_version == "1.0.0":
-        common = migrate_report_v1_to_v2(report)
-        migrations = [
-            {
-                "migration_id": "report-v1-to-v2",
-                "source_schema_version": "1.0.0",
-                "target_schema_version": "2.0.0",
-            }
-        ]
+        migrations = common["provenance"]["migration_history"]
+    elif original_version == "2.0.0":
+        migrations = common["provenance"]["migration_history"][-1:]
     else:
-        validate_report(report)
-        common = report
         migrations = []
+    common_identity = {
+        "report_id": common["report_id"],
+        "content_digest": common["content_digest"],
+        "schema_version": common["schema_version"],
+    }
     return common, {
         "original_report_id": original_id,
         "original_schema_version": original_version,
-        "common_report_id": common.get("report_id", "unknown"),
+        "original_content_digest": report.get("content_digest")
+        if original_version == "3.0.0"
+        else None,
+        "original_document_digest": legacy_report_digest(encode_legacy_report(report)),
+        "common_report": common_identity,
         "applied_migrations": migrations,
     }
 
@@ -141,31 +136,22 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
-    diff_payload = json_like_for_hash(
-        {
-            "base_report": base.get("report_id"),
-            "compare_report": compare.get("report_id"),
-            "changed_dimensions": changed,
-            "unchanged_dimensions": unchanged,
-            "confidence_changes": confidence_changes,
-            "provenance": provenance,
-        }
-    )
-    diff_id = (
-        "atldiff-"
-        + hashlib.sha256(
-            diff_payload.encode("utf-8", errors="surrogatepass")
-        ).hexdigest()[:16]
-    )
     summary = (
         f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged."
     )
-
-    return {
-        "diff_id": diff_id,
-        "schema_version": current_write_version(SchemaFamily.DIFF),
-        "base_report": base.get("report_id", "unknown"),
-        "compare_report": compare.get("report_id", "unknown"),
+    schema_version = current_write_version(SchemaFamily.DIFF)
+    result = {
+        "schema_version": schema_version,
+        "base_report": {
+            "report_id": base["report_id"],
+            "content_digest": base["content_digest"],
+            "schema_version": base["schema_version"],
+        },
+        "compare_report": {
+            "report_id": compare["report_id"],
+            "content_digest": compare["content_digest"],
+            "schema_version": compare["schema_version"],
+        },
         "changed_dimensions": changed,
         "unchanged_dimensions": unchanged,
         "new_signals": [],
@@ -173,4 +159,14 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
         "confidence_changes": confidence_changes,
         "summary": summary,
         "provenance": provenance,
+    }
+    content_digest = framed_content_digest(
+        family="diff",
+        schema_version=schema_version,
+        value=result,
+    )
+    return {
+        "diff_id": f"atldiff-{content_digest[:32]}",
+        "content_digest": content_digest,
+        **result,
     }

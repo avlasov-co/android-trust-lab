@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import trustlab.bounded_io as bounded_io_module
 from trustlab.exceptions import CollectionError
 from trustlab.normalizer import normalize_raw_file
 from trustlab.parser import (
@@ -104,9 +105,9 @@ def test_permission_failure_is_a_collection_error(tmp_path, monkeypatch):
     private = tmp_path / "private.raw"
     private.write_text("unreachable", encoding="utf-8")
 
-    def deny_read(self, *args, **kwargs):
+    def deny_open(*args, **kwargs):
         raise PermissionError("injected permission failure")
 
-    monkeypatch.setattr(Path, "read_text", deny_read)
-    with pytest.raises(CollectionError, match="could not read input artifact"):
+    monkeypatch.setattr(bounded_io_module.os, "open", deny_open)
+    with pytest.raises(CollectionError, match="could not open raw input artifact"):
         normalize_raw_file(private)

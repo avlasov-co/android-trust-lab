@@ -35,9 +35,45 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
         "dataset_manifest_v2_0_0.schema.json",
         "dataset_source_v1_0_0.schema.json",
         "trust_diff.schema.json",
+        "trust_diff_v2_0_0.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
+        "trust_report_v3_0_0.schema.json",
     )
+
+
+def test_v3_report_and_v2_diff_schemas_are_closed_and_required_complete():
+    for name in (
+        "trust_report_v3_0_0.schema.json",
+        "trust_diff_v2_0_0.schema.json",
+    ):
+        schema = load_schema(name)
+        assert set(schema["required"]) == set(schema["properties"])
+        assert schema["additionalProperties"] is False
+
+
+def test_current_identity_documents_reject_excessive_nesting_before_schema_walk():
+    nested: object = None
+    for _ in range(70):
+        nested = {"value": nested}
+
+    report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    report["extensions"] = {"org.example.nested": {"value": nested}}
+    with pytest.raises(SchemaValidationError, match="bounded canonical JSON model"):
+        validate_report(report)
+
+    diff = load_json(ROOT / "tests/fixtures/sample_diff.json")
+    diff["changed_dimensions"][0]["before"] = nested
+    with pytest.raises(SchemaValidationError, match="bounded canonical JSON model"):
+        validate_diff(diff)
+
+
+def test_v3_rejects_canonical_invalid_surrogate_in_excluded_provenance():
+    report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    report["extensions"] = {"org.example.invalid": {"value": "\ud800"}}
+
+    with pytest.raises(SchemaValidationError, match="bounded canonical JSON model"):
+        validate_report(report)
 
 
 def test_v2_schema_declares_required_defs_and_closes_structured_objects():

@@ -12,6 +12,7 @@ import pytest
 
 from trustlab import cli, normalizer, report_writer
 from trustlab.exceptions import (
+    CollectionError,
     NormalizationError,
     OutputWriteError,
     SchemaValidationError,
@@ -221,7 +222,7 @@ def test_project_error_text_escapes_unencodable_characters(monkeypatch, capsys):
     assert captured.err == "error: bad \\ud800\n"
 
 
-def test_diff_unicode_encoding_failure_is_clean_and_preserves_destination(
+def test_diff_noncanonical_evidence_is_clean_and_preserves_destination(
     tmp_path, capsys
 ):
     base = valid_report()
@@ -246,8 +247,10 @@ def test_diff_unicode_encoding_failure_is_clean_and_preserves_destination(
         ]
     )
 
-    assert_clean_error(capsys, code, "could not write output: diff.json")
-    assert code == cli.EXIT_OUTPUT_WRITE_FAILURE
+    assert_clean_error(
+        capsys, code, "report is outside the bounded canonical JSON model"
+    )
+    assert code == cli.EXIT_SCHEMA_VALIDATION
     assert destination.read_bytes() == b"sentinel\n"
     assert list(tmp_path.glob(".diff.json.*.tmp")) == []
 
@@ -319,7 +322,7 @@ def test_normalize_parser_failure_uses_normalization_exit_code(
 ):
     monkeypatch.setattr(
         normalizer,
-        "parse_raw_report",
+        "parse_raw_text",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             ValueError("injected parser failure")
         ),
@@ -342,14 +345,118 @@ def test_windows_input_path_does_not_leak_host_directories(capsys):
     assert "Users" not in captured.err
 
 
-def test_collection_failure_has_stable_exit_code(monkeypatch, capsys):
-    def fail_read_text(self, *args, **kwargs):
-        raise PermissionError("injected permission failure")
+@pytest.mark.parametrize("nested", [False, True])
+def test_validate_report_rejects_duplicate_json_members(tmp_path, capsys, nested):
+    payload = json.dumps(valid_report())
+    if nested:
+        payload = payload.replace(
+            '"observer": {',
+            '"observer": {"observer_type": "adb_shell", ',
+            1,
+        )
+    else:
+        payload = '{"schema_version": "3.0.0", ' + payload[1:]
+    source = tmp_path / "duplicate.json"
+    source.write_text(payload, encoding="utf-8")
 
-    monkeypatch.setattr(report_writer.Path, "read_text", fail_read_text)
+    code = cli.main(["validate-report", str(source)])
+
+    assert_clean_error(capsys, code, "invalid JSON")
+    assert code == cli.EXIT_INVALID_JSON
+
+
+def test_migrate_and_diff_reject_duplicate_json_before_output(tmp_path, capsys):
+    v1_text = (ROOT / "tests/fixtures/report_v1_historical.json").read_text(
+        encoding="utf-8"
+    )
+    duplicate_v1 = tmp_path / "duplicate-v1.json"
+    duplicate_v1.write_text(
+        '{"schema_version": "1.0.0", ' + v1_text.lstrip()[1:],
+        encoding="utf-8",
+    )
+    output = tmp_path / "output.json"
+    code = cli.main(
+        [
+            "migrate-report",
+            "--input",
+            str(duplicate_v1),
+            "--output",
+            str(output),
+        ]
+    )
+    assert_clean_error(capsys, code, "invalid JSON")
+    assert code == cli.EXIT_INVALID_JSON
+    assert not output.exists()
+
+    duplicate_report = tmp_path / "duplicate-report.json"
+    duplicate_report.write_text(
+        '{"schema_version": "3.0.0", '
+        + REPORT_FIXTURE.read_text(encoding="utf-8").lstrip()[1:],
+        encoding="utf-8",
+    )
+    code = cli.main(
+        [
+            "diff",
+            "--base",
+            str(duplicate_report),
+            "--compare",
+            str(REPORT_FIXTURE),
+            "--output",
+            str(output),
+        ]
+    )
+    assert_clean_error(capsys, code, "invalid JSON")
+    assert code == cli.EXIT_INVALID_JSON
+    assert not output.exists()
+
+
+def test_validate_report_nesting_limit_is_a_clean_schema_failure(tmp_path, capsys):
+    report = valid_report()
+    nested: object = None
+    for _ in range(70):
+        nested = {"value": nested}
+    report["extensions"] = {"org.example.nested": {"value": nested}}
+    source = tmp_path / "nested.json"
+    write_document(source, report)
+
+    code = cli.main(["validate-report", str(source)])
+
+    assert_clean_error(capsys, code, "bounded canonical JSON model")
+    assert code == cli.EXIT_SCHEMA_VALIDATION
+
+
+def test_collection_failure_has_stable_exit_code(monkeypatch, capsys):
+    def fail_read(*args, **kwargs):
+        raise CollectionError("could not read input: private.json")
+
+    monkeypatch.setattr(report_writer, "read_bounded_regular_file", fail_read)
     code = cli.main(["validate-report", "private.json"])
     assert_clean_error(capsys, code, "could not read input: private.json")
     assert code == cli.EXIT_COLLECTION_FAILURE
+
+
+def test_cli_rejects_over_limit_json_before_parsing(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "large.json"
+    source.write_bytes(b"{" + (b" " * 8) + b"}")
+    monkeypatch.setattr(report_writer, "MAX_JSON_INPUT_BYTES", 8)
+
+    code = cli.main(["validate-report", str(source)])
+
+    assert_clean_error(capsys, code, "JSON input exceeds the byte limit")
+    assert code == cli.EXIT_COLLECTION_FAILURE
+
+
+def test_cli_rejects_over_limit_raw_before_normalizing(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "large.txt"
+    source.write_bytes(b"x" * 9)
+    output = tmp_path / "report.json"
+    monkeypatch.setattr(normalizer, "MAX_RAW_ARTIFACT_BYTES", 8)
+
+    code = cli.main(["normalize", "--input", str(source), "--output", str(output)])
+
+    assert_clean_error(capsys, code, "raw input artifact exceeds the byte limit")
+    assert code == cli.EXIT_COLLECTION_FAILURE
+    assert not output.exists()
 
 
 def test_normalization_failure_has_stable_exit_code(tmp_path, monkeypatch, capsys):

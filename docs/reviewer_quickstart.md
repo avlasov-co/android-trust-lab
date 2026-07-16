@@ -10,7 +10,8 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Raw artifact parser | Implemented | `analyzer/trustlab/parser.py`, `tests/test_parser.py` |
 | Trust report normalization | Implemented | `analyzer/trustlab/normalizer.py`, `tests/test_normalizer.py` |
 | Trust diff generation | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py` |
-| JSON schemas | Implemented | versioned report v1/v2 schemas and `collector/schema/trust_diff.schema.json` |
+| JSON schemas | Implemented | report v1/v2/v3 and diff v1/v2 schemas under `collector/schema/` |
+| Content provenance | Implemented | `docs/content_identity.md`, `analyzer/trustlab/identity.py`, `tests/test_content_identity.py` |
 | Synthetic / AVD-limited samples | Implemented | `datasets/source.json`, `datasets/samples/`, `datasets/manifest.json` |
 | Dataset integrity and freshness verification | Implemented | `trustlab dataset verify datasets/manifest.json`, `docs/dataset_manifest_v2.md` |
 | Generated result tables and diffs | Implemented | `results/`, `datasets/derived/diffs/`, `tools/generate_report.py` |

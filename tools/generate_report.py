@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab import __version__
+from trustlab.collection_manifest import CollectionManifest
 from trustlab.dataset_manifest import (
     MAX_DATASET_ARTIFACT_BYTES,
     MAX_DATASET_JSON_BYTES,
@@ -32,7 +33,7 @@ from trustlab.dataset_manifest import (
 )
 from trustlab.diff import make_diff
 from trustlab.exceptions import MissingFileError
-from trustlab.normalizer import normalize_raw_bytes
+from trustlab.normalizer import normalize_collection_payload, normalize_raw_bytes
 from trustlab.validators import (
     validate_collection_manifest,
     validate_dataset_manifest,
@@ -241,18 +242,38 @@ def sample_report(
     sample: dict[str, Any],
     artifacts: dict[str, dict[str, Any]],
     raw_payload: bytes,
+    source_documents: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     raw = artifacts[sample["raw_artifact_id"]]
-    report = normalize_raw_bytes(
-        raw_payload,
-        label=Path(raw["relative_path"]).name,
-        experiment_id=sample["experiment_id"],
-        target_type=sample["target_type"],
-        observer_type=sample["observer_type"],
-        collection_method=sample["collection_method"],
-        collection_timestamp=sample["collection_timestamp"],
-        raw_artifact_ref=f"datasets/{raw['relative_path']}",
-    )
+    collection_relationship = sample["collection_manifest"]
+    if collection_relationship["status"] == "observed":
+        collection = CollectionManifest.from_dict(
+            source_documents[collection_relationship["artifact_id"]]
+        )
+        report = normalize_collection_payload(
+            raw_payload,
+            collection,
+            label=Path(raw["relative_path"]).name,
+            generator_name="trustlab",
+        )
+    else:
+        report = normalize_raw_bytes(
+            raw_payload,
+            label=Path(raw["relative_path"]).name,
+            experiment_id=sample["experiment_id"],
+            target_type=sample["target_type"],
+            observer_type=sample["observer_type"],
+            collection_method=sample["collection_method"],
+            collection_timestamp=sample["collection_timestamp"],
+            raw_artifact_ref=f"datasets/{raw['relative_path']}",
+            raw_artifact_id=raw["artifact_id"],
+            collector_name=raw["producer"]["name"],
+            collector_version=raw["producer"]["version"],
+            collection_id=None,
+            redaction_state=raw["redaction_state"],
+            media_type=raw["media_type"],
+            generator_name="trustlab",
+        )
     validate_report(report)
     return report
 
@@ -438,6 +459,7 @@ def build_outputs() -> dict[Path, bytes]:
             sample,
             artifacts,
             artifact_payloads[sample["raw_artifact_id"]],
+            source_documents,
         )
         report_payload = stable_pretty_json_bytes(report)
         report_id = sample["normalized_report_artifact_id"]
@@ -495,6 +517,11 @@ def build_outputs() -> dict[Path, bytes]:
         collection_method="raw_artifact",
         collection_timestamp="2026-04-25T15:06:21Z",
         raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
+        raw_artifact_id="fixture-sample-raw-report",
+        collector_name="trustlab-fixture-authors",
+        collector_version="1.0.0",
+        redaction_state="not_required",
+        generator_name="trustlab",
     )
     validate_report(fixture_report)
     outputs[ROOT / "tests/fixtures/sample_normalized_report.json"] = (
