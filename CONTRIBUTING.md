@@ -56,6 +56,24 @@ Every experiment must include:
 
 All new report types must follow the JSON schema.
 
+## Schema-change checklist
+
+Every report, diff, dataset-manifest, collection-manifest, or experiment-spec
+change must include an ADR or an explicit compatibility note linked from the
+pull request. Before review:
+
+- identify the independently versioned schema family and proposed SemVer impact;
+- update the machine-readable support and validation registries when support changes;
+- state read, write, migration, diff, and deprecation effects;
+- preserve all canonical evidence statuses without magic-string fallbacks;
+- add manually authored positive, negative, compatibility, and migration fixtures;
+- prove deterministic canonical JSON and path-independent identity where relevant;
+- regenerate generator-owned samples only through the canonical generator;
+- retain historical and captured evidence instead of rewriting it in place;
+- update the ADR index, compatibility documentation, and release notes as applicable.
+
+The governing policy is [ADR 0001](docs/adr/0001-schema-evolution-and-compatibility.md).
+
 ## Local pull-request checks
 
 Install the analyzer development dependencies, then run the same fast gate used

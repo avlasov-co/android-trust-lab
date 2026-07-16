@@ -129,6 +129,13 @@ def test_missing_schema_version_collects_all_structured_schema_issues():
     assert "<missing or invalid>" in str(caught.value)
 
 
+@pytest.mark.parametrize("validator", [validate_report, validate_diff])
+@pytest.mark.parametrize("document", [None, [], "not-an-object"])
+def test_non_object_documents_keep_the_schema_error_contract(validator, document):
+    with pytest.raises(SchemaValidationError, match="must be a JSON object"):
+        validator(document)
+
+
 def test_invalid_schema_version_type_does_not_leak_through_native_cause():
     report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
     sensitive_value = "sensitive-device-value"

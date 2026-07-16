@@ -128,11 +128,11 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 38 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 21 analyzer and tool modules |
-| Unit tests | Gate step 5 | 166 passed on Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 94.68% statements (623/658); 82.74% branches (139/168); floors 85%/80% |
-| Tools coverage | Gate step 5 | 87.66% statements (618/705); 74.83% branches (220/294); floors 70%/60% |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 40 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 22 analyzer and tool modules |
+| Unit tests | Gate step 5 | 180 passed on Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 95.06% statements (674/709); 83.14% branches (143/172); floors 85%/80% |
+| Tools coverage | Gate step 5 | 87.68% statements (619/706); 74.83% branches (220/294); floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
@@ -145,6 +145,16 @@ Latest validation for this evidence packet:
 
 Run `bash scripts/check.sh` or the compatible `bash scripts/verify_release.sh`
 from an activated environment containing `analyzer[dev]`.
+
+## Schema compatibility status
+
+[ADR 0001](adr/0001-schema-evolution-and-compatibility.md) defines independent
+schema versions, canonical evidence states, exact registry lookup, migration and
+cross-version diff rules, canonical JSON identity, deprecation windows, and
+sample-retention policy. The supported-version table and schema-resource
+registry are machine-tested in `tests/test_compatibility_policy.py`. Report and
+diff v1 are registered; report v2, collection manifests, and experiment specs
+remain planned rather than falsely advertised as supported.
 
 ## Known limitations
 

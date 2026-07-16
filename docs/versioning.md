@@ -22,13 +22,16 @@ versions remain independent and must not be synchronized mechanically:
 
 | Contract | Current version source | Current value |
 |---|---|---|
-| Trust report schema | `normalizer.py` and report schema | `1.0.0` |
-| Trust diff schema | `diff.py` and diff schema | `1.0.0` |
-| Dataset manifest | report generator | `1.0.0` |
-| Collection manifest | Magisk collector writer | `collection-manifest-0.1` |
+| Trust report schema | compatibility registry and report schema | `1.0.0` |
+| Trust diff schema | compatibility registry and diff schema | `1.0.0` |
+| Dataset manifest | compatibility registry and report generator | legacy `1.0.0` |
+| Collection manifest | compatibility registry | none; `collection-manifest-0.1` is a pre-policy sample |
+| Experiment spec | compatibility registry | none; current Markdown is unversioned |
 
-Future schema compatibility policy belongs in its own architecture decision and
-must not be inferred from an analyzer package release.
+Schema support, migration, evidence-state, canonical-JSON, and deprecation rules
+are governed by [ADR 0001](adr/0001-schema-evolution-and-compatibility.md) and
+the machine-readable `trustlab.compatibility` registry. They must not be
+inferred from an analyzer or collector release.
 
 ## Release history
 

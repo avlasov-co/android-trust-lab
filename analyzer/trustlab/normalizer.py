@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .compatibility import SchemaFamily, current_write_version
 from .exceptions import (
     CollectionError,
     MissingFileError,
@@ -269,7 +270,7 @@ def build_report(
 
     return {
         "report_id": report_id,
-        "schema_version": "1.0.0",
+        "schema_version": current_write_version(SchemaFamily.REPORT),
         "collection_timestamp": timestamp,
         "experiment_id": experiment_id,
         "target": {

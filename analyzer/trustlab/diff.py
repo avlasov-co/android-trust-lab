@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+from .compatibility import SchemaFamily, current_write_version
 from .trust_dimensions import severity_for_dimension
 
 
@@ -115,7 +116,7 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "diff_id": diff_id,
-        "schema_version": "1.0.0",
+        "schema_version": current_write_version(SchemaFamily.DIFF),
         "base_report": base.get("report_id", "unknown"),
         "compare_report": compare.get("report_id", "unknown"),
         "changed_dimensions": changed,

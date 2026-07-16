@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab import __version__
+from trustlab.compatibility import SchemaFamily, current_write_version
 from trustlab.diff import make_diff
 from trustlab.normalizer import normalize_raw_file
 from trustlab.validators import validate_diff, validate_report
@@ -274,7 +275,7 @@ def sample_report(sample: SampleSpec) -> dict[str, Any]:
 
 def manifest(samples: list[SampleSpec]) -> dict[str, Any]:
     return {
-        "schema_version": "1.0.0",
+        "schema_version": current_write_version(SchemaFamily.DATASET_MANIFEST),
         "samples": [
             {
                 "sample_id": sample["sample_id"],

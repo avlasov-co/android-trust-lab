@@ -11,14 +11,20 @@ from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError as JSONSchemaSchemaError
 from jsonschema.exceptions import ValidationError as JSONSchemaValidationError
 
+from .compatibility import (
+    SchemaFamily,
+    current_write_version,
+    schema_resource_name,
+    supported_schema_versions,
+)
 from .exceptions import (
     SchemaIssue,
     SchemaValidationError,
     UnsupportedSchemaVersionError,
 )
 
-SUPPORTED_REPORT_SCHEMA_VERSIONS = frozenset({"1.0.0"})
-SUPPORTED_DIFF_SCHEMA_VERSIONS = frozenset({"1.0.0"})
+SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
+SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
 RFC3339_DATE_TIME_RE = re.compile(
     r"^(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})[Tt]"
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
@@ -188,7 +194,7 @@ def _error_sort_key(
 
 
 def validate_with_schema(
-    data: dict[str, Any],
+    data: object,
     schema_name: str,
     *,
     artifact_name: str,
@@ -233,19 +239,31 @@ def validate_with_schema(
         ) from safe_cause
 
 
-def validate_report(data: dict[str, Any]) -> None:
+def validate_report(data: object) -> None:
+    version = data.get("schema_version") if isinstance(data, dict) else None
+    resource_version = (
+        version
+        if isinstance(version, str)
+        else current_write_version(SchemaFamily.REPORT)
+    )
     validate_with_schema(
         data,
-        "trust_report.schema.json",
+        schema_resource_name(SchemaFamily.REPORT, resource_version),
         artifact_name="report",
         supported_versions=SUPPORTED_REPORT_SCHEMA_VERSIONS,
     )
 
 
-def validate_diff(data: dict[str, Any]) -> None:
+def validate_diff(data: object) -> None:
+    version = data.get("schema_version") if isinstance(data, dict) else None
+    resource_version = (
+        version
+        if isinstance(version, str)
+        else current_write_version(SchemaFamily.DIFF)
+    )
     validate_with_schema(
         data,
-        "trust_diff.schema.json",
+        schema_resource_name(SchemaFamily.DIFF, resource_version),
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
