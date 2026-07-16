@@ -57,6 +57,10 @@ class UnsupportedSchemaVersionError(TrustLabError):
     """An artifact declares a schema version the analyzer cannot read."""
 
 
+class ComparisonAcknowledgementError(TrustLabError):
+    """A confounded comparison requires an explicit caller acknowledgement."""
+
+
 class MissingFileError(TrustLabError):
     """A requested input file does not exist."""
 

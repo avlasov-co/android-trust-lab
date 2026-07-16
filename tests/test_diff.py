@@ -58,7 +58,10 @@ def test_diff_observer_change_is_separate_from_target_mutation():
     )
     diff = make_diff(base, compare)
     dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
-    assert "observer_privilege" in dimensions
+    assert diff["comparison"]["axis"] == "same_state_observer_change"
+    assert diff["comparison"]["visibility_context_changed"] is True
+    assert "observer_privilege" not in dimensions
+    assert "observer_uid_root" not in dimensions
     assert "su_binary_visibility" not in dimensions
 
 
@@ -70,7 +73,7 @@ def test_diff_keeps_su_invocation_tested_separate_from_result():
         "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json"
     )
 
-    diff = make_diff(base, compare)
+    diff = make_diff(base, compare, allow_mixed=True)
     dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
 
     assert "su_invocation_tested" in dimensions
@@ -84,7 +87,7 @@ def test_diff_does_not_emit_fake_visibility_or_physical_dimensions():
     compare = load_report(
         "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json"
     )
-    diff = make_diff(base, compare)
+    diff = make_diff(base, compare, allow_mixed=True)
     dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
     assert "app_visible_state" not in dimensions
     assert "root_visible_state" not in dimensions
@@ -129,7 +132,7 @@ def test_cross_version_diff_uses_explicit_migration_chain():
 
     diff = make_diff(v1, v2)
     assert diff["changed_dimensions"] == []
-    assert len(diff["unchanged_dimensions"]) == 29
+    assert len(diff["unchanged_dimensions"]) == 27
     current = migrate_report_to_current(v2)
     provenance = diff["provenance"]
     compatibility = diff["compatibility"]
@@ -317,7 +320,7 @@ def test_diff_rejects_account_name_in_magisk_version_dimension():
     compare = load_report(
         "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json"
     )
-    forged = make_diff(base, compare)
+    forged = make_diff(base, compare, allow_mixed=True)
     version = next(
         item
         for item in forged["changed_dimensions"]

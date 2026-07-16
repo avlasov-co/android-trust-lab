@@ -1,6 +1,6 @@
-# Trust Diff atldiff-c2badc95a1977285d5e3936b152c300c
+# Trust Diff atldiff-6799804da774a533e8aef89467119486
 
-1 dimensions changed, 28 dimensions unchanged.
+1 dimensions changed, 26 dimensions unchanged.
 
 ## Compatibility
 
@@ -9,6 +9,14 @@
 - Base migrations: none
 - Compare migrations: none
 - Warnings: none
+
+## Comparison
+
+- Axis: `incomparable`
+- Comparability: `incomparable`
+- Reasons: target_identity_missing, target_class_matches, state_identity_missing, experiment_differs, protocol_matches, observer_matches, observer_privilege_matches, observer_effective_uid_matches, report_schema_matches, environment_context_missing, measurement_differs
+
+> **Warning:** Required comparison metadata is missing; inputs are incomparable.
 
 | Dimension | Severity | Before | After |
 |---|---|---|---|

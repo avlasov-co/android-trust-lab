@@ -13,7 +13,6 @@ TRUST_DIMENSIONS = [
     "system_mount_resolution",
     "dynamic_partition_state",
     "apex_mount_set",
-    "observer_uid_root",
     "root_shell_availability",
     "su_binary_visibility",
     "su_invocation_tested",
@@ -32,7 +31,13 @@ TRUST_DIMENSIONS = [
     "physical_device_state",
     "app_visible_state",
     "root_visible_state",
+]
+
+VISIBILITY_CONTEXT_FIELDS = [
+    "observer_type",
     "observer_privilege",
+    "observer_effective_uid_is_root",
+    "protocol",
 ]
 
 # These dimensions are part of the trust model, but should only be diffed when

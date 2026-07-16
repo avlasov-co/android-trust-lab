@@ -13,6 +13,7 @@ from .dataset_manifest import verify_dataset_manifest
 from .diff import make_diff
 from .exceptions import (
     CollectionError,
+    ComparisonAcknowledgementError,
     InvalidJSONError,
     MissingFileError,
     NormalizationError,
@@ -39,6 +40,7 @@ EXIT_NORMALIZATION_FAILURE = 8
 EXIT_OUTPUT_WRITE_FAILURE = 9
 
 EXPECTED_ERROR_EXIT_CODES = (
+    (ComparisonAcknowledgementError, EXIT_USAGE_ERROR),
     (MissingFileError, EXIT_MISSING_FILE),
     (InvalidJSONError, EXIT_INVALID_JSON),
     (UnsupportedSchemaVersionError, EXIT_UNSUPPORTED_SCHEMA),
@@ -119,7 +121,7 @@ def cmd_diff(args: argparse.Namespace) -> int:
     base = load_json(args.base)
     compare = load_json(args.compare)
     _require_distinct_output(args.output, args.base, args.compare)
-    diff = make_diff(base, compare)
+    diff = make_diff(base, compare, allow_mixed=args.allow_mixed)
     validate_diff(diff)
     write_json(diff, args.output)
     return 0
@@ -232,6 +234,11 @@ def build_parser() -> argparse.ArgumentParser:
     diff.add_argument("--base", required=True)
     diff.add_argument("--compare", required=True)
     diff.add_argument("--output", required=True)
+    diff.add_argument(
+        "--allow-mixed",
+        action="store_true",
+        help="Acknowledge a comparison where target state and observer context both change",
+    )
     diff.set_defaults(func=cmd_diff)
 
     migrate = sub.add_parser(

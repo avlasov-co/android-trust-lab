@@ -15,13 +15,14 @@ import os
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab import __version__
 from trustlab.collection_manifest import CollectionManifest
+from trustlab.comparison import attach_comparison_context
 from trustlab.dataset_manifest import (
     MAX_DATASET_ARTIFACT_BYTES,
     MAX_DATASET_JSON_BYTES,
@@ -278,6 +279,14 @@ def sample_report(
             media_type=raw["media_type"],
             generator_name="trustlab",
         )
+    report = attach_comparison_context(
+        report,
+        target_pseudonym=(
+            f"target-{sample['origin_classification'].replace('_', '-')}-{sample['target_type']}"
+        ),
+        state_id=f"state-{sample['experiment_id'].lower().replace('_', '-')}",
+        environment_context=sample["origin_classification"],
+    )
     validate_report(report)
     return report
 
@@ -326,28 +335,51 @@ def diff_markdown(
         "These diffs are generated from checked-in sample reports with `tools/generate_report.py`. They are useful for validating the analyzer pipeline, not for claiming hardware-backed trust behavior.",
         "",
     ]
-    for meta, diff in diff_entries:
-        compatibility = diff["compatibility"]
-        versions = compatibility["input_schema_versions"]
-        lines += [
-            f"## {meta['title']}",
-            "",
-            diff["summary"],
-            "",
-            f"Input schemas: base `{versions['base']}`, compare `{versions['compare']}`; canonical comparison schema: `{compatibility['canonical_comparison_schema_version']}`; migration mode: `{compatibility['migration_mode']}`.",
-            "",
-            "| Dimension | Severity | Before | After | Interpretation |",
-            "|---|---|---|---|---|",
+    axis_order = (
+        "same_target_state_change",
+        "same_state_observer_change",
+        "repeat_measurement",
+        "different_target_context",
+        "mixed_change",
+        "incomparable",
+    )
+    for axis in axis_order:
+        grouped = [
+            (meta, diff)
+            for meta, diff in diff_entries
+            if diff["comparison"]["axis"] == axis
         ]
-        for item in diff["changed_dimensions"]:
-            lines.append(
-                f"| {item['dimension']} | {item['severity']} | `{fmt(item['before'])}` | `{fmt(item['after'])}` | {item['interpretation']} |"
-            )
-        if not diff["changed_dimensions"]:
-            lines.append(
-                "| none | info | `unchanged` | `unchanged` | No measured default dimension changed. |"
-            )
-        lines.append("")
+        if not grouped:
+            continue
+        lines += [f"## Comparison axis: `{axis}`", ""]
+        for meta, diff in grouped:
+            compatibility = diff["compatibility"]
+            comparison = diff["comparison"]
+            versions = compatibility["input_schema_versions"]
+            lines += [
+                f"### {meta['title']}",
+                "",
+                diff["summary"],
+                "",
+                f"Comparability: `{comparison['comparability']}`. Reasons: {', '.join(comparison['reasons'])}.",
+                f"Input schemas: base `{versions['base']}`, compare `{versions['compare']}`; canonical comparison schema: `{compatibility['canonical_comparison_schema_version']}`; migration mode: `{compatibility['migration_mode']}`.",
+                "",
+            ]
+            for warning in comparison["warnings"]:
+                lines += [f"> **Comparison warning:** `{warning}`", ""]
+            lines += [
+                "| Dimension | Severity | Before | After | Interpretation |",
+                "|---|---|---|---|---|",
+            ]
+            for item in diff["changed_dimensions"]:
+                lines.append(
+                    f"| {item['dimension']} | {item['severity']} | `{fmt(item['before'])}` | `{fmt(item['after'])}` | {item['interpretation']} |"
+                )
+            if not diff["changed_dimensions"]:
+                lines.append(
+                    "| none | info | `unchanged` | `unchanged` | No measured default dimension changed. |"
+                )
+            lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -373,8 +405,6 @@ def dimension_value(report: dict[str, Any], dimension: str) -> str:
         return presence(evidence_value(report["magisk_state"]["binary_visibility"]))
     if dimension == "property_consistency":
         return fmt(evidence_value(report["properties"]["security"]))
-    if dimension == "observer_privilege":
-        return cast(str, report["observer"]["privilege_level"])
     return "unknown"
 
 
@@ -397,7 +427,6 @@ def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
         "root_shell_availability",
         "magisk_binary_visibility",
         "property_consistency",
-        "observer_privilege",
     ]
     lines = [
         "# Trust Dimensions Matrix",
@@ -486,6 +515,9 @@ def build_outputs() -> dict[Path, bytes]:
         diff = make_diff(
             reports_by_sample[derivation["base_sample_id"]],
             reports_by_sample[derivation["compare_sample_id"]],
+            allow_mixed=(
+                derivation["derivation_id"] == "rooted-adb-vs-magisk-root-collector"
+            ),
         )
         validate_diff(diff)
         diff_payload = stable_pretty_json_bytes(diff)

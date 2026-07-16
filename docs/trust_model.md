@@ -41,9 +41,9 @@ Canonical dimensions:
 - `physical_device_state`
 - `app_visible_state`
 - `root_visible_state`
-- `observer_privilege`
-
 `app_visible_state` and `root_visible_state` are contextual dimensions. They should only be diffed when reports contain real app-probe or root-probe payloads. They must not be inferred only from `observer.observer_type`, because that creates fake signal when the observer changes.
+
+Observer type, privilege, effective UID, and protocol are visibility-context fields, not target-state dimensions. Diff schema `2.5.0` records them under `comparison.context` and uses them to classify observer changes without reporting them as target mutation.
 
 ## Signal sources
 

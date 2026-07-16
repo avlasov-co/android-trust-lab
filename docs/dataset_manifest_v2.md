@@ -41,7 +41,7 @@ manifest schema is `dataset_manifest_v2_0_0.schema.json`. Canonical packaged
 copies live under `analyzer/trustlab/schemas/`; byte-identical collector
 compatibility copies live under `collector/schema/`.
 
-The checked-in v2 profile binds report schema `6.0.0` and diff schema `2.4.0`.
+The checked-in v2 profile binds report schema `6.0.0` and diff schema `2.5.0`.
 Freshness regeneration carries each source artifact's structured provenance into
 the report and verifies its declared byte size and SHA-256 before parsing.
 The v2 manifest reader also accepts internally consistent historical role

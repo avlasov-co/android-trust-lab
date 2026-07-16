@@ -1,8 +1,8 @@
 {
   "normalize": {
-    "report_id": "atlrep-76d9dacb2d6c40a92e039320d4533c10",
+    "report_id": "atlrep-a540d9e72f1fde287674e580c4feb5f4",
     "collection_event_id": "atlevent-7b188e7fcb6a15f6ef6153f5553179a3",
-    "content_digest": "ed29e4608144b53a7dbdf6cbe01b13385e4013a91d167423998e1d3c677318fa",
+    "content_digest": "43ee444fc1343e649bc6efcb7567acd579560296221a9076ce0d1bc7e33ea055",
     "collection_timestamp": "2026-01-02T03:04:05Z",
     "experiment_id": "E10_golden",
     "target": {
@@ -51,8 +51,8 @@
     ]
   },
   "diff": {
-    "diff_id": "atldiff-c2badc95a1977285d5e3936b152c300c",
-    "summary": "1 dimensions changed, 28 dimensions unchanged.",
+    "diff_id": "atldiff-6799804da774a533e8aef89467119486",
+    "summary": "1 dimensions changed, 26 dimensions unchanged.",
     "compatibility": {
       "input_schema_versions": {
         "base": "6.0.0",
@@ -65,6 +65,28 @@
       "warnings": [],
       "canonical_comparison_schema_version": "6.0.0",
       "migration_mode": "temporary_in_memory"
+    },
+    "comparison": {
+      "axis": "incomparable",
+      "comparability": "incomparable",
+      "reasons": [
+        "target_identity_missing",
+        "target_class_matches",
+        "state_identity_missing",
+        "experiment_differs",
+        "protocol_matches",
+        "observer_matches",
+        "observer_privilege_matches",
+        "observer_effective_uid_matches",
+        "report_schema_matches",
+        "environment_context_missing",
+        "measurement_differs"
+      ],
+      "warnings": [
+        "insufficient_metadata_for_comparison"
+      ],
+      "acknowledgement": "not_required",
+      "visibility_context_changed": false
     },
     "changed_dimensions": [
       {

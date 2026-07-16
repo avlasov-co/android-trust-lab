@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .collection_manifest import CollectionManifest
+from .comparison import attach_comparison_context
 from .diff import make_diff
 from .exceptions import (
     CollectionError,
@@ -380,13 +381,27 @@ def _validate_freshness(
                 "dataset report producer does not match report provenance"
             )
         if stable_pretty_json_bytes(expected) != payloads[report_id]:
-            raise CollectionError("normalized dataset report is stale")
+            expected = attach_comparison_context(
+                expected,
+                target_pseudonym=(
+                    f"target-{sample['origin_classification'].replace('_', '-')}-"
+                    f"{sample['target_type']}"
+                ),
+                state_id=f"state-{sample['experiment_id'].lower().replace('_', '-')}",
+                environment_context=sample["origin_classification"],
+            )
+            validate_report(expected)
+            if stable_pretty_json_bytes(expected) != payloads[report_id]:
+                raise CollectionError("normalized dataset report is stale")
         reports[sample["sample_id"]] = expected
 
     for derivation in manifest["derived_diffs"]:
         expected = make_diff(
             reports[derivation["base_sample_id"]],
             reports[derivation["compare_sample_id"]],
+            allow_mixed=(
+                derivation["derivation_id"] == "rooted-adb-vs-magisk-root-collector"
+            ),
         )
         validate_diff(expected)
         if stable_pretty_json_bytes(expected) != payloads[derivation["artifact_id"]]:

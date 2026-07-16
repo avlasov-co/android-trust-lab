@@ -11,6 +11,7 @@ import pytest
 from trustlab import cli
 from trustlab.canonical_json import framed_content_digest
 from trustlab.collection_manifest import CollectionManifest
+from trustlab.comparison import attach_comparison_context
 from trustlab.dataset_manifest import (
     MAX_DATASET_ARTIFACT_BYTES,
     parse_dataset_json,
@@ -172,7 +173,7 @@ def test_current_dataset_verifies_as_a_closed_fresh_bundle():
     assert result.diff_count == 4
 
 
-def test_observed_manifest_dataset_report_uses_the_exact_manifest_normalization():
+def test_observed_manifest_dataset_report_adds_declared_comparison_context():
     manifest_path = (
         ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
     )
@@ -183,6 +184,12 @@ def test_observed_manifest_dataset_report_uses_the_exact_manifest_normalization(
 
     checked = load_json(report_path)
     expected = normalize_collection_manifest(manifest_path)
+    expected = attach_comparison_context(
+        expected,
+        target_pseudonym="target-synthetic-avd",
+        state_id="state-e05-magisk-collector",
+        environment_context="synthetic",
+    )
     assert checked == expected
     assert checked["raw_artifacts"][0]["collector_name"] == "trustlab-magisk"
     assert (

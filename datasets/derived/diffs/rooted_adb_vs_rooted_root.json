@@ -1,41 +1,64 @@
 {
   "base_report": {
-    "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-    "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+    "content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+    "report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
     "schema_version": "6.0.0"
   },
-  "changed_dimensions": [
-    {
-      "after": {
-        "status": "observed",
-        "value": true
-      },
-      "before": {
-        "status": "observed_absent",
-        "value": false
-      },
-      "dimension": "observer_uid_root",
-      "evidence_paths": [
-        "root_state.observer_effective_uid_is_root"
-      ],
-      "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
-    },
-    {
-      "after": "root",
-      "before": "shell",
-      "dimension": "observer_privilege",
-      "evidence_paths": [
-        "observer.privilege_level"
-      ],
-      "interpretation": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
-      "severity": "info"
-    }
-  ],
+  "changed_dimensions": [],
   "compare_report": {
-    "content_digest": "1d433b0b29f3cf96db3b4e07c3d3bc99fc68e3998628c1ee47331ecf18ab51a7",
-    "report_id": "atlrep-f7d8abf9e66b43dfd00477381da00e37",
+    "content_digest": "8641fffdd7aca8aa6c29bf313a27c73d7b23c100f0f2f86906851298303ca7d7",
+    "report_id": "atlrep-b9d6c3e7ccc7360a3ec73262a3f68285",
     "schema_version": "6.0.0"
+  },
+  "comparison": {
+    "acknowledgement": "not_required",
+    "axis": "same_state_observer_change",
+    "comparability": "comparable",
+    "context": {
+      "base": {
+        "environment_context": "synthetic",
+        "experiment_id": "E02_rooted_avd",
+        "measurement_id": "atlevent-1e942d7afbe785ee101fd1ce35daf878",
+        "observer": "adb_shell",
+        "observer_effective_uid_is_root": "false",
+        "observer_privilege": "shell",
+        "protocol": "adb",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e02-rooted-avd",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      },
+      "compare": {
+        "environment_context": "synthetic",
+        "experiment_id": "E02_rooted_avd",
+        "measurement_id": "atlevent-a7183482b0296965db640dee0367b85d",
+        "observer": "root_collector",
+        "observer_effective_uid_is_root": "true",
+        "observer_privilege": "root",
+        "protocol": "root",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e02-rooted-avd",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      }
+    },
+    "reasons": [
+      "target_identity_matches",
+      "target_class_matches",
+      "state_identity_matches",
+      "experiment_matches",
+      "protocol_differs",
+      "observer_differs",
+      "observer_privilege_differs",
+      "observer_effective_uid_differs",
+      "report_schema_matches",
+      "environment_context_matches",
+      "measurement_differs"
+    ],
+    "visibility_context_changed": true,
+    "warnings": [
+      "observer_context_changed_visibility_may_differ"
+    ]
   },
   "compatibility": {
     "canonical_comparison_schema_version": "6.0.0",
@@ -79,39 +102,39 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "decdb24c95e843170073303c85be269de5493f80e5337a46de7e2e2e9846a16f",
-  "diff_id": "atldiff-decdb24c95e843170073303c85be269d",
+  "content_digest": "42bc26bf4820ce1916dd01f59970c82bbb1e6645e5edbc7b838b6c78ab7eb22e",
+  "diff_id": "atldiff-42bc26bf4820ce1916dd01f59970c82b",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-        "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+        "content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+        "report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-      "original_document_digest": "6276f339a4c2d671e62ffab161ff92aaf1579d4b273f25885f61c1cd69e6f859",
-      "original_report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+      "original_content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+      "original_document_digest": "ed18e313ffe09b89624dc91395ed46176e62774dd10be21f88b95c36296503c0",
+      "original_report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
       "original_schema_version": "6.0.0"
     },
     "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "1d433b0b29f3cf96db3b4e07c3d3bc99fc68e3998628c1ee47331ecf18ab51a7",
-        "report_id": "atlrep-f7d8abf9e66b43dfd00477381da00e37",
+        "content_digest": "8641fffdd7aca8aa6c29bf313a27c73d7b23c100f0f2f86906851298303ca7d7",
+        "report_id": "atlrep-b9d6c3e7ccc7360a3ec73262a3f68285",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "1d433b0b29f3cf96db3b4e07c3d3bc99fc68e3998628c1ee47331ecf18ab51a7",
-      "original_document_digest": "2479cd5af1691a30a5483bdb1d910425b36fc36eb9f97c8881f063e4009ca9aa",
-      "original_report_id": "atlrep-f7d8abf9e66b43dfd00477381da00e37",
+      "original_content_digest": "8641fffdd7aca8aa6c29bf313a27c73d7b23c100f0f2f86906851298303ca7d7",
+      "original_document_digest": "f5e9bd90fd9dc2604e7a157a07931a4e1099902a74dcef229316227c91a1ae1e",
+      "original_report_id": "atlrep-b9d6c3e7ccc7360a3ec73262a3f68285",
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.4.0",
-  "summary": "2 dimensions changed, 27 dimensions unchanged.",
+  "schema_version": "2.5.0",
+  "summary": "0 dimensions changed, 27 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",

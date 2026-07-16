@@ -23,7 +23,7 @@
   },
   "collection_event_id": "atlevent-1e942d7afbe785ee101fd1ce35daf878",
   "collection_timestamp": "2026-04-25T15:07:21Z",
-  "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+  "content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -122,6 +122,18 @@
       "warnings": [
         "adapter warning 001 withheld"
       ]
+    },
+    "org.androidtrustlab.comparison-context": {
+      "environment_context": "synthetic",
+      "experiment_id": "E02_rooted_avd",
+      "measurement_id": "atlevent-1e942d7afbe785ee101fd1ce35daf878",
+      "observer": "adb_shell",
+      "observer_privilege": "shell",
+      "protocol": "adb",
+      "report_schema_version": "6.0.0",
+      "state_id": "state-e02-rooted-avd",
+      "target_class": "avd",
+      "target_pseudonym": "target-synthetic-avd"
     }
   },
   "limitations": {
@@ -893,7 +905,7 @@
       "status": "observed"
     }
   ],
-  "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+  "report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
   "root_state": {
     "limitations": [
       "independent_root_probe_not_collected",

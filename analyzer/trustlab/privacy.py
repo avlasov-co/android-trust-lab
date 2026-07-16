@@ -8,6 +8,7 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from .comparison import observer_protocol
 from .exceptions import SchemaValidationError
 
 _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:+/@-]{1,255}$", flags=re.ASCII)
@@ -853,6 +854,64 @@ def _validate_migration_extension(extension: object) -> None:
     validate_portable_historical_report(nested)
 
 
+def _validate_comparison_context_extension(
+    report: dict[str, Any], extension: object
+) -> None:
+    fields = {
+        "environment_context",
+        "experiment_id",
+        "measurement_id",
+        "observer",
+        "observer_privilege",
+        "protocol",
+        "report_schema_version",
+        "state_id",
+        "target_class",
+        "target_pseudonym",
+    }
+    if not isinstance(extension, dict) or set(extension) != fields:
+        raise SchemaValidationError("report comparison context is not portable")
+    observer = report.get("observer", {})
+    target = report.get("target", {})
+    expected = {
+        "experiment_id": report.get("experiment_id"),
+        "measurement_id": report.get("collection_event_id"),
+        "observer": observer.get("observer_type")
+        if isinstance(observer, dict)
+        else None,
+        "observer_privilege": (
+            observer.get("privilege_level") if isinstance(observer, dict) else None
+        ),
+        "protocol": observer_protocol(
+            observer.get("observer_type") if isinstance(observer, dict) else None
+        ),
+        "report_schema_version": report.get("schema_version"),
+        "target_class": target.get("target_type") if isinstance(target, dict) else None,
+    }
+    if any(extension.get(name) != value for name, value in expected.items()):
+        raise SchemaValidationError(
+            "report comparison context does not bind report metadata"
+        )
+    target_pseudonym = extension.get("target_pseudonym")
+    state_id = extension.get("state_id")
+    environment = extension.get("environment_context")
+    if not isinstance(target_pseudonym, str) or (
+        target_pseudonym != "unknown"
+        and re.fullmatch(r"target-[a-z0-9][a-z0-9-]{2,127}", target_pseudonym) is None
+    ):
+        raise SchemaValidationError("report target pseudonym is not portable")
+    if not isinstance(state_id, str) or (
+        state_id != "unknown"
+        and re.fullmatch(r"state-[a-z0-9][a-z0-9-]{1,127}", state_id) is None
+    ):
+        raise SchemaValidationError("report state identifier is not portable")
+    if not isinstance(environment, str) or (
+        environment != "unknown"
+        and re.fullmatch(r"[a-z][a-z0-9_]{1,63}", environment) is None
+    ):
+        raise SchemaValidationError("report environment context is not portable")
+
+
 def _validate_report_extensions(report: dict[str, Any]) -> None:
     extensions = report.get("extensions")
     if not isinstance(extensions, dict):
@@ -860,6 +919,7 @@ def _validate_report_extensions(report: dict[str, Any]) -> None:
     allowed = {
         "org.androidtrustlab.adapter",
         "org.androidtrustlab.collection",
+        "org.androidtrustlab.comparison-context",
         "org.androidtrustlab.migration",
         "org.androidtrustlab.migration-v3",
         "org.androidtrustlab.migration-v4",
@@ -872,6 +932,10 @@ def _validate_report_extensions(report: dict[str, Any]) -> None:
         _validate_adapter_extension(extensions["org.androidtrustlab.adapter"])
     if "org.androidtrustlab.collection" in extensions:
         _validate_collection_extension(extensions["org.androidtrustlab.collection"])
+    if "org.androidtrustlab.comparison-context" in extensions:
+        _validate_comparison_context_extension(
+            report, extensions["org.androidtrustlab.comparison-context"]
+        )
     for key, extension in extensions.items():
         if key.startswith("org.androidtrustlab.migration"):
             _validate_migration_extension(extension)
@@ -1632,19 +1696,97 @@ def _validate_diff_compatibility_portability(diff: dict[str, Any]) -> None:
         raise SchemaValidationError("diff compatibility is not portable")
 
 
-def validate_portable_diff(diff: object) -> None:
-    """Reject sensitive or non-semantic values before portable diff output."""
-
-    _reject_sensitive_strings(diff, artifact="diff")
-    if not isinstance(diff, dict) or diff.get("schema_version") not in {
-        "2.3.0",
-        "2.4.0",
+def _validate_diff_comparison_portability(diff: dict[str, Any]) -> None:
+    comparison = diff.get("comparison")
+    if not isinstance(comparison, dict) or set(comparison) != {
+        "acknowledgement",
+        "axis",
+        "comparability",
+        "context",
+        "reasons",
+        "visibility_context_changed",
+        "warnings",
     }:
-        return
-    _validate_diff_provenance(diff)
-    if diff.get("schema_version") == "2.4.0":
-        _validate_diff_compatibility_portability(diff)
+        raise SchemaValidationError("diff comparison classification is not portable")
+    reason_fields = {
+        "environment_context",
+        "experiment",
+        "measurement",
+        "observer",
+        "observer_effective_uid",
+        "observer_privilege",
+        "protocol",
+        "report_schema",
+        "state_identity",
+        "target_class",
+        "target_identity",
+    }
+    allowed_reasons = {
+        f"{field}_{relationship}"
+        for field in reason_fields
+        for relationship in {"differs", "matches", "missing"}
+    }
+    context = comparison.get("context")
+    context_fields = {
+        "environment_context",
+        "experiment_id",
+        "measurement_id",
+        "observer",
+        "observer_effective_uid_is_root",
+        "observer_privilege",
+        "protocol",
+        "report_schema_version",
+        "state_id",
+        "target_class",
+        "target_pseudonym",
+    }
+    contexts_portable = (
+        isinstance(context, dict)
+        and set(context)
+        == {
+            "base",
+            "compare",
+        }
+        and all(
+            isinstance(context.get(side), dict)
+            and set(context[side]) == context_fields
+            and all(isinstance(value, str) for value in context[side].values())
+            for side in ("base", "compare")
+        )
+    )
+    if (
+        comparison.get("axis")
+        not in {
+            "same_target_state_change",
+            "same_state_observer_change",
+            "repeat_measurement",
+            "different_target_context",
+            "mixed_change",
+            "incomparable",
+        }
+        or comparison.get("comparability")
+        not in {"comparable", "limited", "incomparable"}
+        or comparison.get("acknowledgement") not in {"allow_mixed", "not_required"}
+        or not isinstance(comparison.get("visibility_context_changed"), bool)
+        or not isinstance(comparison.get("reasons"), list)
+        or not set(comparison["reasons"]) <= allowed_reasons
+        or not isinstance(comparison.get("warnings"), list)
+        or not set(comparison["warnings"])
+        <= {
+            "different_target_context_limits_attribution",
+            "insufficient_metadata_for_comparison",
+            "mixed_state_and_observer_change_acknowledged",
+            "observer_context_changed_visibility_may_differ",
+        }
+        or not contexts_portable
+    ):
+        raise SchemaValidationError("diff comparison classification is not portable")
+
+
+def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
     all_dimensions = set(_DIFF_DIMENSION_PATHS)
+    if diff.get("schema_version") == "2.5.0":
+        all_dimensions -= {"observer_privilege", "observer_uid_root"}
     changed = diff.get("changed_dimensions", [])
     changed_names: list[str] = []
     for item in changed if isinstance(changed, list) else []:
@@ -1675,6 +1817,13 @@ def validate_portable_diff(diff: object) -> None:
             raise SchemaValidationError("diff signal list is not portable")
     if set(changed_names) & set(unchanged):
         raise SchemaValidationError("diff changed and unchanged dimensions overlap")
+    if (
+        diff.get("schema_version") == "2.5.0"
+        and (set(changed_names) | set(unchanged)) != all_dimensions
+    ):
+        raise SchemaValidationError(
+            "diff target-state dimensions do not form a complete partition"
+        )
     if diff.get("summary") != (
         f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions unchanged."
     ):
@@ -1684,6 +1833,24 @@ def validate_portable_diff(diff: object) -> None:
             raise SchemaValidationError("diff confidence path is not portable")
         _validate_diff_confidence(item.get("before"))
         _validate_diff_confidence(item.get("after"))
+
+
+def validate_portable_diff(diff: object) -> None:
+    """Reject sensitive or non-semantic values before portable diff output."""
+
+    _reject_sensitive_strings(diff, artifact="diff")
+    if not isinstance(diff, dict) or diff.get("schema_version") not in {
+        "2.3.0",
+        "2.4.0",
+        "2.5.0",
+    }:
+        return
+    _validate_diff_provenance(diff)
+    if diff.get("schema_version") in {"2.4.0", "2.5.0"}:
+        _validate_diff_compatibility_portability(diff)
+    if diff.get("schema_version") == "2.5.0":
+        _validate_diff_comparison_portability(diff)
+    _validate_diff_dimensions_portability(diff)
 
 
 def _validate_manifest_identity_fields(manifest: dict[str, Any]) -> None:

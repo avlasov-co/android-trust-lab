@@ -1,7 +1,7 @@
 {
   "base_report": {
-    "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-    "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+    "content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+    "report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
     "schema_version": "6.0.0"
   },
   "changed_dimensions": [
@@ -177,22 +177,6 @@
         "value": true
       },
       "before": {
-        "status": "observed_absent",
-        "value": false
-      },
-      "dimension": "observer_uid_root",
-      "evidence_paths": [
-        "root_state.observer_effective_uid_is_root"
-      ],
-      "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
-    },
-    {
-      "after": {
-        "status": "observed",
-        "value": true
-      },
-      "before": {
         "status": "not_collected",
         "value": null
       },
@@ -346,22 +330,62 @@
       ],
       "interpretation": "Trust-state dimension changed between reports.",
       "severity": "info"
-    },
-    {
-      "after": "root",
-      "before": "shell",
-      "dimension": "observer_privilege",
-      "evidence_paths": [
-        "observer.privilege_level"
-      ],
-      "interpretation": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
-      "severity": "info"
     }
   ],
   "compare_report": {
-    "content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
-    "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+    "content_digest": "2a049349ebee1e887384aaf629f632959cfb7aaa77f579fec7a6b65b100a236a",
+    "report_id": "atlrep-4f395129587b23cac0a448b8f4821a55",
     "schema_version": "6.0.0"
+  },
+  "comparison": {
+    "acknowledgement": "allow_mixed",
+    "axis": "mixed_change",
+    "comparability": "limited",
+    "context": {
+      "base": {
+        "environment_context": "synthetic",
+        "experiment_id": "E02_rooted_avd",
+        "measurement_id": "atlevent-1e942d7afbe785ee101fd1ce35daf878",
+        "observer": "adb_shell",
+        "observer_effective_uid_is_root": "false",
+        "observer_privilege": "shell",
+        "protocol": "adb",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e02-rooted-avd",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      },
+      "compare": {
+        "environment_context": "synthetic",
+        "experiment_id": "E05_magisk_collector",
+        "measurement_id": "atlevent-88badbff5fbeea1241eca697f9158baa",
+        "observer": "root_collector",
+        "observer_effective_uid_is_root": "true",
+        "observer_privilege": "root",
+        "protocol": "root",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e05-magisk-collector",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      }
+    },
+    "reasons": [
+      "target_identity_matches",
+      "target_class_matches",
+      "state_identity_differs",
+      "experiment_differs",
+      "protocol_differs",
+      "observer_differs",
+      "observer_privilege_differs",
+      "observer_effective_uid_differs",
+      "report_schema_matches",
+      "environment_context_matches",
+      "measurement_differs"
+    ],
+    "visibility_context_changed": true,
+    "warnings": [
+      "mixed_state_and_observer_change_acknowledged"
+    ]
   },
   "compatibility": {
     "canonical_comparison_schema_version": "6.0.0",
@@ -405,39 +429,39 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "b09bb26a7dd04dced3efa46cf28ff465a3b8e1c6ec940797f8b3d05a074c1647",
-  "diff_id": "atldiff-b09bb26a7dd04dced3efa46cf28ff465",
+  "content_digest": "b23ecc0e75afcce7e9964a4abeacb334b98ee186a74e8791bd9ddc719dc8ca32",
+  "diff_id": "atldiff-b23ecc0e75afcce7e9964a4abeacb334",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-        "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+        "content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+        "report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
-      "original_document_digest": "6276f339a4c2d671e62ffab161ff92aaf1579d4b273f25885f61c1cd69e6f859",
-      "original_report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+      "original_content_digest": "ef265eea160d25549467a8cc26d83a24d26f7032bab0b7cd6bfa5993b0fa59b4",
+      "original_document_digest": "ed18e313ffe09b89624dc91395ed46176e62774dd10be21f88b95c36296503c0",
+      "original_report_id": "atlrep-e97c8dde15e815410c8ae7368d849de6",
       "original_schema_version": "6.0.0"
     },
     "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
-        "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+        "content_digest": "2a049349ebee1e887384aaf629f632959cfb7aaa77f579fec7a6b65b100a236a",
+        "report_id": "atlrep-4f395129587b23cac0a448b8f4821a55",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
-      "original_document_digest": "78adb9d56de7dc5779a5c0c39fd123ab06878d5b2b634ceab4f52ddd03fa0571",
-      "original_report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+      "original_content_digest": "2a049349ebee1e887384aaf629f632959cfb7aaa77f579fec7a6b65b100a236a",
+      "original_document_digest": "a03ca693134596d89bedbc84e8397d262df00e039f0d038f7af791153a7b22f2",
+      "original_report_id": "atlrep-4f395129587b23cac0a448b8f4821a55",
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.4.0",
-  "summary": "13 dimensions changed, 16 dimensions unchanged.",
+  "schema_version": "2.5.0",
+  "summary": "11 dimensions changed, 16 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",

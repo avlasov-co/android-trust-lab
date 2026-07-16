@@ -130,6 +130,8 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     assert diff_document["diff_id"] == expected_diff["diff_id"]
     assert diff_document["summary"] == expected_diff["summary"]
     assert diff_document["compatibility"] == expected_diff["compatibility"]
+    for key, value in expected_diff["comparison"].items():
+        assert diff_document["comparison"][key] == value
     projected_changes = [
         {
             "dimension": change["dimension"],

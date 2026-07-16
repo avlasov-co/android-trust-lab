@@ -215,10 +215,21 @@ def report_content_projection(report: dict[str, Any]) -> dict[str, Any]:
             ),
         )
     )
-    return {
+    projection = {
         **{field: deepcopy(report[field]) for field in REPORT_EVIDENCE_FIELDS},
         "raw_artifacts": raw_artifacts,
     }
+    comparison_context = report.get("extensions", {}).get(
+        "org.androidtrustlab.comparison-context"
+    )
+    if comparison_context is not None:
+        bound_context = deepcopy(comparison_context)
+        if isinstance(bound_context, dict):
+            # The report ID already binds collection_event_id. Keep the evidence
+            # digest stable across repeat measurements of identical evidence.
+            bound_context.pop("measurement_id", None)
+        projection["comparison_context"] = bound_context
+    return projection
 
 
 def calculate_report_content_digest(report: dict[str, Any]) -> str:

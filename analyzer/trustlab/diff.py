@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .canonical_json import framed_content_digest
+from .comparison import classify_comparison
 from .compatibility import (
     SchemaFamily,
     current_write_version,
@@ -29,7 +30,6 @@ DIMENSION_PATHS = {
     "system_mount_resolution": ["mounts", "system_resolution"],
     "dynamic_partition_state": ["mounts", "dynamic_partitions"],
     "apex_mount_set": ["mounts", "apex_set"],
-    "observer_uid_root": ["root_state", "observer_effective_uid_is_root"],
     "root_shell_availability": ["root_state", "root_shell_available"],
     "su_binary_visibility": ["root_state", "su_binary_observed"],
     "su_invocation_tested": ["root_state", "su_invocation_tested"],
@@ -48,7 +48,6 @@ DIMENSION_PATHS = {
     "magisk_command_status": ["magisk_state", "command_status"],
     "property_consistency": ["properties", "security"],
     "emulator_state": ["emulator_state", "is_emulator"],
-    "observer_privilege": ["observer", "privilege_level"],
 }
 
 
@@ -102,7 +101,12 @@ def interpretation(dimension: str) -> str:
     return messages.get(dimension, "Trust-state dimension changed between reports.")
 
 
-def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
+def make_diff(
+    base: dict[str, Any],
+    compare: dict[str, Any],
+    *,
+    allow_mixed: bool = False,
+) -> dict[str, Any]:
     base, base_provenance, base_compatibility = prepare_report_for_comparison(
         base, side="base"
     )
@@ -112,6 +116,7 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
     common_version = base.get("schema_version")
     if compare.get("schema_version") != common_version:
         raise ValueError("report migration did not produce one common schema version")
+    comparison = classify_comparison(base, compare, allow_mixed=allow_mixed)
     provenance = {
         "common_report_schema_version": common_version,
         "base": base_provenance,
@@ -188,6 +193,7 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
         "confidence_changes": confidence_changes,
         "summary": summary,
         "compatibility": compatibility,
+        "comparison": comparison,
         "provenance": provenance,
     }
     content_digest = framed_content_digest(

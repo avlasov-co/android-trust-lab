@@ -30,7 +30,7 @@
     "raw_artifact": "1.0.0",
     "collection_manifest": "1.0.0",
     "normalized_report": "6.0.0",
-    "derived_diff": "2.4.0"
+    "derived_diff": "2.5.0"
   },
   "aggregate_limitations": [
     "Schema-only fixture."

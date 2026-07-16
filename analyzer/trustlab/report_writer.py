@@ -143,6 +143,22 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
         or "none"
     )
     warnings = ", ".join(compatibility.get("warnings", [])) or "none"
+    comparison = diff.get("comparison", {})
+    comparison_reasons = ", ".join(comparison.get("reasons", [])) or "none"
+    warning_messages = {
+        "different_target_context_limits_attribution": (
+            "Different target context limits causal attribution."
+        ),
+        "insufficient_metadata_for_comparison": (
+            "Required comparison metadata is missing; inputs are incomparable."
+        ),
+        "mixed_state_and_observer_change_acknowledged": (
+            "Target state and observer context both changed; attribution is confounded."
+        ),
+        "observer_context_changed_visibility_may_differ": (
+            "Observer context changed; visibility differences are not target-state changes."
+        ),
+    }
     lines = [
         f"# Trust Diff {diff.get('diff_id', '')}",
         "",
@@ -156,6 +172,17 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
         f"- Compare migrations: {compare_migrations}",
         f"- Warnings: {warnings}",
         "",
+        "## Comparison",
+        "",
+        f"- Axis: `{comparison.get('axis', 'unknown')}`",
+        f"- Comparability: `{comparison.get('comparability', 'unknown')}`",
+        f"- Reasons: {comparison_reasons}",
+        "",
+        *[
+            f"> **Warning:** {warning_messages[warning]}"
+            for warning in comparison.get("warnings", [])
+        ],
+        *([""] if comparison.get("warnings") else []),
         "| Dimension | Severity | Before | After |",
         "|---|---|---|---|",
     ]

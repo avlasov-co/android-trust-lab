@@ -27,6 +27,7 @@ from .collection_manifest import (
     read_collection_manifest,
     verify_collection_artifacts,
 )
+from .comparison import COMPARISON_CONTEXT_EXTENSION, observer_protocol
 from .compatibility import EvidenceStatus
 from .exceptions import (
     CollectionError,
@@ -957,6 +958,18 @@ def build_report(
     if unrecognized_sections:
         adapter_extension["unrecognized_sections"] = unrecognized_sections
     report["extensions"]["org.androidtrustlab.adapter"] = adapter_extension
+    report["extensions"][COMPARISON_CONTEXT_EXTENSION] = {
+        "target_pseudonym": "unknown",
+        "target_class": report["target"]["target_type"],
+        "state_id": "unknown",
+        "experiment_id": report["experiment_id"],
+        "protocol": observer_protocol(report["observer"]["observer_type"]),
+        "observer": report["observer"]["observer_type"],
+        "observer_privilege": report["observer"]["privilege_level"],
+        "report_schema_version": report["schema_version"],
+        "environment_context": "unknown",
+        "measurement_id": report["collection_event_id"],
+    }
     return finalize_report_identity(report)
 
 
@@ -1205,6 +1218,9 @@ def _normalize_raw_payload(
         collection_method=report["observer"]["collection_method"],
         collection_manifest_sha256=collection_manifest_sha256,
     )
+    report["extensions"][COMPARISON_CONTEXT_EXTENSION]["measurement_id"] = report[
+        "collection_event_id"
+    ]
     return finalize_report_identity(report)
 
 
@@ -1407,6 +1423,18 @@ def normalize_collection_payload(
             "redaction_state": report["raw_artifacts"][0]["redaction_state"],
             "artifact_results": [dict(result) for result in portable_results],
         },
+    }
+    report["extensions"][COMPARISON_CONTEXT_EXTENSION] = {
+        "target_pseudonym": manifest.target.pseudonymous_id,
+        "target_class": report["target"]["target_type"],
+        "state_id": "unknown",
+        "experiment_id": report["experiment_id"],
+        "protocol": observer_protocol(report["observer"]["observer_type"]),
+        "observer": report["observer"]["observer_type"],
+        "observer_privilege": report["observer"]["privilege_level"],
+        "report_schema_version": report["schema_version"],
+        "environment_context": manifest.environment.execution_context,
+        "measurement_id": report["collection_event_id"],
     }
     return finalize_report_identity(report)
 

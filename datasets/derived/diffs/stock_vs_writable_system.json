@@ -1,7 +1,7 @@
 {
   "base_report": {
-    "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
-    "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+    "content_digest": "755cae3ab575355f102a0164a033d8ba784af7c59bbccefcd4dbdfe9e81d58ca",
+    "report_id": "atlrep-c69f8f5f23d6d04a41dad7b138e429b9",
     "schema_version": "6.0.0"
   },
   "changed_dimensions": [
@@ -72,9 +72,57 @@
     }
   ],
   "compare_report": {
-    "content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
-    "report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+    "content_digest": "609d2f9cd57057acb202c0f2f49bedf086bfe556b79a52de8e3b81fd17cb1601",
+    "report_id": "atlrep-90d910be9cbab382d2f94a6bb4b5e6fb",
     "schema_version": "6.0.0"
+  },
+  "comparison": {
+    "acknowledgement": "not_required",
+    "axis": "same_target_state_change",
+    "comparability": "comparable",
+    "context": {
+      "base": {
+        "environment_context": "synthetic",
+        "experiment_id": "E01_stock_avd",
+        "measurement_id": "atlevent-730498d6c9dc0ca56f5b4c40e7d5b981",
+        "observer": "adb_shell",
+        "observer_effective_uid_is_root": "false",
+        "observer_privilege": "shell",
+        "protocol": "adb",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e01-stock-avd",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      },
+      "compare": {
+        "environment_context": "synthetic",
+        "experiment_id": "E03_writable_system_avd",
+        "measurement_id": "atlevent-de5e7e106b075e9bba3467ca0b0e5537",
+        "observer": "adb_shell",
+        "observer_effective_uid_is_root": "false",
+        "observer_privilege": "shell",
+        "protocol": "adb",
+        "report_schema_version": "6.0.0",
+        "state_id": "state-e03-writable-system-avd",
+        "target_class": "avd",
+        "target_pseudonym": "target-synthetic-avd"
+      }
+    },
+    "reasons": [
+      "target_identity_matches",
+      "target_class_matches",
+      "state_identity_differs",
+      "experiment_differs",
+      "protocol_matches",
+      "observer_matches",
+      "observer_privilege_matches",
+      "observer_effective_uid_matches",
+      "report_schema_matches",
+      "environment_context_matches",
+      "measurement_differs"
+    ],
+    "visibility_context_changed": false,
+    "warnings": []
   },
   "compatibility": {
     "canonical_comparison_schema_version": "6.0.0",
@@ -90,39 +138,39 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "a3b3bc65277a6ed2d87fb9894f9bfd6baca08b8c02078692ca4546be262658fb",
-  "diff_id": "atldiff-a3b3bc65277a6ed2d87fb9894f9bfd6b",
+  "content_digest": "566232bb492f9f5bc90a32527502917800bcfc7464469d2dbb9d42051e9f49a2",
+  "diff_id": "atldiff-566232bb492f9f5bc90a325275029178",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
-        "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+        "content_digest": "755cae3ab575355f102a0164a033d8ba784af7c59bbccefcd4dbdfe9e81d58ca",
+        "report_id": "atlrep-c69f8f5f23d6d04a41dad7b138e429b9",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
-      "original_document_digest": "4d91f1f57164e6695baa849fa1988b1a3f2bbfaa973bb1061bb2206d41d38b55",
-      "original_report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+      "original_content_digest": "755cae3ab575355f102a0164a033d8ba784af7c59bbccefcd4dbdfe9e81d58ca",
+      "original_document_digest": "2eaa44ba61f561016d9e264fa3bbe64b4d79a215331700290cd521de04075ad3",
+      "original_report_id": "atlrep-c69f8f5f23d6d04a41dad7b138e429b9",
       "original_schema_version": "6.0.0"
     },
     "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
-        "report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+        "content_digest": "609d2f9cd57057acb202c0f2f49bedf086bfe556b79a52de8e3b81fd17cb1601",
+        "report_id": "atlrep-90d910be9cbab382d2f94a6bb4b5e6fb",
         "schema_version": "6.0.0"
       },
-      "original_content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
-      "original_document_digest": "226c1f276bb71ab0b57a8905491246ef10388f2a5fed897c19df597f23767e5e",
-      "original_report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+      "original_content_digest": "609d2f9cd57057acb202c0f2f49bedf086bfe556b79a52de8e3b81fd17cb1601",
+      "original_document_digest": "a506bd6b1fe4f62acad702ffc8d0630bb4f36d57ac7fa86fb75f460b76de7161",
+      "original_report_id": "atlrep-90d910be9cbab382d2f94a6bb4b5e6fb",
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.4.0",
-  "summary": "2 dimensions changed, 27 dimensions unchanged.",
+  "schema_version": "2.5.0",
+  "summary": "2 dimensions changed, 25 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -134,7 +182,6 @@
     "selected_process_visibility",
     "system_mount_resolution",
     "apex_mount_set",
-    "observer_uid_root",
     "root_shell_availability",
     "su_binary_visibility",
     "su_invocation_tested",
@@ -149,7 +196,6 @@
     "magisk_module_context",
     "magisk_command_status",
     "property_consistency",
-    "emulator_state",
-    "observer_privilege"
+    "emulator_state"
   ]
 }
