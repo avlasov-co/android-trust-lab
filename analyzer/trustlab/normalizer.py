@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .artifacts import (
+    ArtifactMetadata,
+    ArtifactParseResult,
+    CaptureStatus,
+    CommandCapture,
+    EvidenceFragments,
+    InputKind,
+    parse_artifact_text,
+    parse_collection_payload_text,
+)
 from .bounded_io import read_bounded_regular_file
 from .canonical_json import MAX_CANONICAL_BYTES, canonical_json_bytes
 from .collection_manifest import (
@@ -29,7 +40,6 @@ from .identity import (
     make_raw_artifact_reference,
 )
 from .observers import observer_spec
-from .parser import parse_raw_text
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import report_v3_from_v2_shape
 
@@ -86,15 +96,17 @@ def unknown_mount(path: str) -> dict[str, Any]:
     }
 
 
-def select_mount(mounts: list[dict[str, Any]], mount_point: str) -> dict[str, Any]:
+def select_mount(
+    mounts: Sequence[Mapping[str, object]], mount_point: str
+) -> dict[str, Any]:
     exact = [m for m in mounts if m.get("mount_point") == mount_point]
     if exact:
-        return exact[-1]
+        return dict(exact[-1])
     nested = [
         m for m in mounts if str(m.get("mount_point", "")).startswith(mount_point + "/")
     ]
     if nested:
-        return nested[-1]
+        return dict(nested[-1])
     return unknown_mount(mount_point)
 
 
@@ -147,11 +159,11 @@ def detect_emulator(props: dict[str, str], target_type: str) -> dict[str, Any]:
             or val == "1"
         ):
             indicators.append(key)
-    is_emulator = target_type == "avd" or bool(indicators)
+    is_emulator = bool(indicators)
     return {"is_emulator": is_emulator, "indicators": sorted(set(indicators))}
 
 
-def normalize_mounts(mounts: list[dict[str, Any]]) -> dict[str, Any]:
+def normalize_mounts(mounts: Sequence[Mapping[str, object]]) -> dict[str, Any]:
     result: dict[str, Any] = {
         field: select_mount(mounts, path) for path, field in SENSITIVE_MOUNTS.items()
     }
@@ -161,7 +173,8 @@ def normalize_mounts(mounts: list[dict[str, Any]]) -> dict[str, Any]:
     writable = []
     for path, field in SENSITIVE_MOUNTS.items():
         mount = result[field]
-        options = set(mount.get("options", []))
+        raw_options = mount.get("options", [])
+        options = set(raw_options if isinstance(raw_options, list) else [])
         if path != "/data" and (
             mount.get("classification") in {"read-write", "overlay"} or "rw" in options
         ):
@@ -174,11 +187,11 @@ def normalize_mounts(mounts: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def root_state(parsed: dict[str, Any]) -> dict[str, Any]:
-    identity = parsed.get("id", {})
+def root_state(parsed: EvidenceFragments) -> dict[str, Any]:
+    identity = parsed.identity
     uid = str(identity.get("uid", "unknown"))
     gid = str(identity.get("gid", "unknown"))
-    su_paths = parsed.get("su_paths", [])
+    su_paths = list(parsed.su_paths)
     su_present = bool(su_paths) or uid == "0"
     return {
         "su_present": su_present,
@@ -189,8 +202,8 @@ def root_state(parsed: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def magisk_state(parsed: dict[str, Any]) -> dict[str, Any]:
-    raw = parsed.get("magisk", "") or ""
+def magisk_state(parsed: EvidenceFragments) -> dict[str, Any]:
+    raw = parsed.magisk_text or ""
     lower = raw.lower()
     present = "magisk" in lower and "not found" not in lower
     version = "unknown"
@@ -255,7 +268,7 @@ def verified_boot_state(
 
 
 def build_report(
-    parsed: dict[str, Any],
+    parsed: ArtifactParseResult,
     *,
     experiment_id: str = "unknown",
     target_type: str = "unknown",
@@ -266,40 +279,38 @@ def build_report(
     collection_timestamp: str,
     generator_name: str = "trustlab",
 ) -> dict[str, Any]:
+    fragments = parsed.fragments
     observer = observer_spec(observer_type)
-    props = parsed.get("properties", {})
-    boot_state_raw = parsed.get("boot_state_raw", {}) or {}
-    mounts = parsed.get("mounts", [])
+    props = dict(fragments.properties)
+    boot_state_raw = dict(fragments.boot_state)
+    mounts = list(fragments.mounts)
     timestamp = collection_timestamp
-    cmdline = (
-        parsed.get("cmdline", "") or boot_state_raw.get("kernel_cmdline", "") or ""
-    )
+    cmdline = fragments.cmdline or boot_state_raw.get("kernel_cmdline", "") or ""
     emulator = detect_emulator(props, target_type)
-    collection_errors = []
+    collection_errors = list(parsed.errors)
     if not props:
         collection_errors.append("missing getprop section")
     if not mounts:
         collection_errors.append("missing mount section")
 
-    section_names = set(parsed.get("section_names", []))
+    captured_names = set(parsed.parsed_capture_names)
 
-    def section_was_collected(*names: str) -> bool:
-        return bool(section_names.intersection(names))
+    def capture_was_collected(*names: str) -> bool:
+        return bool(captured_names.intersection(names))
 
     observed_probes = frozenset(
         probe
         for probe, observed in {
-            "properties": section_was_collected("GETPROP", "PROPS"),
-            "boot_state": section_was_collected("BOOT_STATE"),
-            "mounts": section_was_collected("MOUNT", "MOUNTS"),
-            "identity": section_was_collected("ID"),
-            "selinux": section_was_collected("GETENFORCE", "SELINUX"),
-            "cmdline": section_was_collected("CMDLINE", "BOOT_STATE"),
-            "su_paths": section_was_collected("SU_PATHS"),
-            "magisk": section_was_collected("MAGISK"),
-            "processes": section_was_collected("PS", "PROCESSES"),
-            "emulator_basis": section_was_collected("GETPROP", "PROPS")
-            or target_type in {"avd", "physical"},
+            "properties": capture_was_collected("properties", "getprop_selected"),
+            "boot_state": capture_was_collected("boot_state"),
+            "mounts": capture_was_collected("mountinfo", "mounts", "proc_mounts"),
+            "identity": capture_was_collected("identity", "id"),
+            "selinux": capture_was_collected("selinux_mode", "getenforce"),
+            "cmdline": capture_was_collected("kernel_cmdline", "boot_state"),
+            "su_paths": capture_was_collected("su_paths"),
+            "magisk": capture_was_collected("magisk"),
+            "processes": capture_was_collected("processes", "ps_selected"),
+            "emulator_basis": capture_was_collected("properties", "getprop_selected"),
         }.items()
         if observed
     )
@@ -342,12 +353,12 @@ def build_report(
             "kernel_cmdline_present": bool(cmdline.strip()),
         },
         "verified_boot": verified_boot_state(props, target_type, boot_state_raw),
-        "selinux": normalize_selinux(parsed.get("selinux_mode", "unknown")),
+        "selinux": normalize_selinux(fragments.selinux_mode),
         "mounts": normalize_mounts(mounts),
         "properties": normalize_properties(props),
-        "root_state": root_state(parsed),
-        "magisk_state": magisk_state(parsed),
-        "process_state": parsed.get("processes", {}),
+        "root_state": root_state(fragments),
+        "magisk_state": magisk_state(fragments),
+        "process_state": dict(fragments.processes),
         "emulator_state": emulator,
         "limitations": {
             "emulator_target": bool(emulator["is_emulator"]),
@@ -363,22 +374,62 @@ def build_report(
         preserve_legacy_source=False,
         observed_probes=observed_probes,
     )
-    return report_v3_from_v2_shape(
+    report = report_v3_from_v2_shape(
         report_v2,
         raw_artifacts=[raw_artifact],
         collection_event_id=collection_event_id,
         source_schema_version="raw",
         generator_name=generator_name,
     )
+    report["provenance"]["command_results"] = [
+        _capture_command_result(capture) for capture in parsed.captures
+    ]
+    report["extensions"]["org.androidtrustlab.adapter"] = {
+        "input_kind": parsed.input_kind.value,
+        "input_schema_version": parsed.metadata.schema_version,
+        "collector_version": parsed.metadata.collector_version,
+        "warnings": list(parsed.warnings),
+        "errors": list(parsed.errors),
+        "captures": [
+            {
+                "name": capture.name,
+                "status": capture.status.value,
+                "source_ref": capture.source_ref,
+            }
+            for capture in parsed.captures
+        ],
+    }
+    return finalize_report_identity(report)
+
+
+def _capture_command_result(capture: CommandCapture) -> dict[str, Any]:
+    status = {
+        CaptureStatus.OBSERVED: "observed",
+        CaptureStatus.EMPTY: "observed_absent",
+        CaptureStatus.NOT_COLLECTED: "not_collected",
+        CaptureStatus.INACCESSIBLE: "inaccessible",
+        CaptureStatus.COMMAND_ERROR: "command_error",
+        CaptureStatus.TIMEOUT: "command_error",
+        CaptureStatus.UNSUPPORTED: "unsupported",
+        CaptureStatus.ERROR: "command_error",
+    }[capture.status]
+    detail = capture.stderr.strip() or None
+    return {
+        "command_id": capture.name,
+        "status": status,
+        "exit_code": capture.exit_code,
+        "timed_out": capture.timed_out,
+        "detail": detail,
+    }
 
 
 def normalize_raw_file(
     input_path: str | Path,
     *,
-    experiment_id: str = "unknown",
-    target_type: str = "unknown",
-    observer_type: str = "adb_shell",
-    collection_method: str = "raw_artifact",
+    experiment_id: str | None = None,
+    target_type: str | None = None,
+    observer_type: str | None = None,
+    collection_method: str | None = None,
     collection_timestamp: str | None = None,
     raw_artifact_ref: str | None = None,
     raw_artifact_id: str | None = None,
@@ -386,8 +437,10 @@ def normalize_raw_file(
     collector_version: str = "unknown",
     collection_id: str | None = None,
     redaction_state: str = "unknown",
+    artifact_kind: str | None = None,
 ) -> dict[str, Any]:
-    observer_spec(observer_type)
+    if observer_type is not None:
+        observer_spec(observer_type)
     source = Path(input_path)
     label = safe_path_label(source)
     payload = read_bounded_regular_file(
@@ -409,6 +462,7 @@ def normalize_raw_file(
         collector_version=collector_version,
         collection_id=collection_id,
         redaction_state=redaction_state,
+        artifact_kind=artifact_kind,
     )
 
 
@@ -416,10 +470,10 @@ def _normalize_raw_payload(
     payload: bytes,
     *,
     label: str,
-    experiment_id: str,
-    target_type: str,
-    observer_type: str,
-    collection_method: str,
+    experiment_id: str | None,
+    target_type: str | None,
+    observer_type: str | None,
+    collection_method: str | None,
     collection_timestamp: str | None,
     raw_artifact_ref: str | None,
     raw_artifact_id: str | None = None,
@@ -428,33 +482,114 @@ def _normalize_raw_payload(
     collection_id: str | None = None,
     raw_status: str = "observed",
     redaction_state: str = "unknown",
-    media_type: str = "text/plain",
+    media_type: str | None = None,
     expected_sha256: str | None = None,
     expected_byte_size: int | None = None,
     generator_name: str = "trustlab",
     collection_manifest_sha256: str | None = None,
+    artifact_kind: str | None = None,
+    manifest_adapter_metadata: ArtifactMetadata | None = None,
 ) -> dict[str, Any]:
     """Normalize the exact bytes supplied by a caller after provenance checks."""
 
-    timestamp = collection_timestamp or datetime.now(UTC).replace(
-        microsecond=0
-    ).isoformat().replace("+00:00", "Z")
     raw_sha256 = hashlib.sha256(payload).hexdigest()
+    if expected_sha256 is not None and raw_sha256 != expected_sha256:
+        raise CollectionError("raw artifact digest does not match provenance")
+    if expected_byte_size is not None and len(payload) != expected_byte_size:
+        raise CollectionError("raw artifact byte size does not match provenance")
+    try:
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
+    try:
+        if manifest_adapter_metadata is None:
+            parsed = parse_artifact_text(
+                text,
+                source_ref=label,
+                artifact_kind=artifact_kind,
+            )
+        else:
+            if artifact_kind not in {None, "auto"}:
+                raise NormalizationError(
+                    "portable collection manifests select their artifact adapter"
+                )
+            parsed = parse_collection_payload_text(
+                text,
+                source_ref=label,
+                metadata=manifest_adapter_metadata,
+            )
+    except (TypeError, ValueError) as exc:
+        raise NormalizationError(
+            f"could not normalize input artifact: {label}"
+        ) from exc
+
+    metadata = parsed.metadata
+    if parsed.input_kind is not InputKind.LEGACY_SECTIONED_TEXT:
+        declared_values = {
+            "experiment_id": (experiment_id, metadata.experiment_id),
+            "target_type": (target_type, metadata.target_type),
+            "observer_type": (observer_type, metadata.observer_type),
+            "collection_method": (
+                collection_method,
+                metadata.collection_method,
+            ),
+            "collection_timestamp": (
+                collection_timestamp,
+                metadata.collection_timestamp,
+            ),
+        }
+        for field_name, (explicit, declared) in declared_values.items():
+            if explicit is not None and declared is not None and explicit != declared:
+                raise NormalizationError(
+                    f"typed artifact {field_name} conflicts with declared metadata"
+                )
+        if (
+            collector_version != "unknown"
+            and collector_version != metadata.collector_version
+        ):
+            raise NormalizationError(
+                "typed artifact collector_version conflicts with declared metadata"
+            )
+        if metadata.collection_timestamp is None:
+            raise NormalizationError("typed artifact collection timestamp is required")
+    resolved_experiment_id = experiment_id or metadata.experiment_id or "unknown"
+    resolved_target_type = target_type or metadata.target_type or "unknown"
+    resolved_observer_type = observer_type or metadata.observer_type or "adb_shell"
+    resolved_collection_method = (
+        collection_method or metadata.collection_method or "raw_artifact"
+    )
+    observer_spec(resolved_observer_type)
+    timestamp = (
+        collection_timestamp
+        or metadata.collection_timestamp
+        or datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    )
+    resolved_collector_version = collector_version
+    if (
+        resolved_collector_version == "unknown"
+        and parsed.input_kind is not InputKind.LEGACY_SECTIONED_TEXT
+    ):
+        resolved_collector_version = metadata.collector_version
+    resolved_media_type = media_type or (
+        "text/plain"
+        if parsed.input_kind is InputKind.LEGACY_SECTIONED_TEXT
+        else "application/json"
+    )
     resolved_collection_id = collection_id or derive_collection_id(
         timestamp=timestamp,
-        experiment_id=experiment_id,
-        target_type=target_type,
-        observer_type=observer_type,
-        collection_method=collection_method,
+        experiment_id=resolved_experiment_id,
+        target_type=resolved_target_type,
+        observer_type=resolved_observer_type,
+        collection_method=resolved_collection_method,
         raw_sha256=raw_sha256,
     )
     raw_reference = make_raw_artifact_reference(
         payload,
         logical_id=raw_artifact_id,
         relative_path=raw_artifact_ref or label,
-        media_type=media_type,
+        media_type=resolved_media_type,
         collector_name=collector_name,
-        collector_version=collector_version,
+        collector_version=resolved_collector_version,
         collection_id=resolved_collection_id,
         status=raw_status,
         redaction_state=redaction_state,
@@ -464,26 +599,18 @@ def _normalize_raw_payload(
     event_id = collection_event_identity(
         collection_id=resolved_collection_id,
         timestamp=timestamp,
-        experiment_id=experiment_id,
-        target_type=target_type,
-        observer_type=observer_type,
-        collection_method=collection_method,
+        experiment_id=resolved_experiment_id,
+        target_type=resolved_target_type,
+        observer_type=resolved_observer_type,
+        collection_method=resolved_collection_method,
         collection_manifest_sha256=collection_manifest_sha256,
     )
-    try:
-        parsed = parse_raw_text(payload.decode("utf-8"))
-    except UnicodeDecodeError as exc:
-        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
-    except (TypeError, ValueError) as exc:
-        raise NormalizationError(
-            f"could not normalize input artifact: {label}"
-        ) from exc
     report = _normalize_parsed_report(
         parsed,
-        experiment_id=experiment_id,
-        target_type=target_type,
-        observer_type=observer_type,
-        collection_method=collection_method,
+        experiment_id=resolved_experiment_id,
+        target_type=resolved_target_type,
+        observer_type=resolved_observer_type,
+        collection_method=resolved_collection_method,
         collection_timestamp=timestamp,
         raw_artifact=raw_reference,
         collection_event_id=event_id,
@@ -517,10 +644,11 @@ def normalize_raw_bytes(
     collection_id: str | None = None,
     raw_status: str = "observed",
     redaction_state: str = "unknown",
-    media_type: str = "text/plain",
+    media_type: str | None = None,
     expected_sha256: str | None = None,
     expected_byte_size: int | None = None,
     generator_name: str = "trustlab",
+    artifact_kind: str | None = None,
 ) -> dict[str, Any]:
     """Normalize one already-verified immutable byte snapshot."""
 
@@ -543,11 +671,12 @@ def normalize_raw_bytes(
         expected_sha256=expected_sha256,
         expected_byte_size=expected_byte_size,
         generator_name=generator_name,
+        artifact_kind=artifact_kind,
     )
 
 
 def _normalize_parsed_report(
-    parsed: dict[str, Any],
+    parsed: ArtifactParseResult,
     *,
     experiment_id: str,
     target_type: str,
@@ -652,6 +781,15 @@ def normalize_collection_payload(
         expected_byte_size=raw_entry.byte_size,
         generator_name=generator_name,
         collection_manifest_sha256=manifest_digest,
+        manifest_adapter_metadata=ArtifactMetadata(
+            schema_version=manifest.schema_version,
+            collector_version=manifest.collector.version,
+            observer_type=manifest.observer.observer_type,
+            collection_method=manifest.observer.collection_method,
+            experiment_id=manifest.experiment_id,
+            target_type=manifest.target.target_type,
+            collection_timestamp=manifest.ended_at,
+        ),
     )
     report["provenance"]["command_results"] = [
         {

@@ -39,6 +39,11 @@ or probe as a distinct artifact outcome; a command that did not run is
 `not_collected`, not an empty observed file. Only relative artifact paths may be
 published.
 
+During normalization, validated `adb_shell` manifest metadata selects the ADB
+typed adapter for the exact integrity-bound raw report. Inline capture imports
+may instead use `artifact_collection_manifest_v1_0_0.schema.json` with
+`artifact_kind` set to `adb_collection_manifest`.
+
 ## Suggested raw artifact format
 
 Use section markers:

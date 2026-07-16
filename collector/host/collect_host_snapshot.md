@@ -29,3 +29,6 @@ Preserve provenance with
 root observers use this same contract; observed artifacts are bound by relative
 path, byte size, and SHA-256. Reports without portable provenance are not
 suitable for reproducible comparison.
+
+During normalization, validated host manifest metadata selects the host typed
+adapter. Host capture vocabularies cannot populate Android target dimensions.

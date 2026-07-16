@@ -202,7 +202,7 @@ def test_expected_source_binding_is_checked_before_normalization(monkeypatch):
     def unexpected_parse(_text: str):
         raise AssertionError("parser must not run before source verification")
 
-    monkeypatch.setattr(normalizer_module, "parse_raw_text", unexpected_parse)
+    monkeypatch.setattr(normalizer_module, "parse_artifact_text", unexpected_parse)
     with pytest.raises(CollectionError, match="digest does not match provenance"):
         normalize_raw_bytes(
             RAW,

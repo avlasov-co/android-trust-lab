@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/app-probe/1.0.0",
+  "title": "Android Trust Lab App Probe v1",
+  "type": "object",
+  "required": ["artifact_kind", "schema_version", "collector_version", "observer", "collection", "captures"],
+  "properties": {
+    "artifact_kind": {"const": "app_probe_json"},
+    "schema_version": {"const": "1.0.0"},
+    "collector_version": {"enum": ["0.3.0", "0.3.0-dev0", "1.0.0"]},
+    "observer": {
+      "type": "object",
+      "required": ["observer_type", "collection_method"],
+      "properties": {
+        "observer_type": {"const": "unprivileged_app"},
+        "collection_method": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"}
+      },
+      "additionalProperties": false
+    },
+    "collection": {
+      "type": "object",
+      "required": ["experiment_id", "target_type", "timestamp"],
+      "properties": {
+        "experiment_id": {"type": "string", "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"},
+        "target_type": {"enum": ["avd", "physical", "unknown"]},
+        "timestamp": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "captures": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/capture"}
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "$defs": {
+    "capture": {
+      "type": "object",
+      "required": ["name", "status", "exit_code", "timed_out", "stdout", "stderr", "source_ref"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+        "status": {
+          "enum": ["observed", "empty", "not_collected", "inaccessible", "command_error", "timeout", "unsupported", "error"]
+        },
+        "exit_code": {"type": ["integer", "null"], "minimum": 0, "maximum": 255},
+        "timed_out": {"type": "boolean"},
+        "stdout": {"type": "string", "maxLength": 4194304},
+        "stderr": {"type": "string", "maxLength": 65536},
+        "source_ref": {"type": "string", "minLength": 1, "maxLength": 512}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {"properties": {"exit_code": {"enum": [0, null]}, "timed_out": {"const": false}, "stdout": {"minLength": 1}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "empty"}}},
+          "then": {"properties": {"exit_code": {"enum": [0, null]}, "timed_out": {"const": false}, "stdout": {"const": ""}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "timeout"}}},
+          "then": {"properties": {"exit_code": {"const": null}, "timed_out": {"const": true}}},
+          "else": {"properties": {"timed_out": {"const": false}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["not_collected", "unsupported"]}}},
+          "then": {"properties": {"exit_code": {"const": null}, "stdout": {"const": ""}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "inaccessible"}}},
+          "then": {"properties": {"exit_code": {"anyOf": [{"const": null}, {"type": "integer", "minimum": 1, "maximum": 255}]}, "stdout": {"const": ""}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["command_error", "error"]}}},
+          "then": {"properties": {"exit_code": {"anyOf": [{"const": null}, {"type": "integer", "minimum": 1, "maximum": 255}]}}}
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

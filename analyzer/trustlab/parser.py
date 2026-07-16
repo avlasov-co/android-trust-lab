@@ -4,7 +4,50 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import TypedDict
+
+
+class ParsedMount(TypedDict):
+    """Syntactic mount fields produced before trust interpretation."""
+
+    raw: str
+    mount_point: str
+    fs_type: str
+    options: list[str]
+    classification: str
+
+
+class ParsedIdentity(TypedDict):
+    uid: str
+    user: str
+    gid: str
+    group: str
+    raw: str
+
+
+class ParsedProcesses(TypedDict):
+    raw_line_count: int
+    init_visible: bool
+    adbd_visible: bool
+    zygote_visible: bool
+    system_server_visible: bool
+    magisk_processes_visible: bool
+    process_contexts_available: bool
+
+
+class RawParsedArtifact(TypedDict):
+    sections: dict[str, str]
+    section_names: list[str]
+    properties: dict[str, str]
+    boot_state_raw: dict[str, str]
+    mounts: list[ParsedMount]
+    id: ParsedIdentity
+    selinux_mode: str
+    cmdline: str
+    su_paths: list[str]
+    magisk: str
+    processes: ParsedProcesses
+
 
 SECTION_RE = re.compile(r"^===\s*([A-Z0-9_ -]+)\s*===\s*$")
 GETPROP_RE = re.compile(r"^\[([^\]]+)\]:\s*\[(.*)\]\s*$")
@@ -58,7 +101,7 @@ def parse_key_values(text: str) -> dict[str, str]:
     return values
 
 
-def parse_id(text: str) -> dict[str, str]:
+def parse_id(text: str) -> ParsedIdentity:
     match = ID_RE.search(text.strip())
     if not match:
         return {
@@ -79,14 +122,14 @@ def parse_id(text: str) -> dict[str, str]:
 
 def parse_getenforce(text: str) -> str:
     value = text.strip().lower()
-    if value in {"enforcing", "permissive", "disabled"}:
+    if value in {"enforcing", "permissive", "disabled", "inaccessible"}:
         return value
     if "permission denied" in value:
         return "inaccessible"
     return "unknown"
 
 
-def parse_mount_line(line: str) -> dict[str, Any]:
+def parse_mount_line(line: str) -> ParsedMount:
     raw = line.strip()
     if not raw:
         return {
@@ -140,7 +183,7 @@ def classify_mount(fs_type: str, options: list[str]) -> str:
     return "unknown"
 
 
-def parse_mounts(text: str) -> list[dict[str, Any]]:
+def parse_mounts(text: str) -> list[ParsedMount]:
     return [parse_mount_line(line) for line in text.splitlines() if line.strip()]
 
 
@@ -153,7 +196,7 @@ def parse_paths(text: str) -> list[str]:
     return values
 
 
-def parse_processes(text: str) -> dict[str, Any]:
+def parse_processes(text: str) -> ParsedProcesses:
     lines = [line for line in text.splitlines() if line.strip()]
     joined = "\n".join(lines).lower()
     return {
@@ -167,7 +210,7 @@ def parse_processes(text: str) -> dict[str, Any]:
     }
 
 
-def parse_raw_text(text: str) -> dict[str, Any]:
+def parse_raw_text(text: str) -> RawParsedArtifact:
     """Parse one already-decoded raw report snapshot."""
 
     sections = split_sections(text)
@@ -192,7 +235,7 @@ def parse_raw_text(text: str) -> dict[str, Any]:
     }
 
 
-def parse_raw_report(path: str | Path) -> dict[str, Any]:
-    """Read and parse a raw report from a filesystem path."""
+def parse_raw_report(path: str | Path) -> RawParsedArtifact:
+    """Compatibility wrapper for callers that still pass a legacy text path."""
 
     return parse_raw_text(Path(path).read_text(encoding="utf-8"))

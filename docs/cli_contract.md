@@ -8,7 +8,11 @@ migration step to current report v3, and publishes a separate output without
 replacing the historical source. Current v3 input is validated and copied.
 `validate-collection-manifest` validates the strict portable manifest contract.
 Normalize with `--manifest` verifies every observed artifact binding before it
-parses the declared `raw_report`.
+parses the declared `raw_report`. The validated manifest observer and schema
+select the observer-specific adapter. Direct JSON inputs select from their
+declared `artifact_kind`, `schema_version`, and `collector_version`; direct
+non-JSON input uses the warned legacy fallback. `--artifact-kind` can make
+direct-input selection explicit and is rejected with `--manifest`.
 `dataset verify` is read-only: it validates dataset source and manifest
 contracts, safe relative paths, exact size/hash bindings, the closed reference
 graph, collection relationships, and deterministic report/diff freshness.

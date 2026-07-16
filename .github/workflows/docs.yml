@@ -22,6 +22,9 @@ jobs:
           test -f docs/dataset_manifest_v2.md
           test -f docs/content_identity.md
           test -f docs/report_schema_v3.md
+          test -f docs/artifact_adapters.md
+          test -f collector/schema/app_probe_v1_0_0.schema.json
+          test -f collector/schema/artifact_collection_manifest_v1_0_0.schema.json
           test -f collector/schema/trust_report_v1_0_0.schema.json
           test -f collector/schema/trust_report_v2_0_0.schema.json
           test -f collector/schema/trust_report_v3_0_0.schema.json

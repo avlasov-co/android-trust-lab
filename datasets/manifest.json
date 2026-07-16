@@ -46,7 +46,7 @@
     },
     {
       "artifact_id": "report-stock-avd-adb",
-      "byte_size": 10266,
+      "byte_size": 13275,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -58,7 +58,7 @@
       "role": "normalized_report",
       "schema_family": "report",
       "schema_version": "3.0.0",
-      "sha256": "b1fb36ad5a84dd162a5dbb2649a33aad51647b0085c7396a1807a6a4e569c332"
+      "sha256": "59106634e7ccf5a79a5af6f8f016782948cd33419f1a59468659173c4f22f52d"
     },
     {
       "artifact_id": "raw-rooted-avd-adb",
@@ -78,7 +78,7 @@
     },
     {
       "artifact_id": "report-rooted-avd-adb",
-      "byte_size": 10214,
+      "byte_size": 13219,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -90,7 +90,7 @@
       "role": "normalized_report",
       "schema_family": "report",
       "schema_version": "3.0.0",
-      "sha256": "95ce0f6ed7b7a129df738cf650ed6ba2e926d1368f1f9e04770270081c831123"
+      "sha256": "6fb35bd9ba020d44a388176b56f8fc851d5bd88a2821037b0377c04af8bef2f9"
     },
     {
       "artifact_id": "raw-rooted-avd-root",
@@ -110,7 +110,7 @@
     },
     {
       "artifact_id": "report-rooted-avd-root",
-      "byte_size": 10167,
+      "byte_size": 13172,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -122,7 +122,7 @@
       "role": "normalized_report",
       "schema_family": "report",
       "schema_version": "3.0.0",
-      "sha256": "c44081101e903d664d43f7c2f5a3cc5dcf84ab40ad583e4abc48f57fbd0b9765"
+      "sha256": "353438884c2d114c9aa2007455b0fb79229cb5a03f04eec4187ecf7de19488eb"
     },
     {
       "artifact_id": "raw-writable-system-avd-adb",
@@ -142,7 +142,7 @@
     },
     {
       "artifact_id": "report-writable-system-avd-adb",
-      "byte_size": 10469,
+      "byte_size": 13478,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -154,7 +154,7 @@
       "role": "normalized_report",
       "schema_family": "report",
       "schema_version": "3.0.0",
-      "sha256": "d0324940ff3437d974a383f2166bd6bfa2167d65b4438ad5d1cd0bb2071fadc1"
+      "sha256": "e3a415bc1fe95ebbed0202e8cc9a4a881bfde906b7638d3d438cf78ada090ff0"
     },
     {
       "artifact_id": "raw-magisk-collector-root",
@@ -190,7 +190,7 @@
     },
     {
       "artifact_id": "report-magisk-collector-root",
-      "byte_size": 13203,
+      "byte_size": 14781,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -202,7 +202,7 @@
       "role": "normalized_report",
       "schema_family": "report",
       "schema_version": "3.0.0",
-      "sha256": "1c5041758a9f4f4c3fdfc17aef2b754d592ff5c968e813381bd849596a12062b"
+      "sha256": "ecca1400b48d74e91557a2daff56006fefc42ebc6e4efc24a36932b40a791d1b"
     },
     {
       "artifact_id": "diff-stock-adb-vs-rooted-adb",
@@ -218,7 +218,7 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.0.0",
-      "sha256": "599db9d332449b4a0e17c5ca0ef68e1f34ca64e2be142c0180bdd6b99d28ac52"
+      "sha256": "e61e2bab7cd6b36a753e493f65c36ae2c30c79aa2f1c5f71898b699a31cb6ffd"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-rooted-root",
@@ -234,7 +234,7 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.0.0",
-      "sha256": "190e109d15cca8affaa7f5611ea2c37c32ae1d8504146ca1cf475a4c05d15cd6"
+      "sha256": "ebc3ee327b94ac78eb9d19279bc2ef3c3f272a71064ee4c66ed6e16360d71a2c"
     },
     {
       "artifact_id": "diff-stock-vs-writable-system",
@@ -250,7 +250,7 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.0.0",
-      "sha256": "89392654693b7b00abca7e133c18d9274d8e4a6730849fb3335f87f338891482"
+      "sha256": "676f65d7a5360ec9d173935d73a68ff5138767b064747564a3849c2eaebf385c"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-magisk-root",
@@ -266,7 +266,7 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.0.0",
-      "sha256": "ce589d8c71eac162274491a3b521a43100ec3bd8cf62da48ac212238a1dcfee5"
+      "sha256": "d65e65575d3aa101fcce19ccc3779f5083e3ed8646badceefe7aa49f9d99383c"
     }
   ],
   "authorization": {

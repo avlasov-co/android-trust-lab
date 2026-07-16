@@ -1,0 +1,35 @@
+{
+  "artifact_kind": "magisk_collection_manifest",
+  "schema_version": "1.0.0",
+  "collector_version": "0.3.0",
+  "observer": {
+    "observer_type": "root_collector",
+    "collection_method": "synthetic_magisk_fixture"
+  },
+  "collection": {
+    "experiment_id": "E16_adapter_contract",
+    "target_type": "avd",
+    "timestamp": "2026-07-16T10:01:00Z"
+  },
+  "captures": [
+    {
+      "name": "identity",
+      "status": "observed",
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout": "uid=0(root) gid=0(root) groups=0(root)",
+      "stderr": "",
+      "source_ref": "captures/id.txt"
+    },
+    {
+      "name": "magisk",
+      "status": "observed",
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout": "magisk_version=synthetic-28.1\nmodule_context=androidtrustlab",
+      "stderr": "",
+      "source_ref": "captures/magisk.txt"
+    }
+  ],
+  "warnings": ["synthetic adapter fixture"]
+}

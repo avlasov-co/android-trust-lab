@@ -24,7 +24,9 @@ Collection manifest `1.0.0` uses the same packaged, exact-version validation
 path. Manifest normalization accepts only bounded regular files, parses the exact
 verified byte snapshot, and retains the canonical manifest digest plus all probe
 outcomes in report provenance. Legacy direct raw-file normalization remains
-supported.
+supported. Portable manifest metadata selects the ADB, host, app, or Magisk
+adapter; direct versioned JSON can also declare its input kind. Typed metadata
+cannot be contradicted by CLI or library overrides.
 
 Dataset manifest `2.0.0` is the sole writable dataset contract; frozen v1 remains
 readable only. `trustlab dataset verify` validates the complete portable graph,
@@ -41,6 +43,7 @@ identity, and diff v2 binds both exact report/content identities. See
 
 ```bash
 trustlab normalize --input ../tests/fixtures/sample_raw_report.txt --output /tmp/report.json
+trustlab normalize --input ../tests/fixtures/adapters/adb_manifest.json --artifact-kind adb_collection_manifest --output /tmp/adb-report.json
 trustlab normalize --manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json --output /tmp/manifest-report.json
 trustlab validate-collection-manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json
 trustlab dataset verify ../datasets/manifest.json

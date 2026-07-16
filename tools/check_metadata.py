@@ -16,6 +16,10 @@ from jsonschema import Draft7Validator, FormatChecker
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_URL = "https://github.com/avlasov-co/android-trust-lab"
 SCHEMA_IDS = {
+    "app_probe_v1_0_0.schema.json": (f"{REPOSITORY_URL}/schema/app-probe/1.0.0"),
+    "artifact_collection_manifest_v1_0_0.schema.json": (
+        f"{REPOSITORY_URL}/schema/artifact-collection-manifest/1.0.0"
+    ),
     "collection_manifest_v1_0_0.schema.json": (
         f"{REPOSITORY_URL}/schema/collection-manifest/1.0.0"
     ),

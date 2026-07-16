@@ -1,0 +1,35 @@
+{
+  "artifact_kind": "app_probe_json",
+  "schema_version": "1.0.0",
+  "collector_version": "0.3.0",
+  "observer": {
+    "observer_type": "unprivileged_app",
+    "collection_method": "synthetic_app_fixture"
+  },
+  "collection": {
+    "experiment_id": "E16_adapter_contract",
+    "target_type": "avd",
+    "timestamp": "2026-07-16T10:03:00Z"
+  },
+  "captures": [
+    {
+      "name": "identity",
+      "status": "observed",
+      "exit_code": null,
+      "timed_out": false,
+      "stdout": "uid=10123(app) gid=10123(app)",
+      "stderr": "",
+      "source_ref": "probes/app-uid"
+    },
+    {
+      "name": "getenforce",
+      "status": "inaccessible",
+      "exit_code": null,
+      "timed_out": false,
+      "stdout": "",
+      "stderr": "access denied",
+      "source_ref": "probes/selinux-mode"
+    }
+  ],
+  "warnings": ["synthetic app-probe fixture"]
+}

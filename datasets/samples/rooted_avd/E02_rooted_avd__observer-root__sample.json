@@ -41,7 +41,64 @@
     }
   },
   "experiment_id": "E02_rooted_avd",
-  "extensions": {},
+  "extensions": {
+    "org.androidtrustlab.adapter": {
+      "captures": [
+        {
+          "name": "properties",
+          "source_ref": "legacy-sections/GETPROP",
+          "status": "observed"
+        },
+        {
+          "name": "boot_state",
+          "source_ref": "legacy-sections/BOOT_STATE",
+          "status": "not_collected"
+        },
+        {
+          "name": "mounts",
+          "source_ref": "legacy-sections/MOUNT",
+          "status": "observed"
+        },
+        {
+          "name": "identity",
+          "source_ref": "legacy-sections/ID",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_mode",
+          "source_ref": "legacy-sections/GETENFORCE",
+          "status": "observed"
+        },
+        {
+          "name": "kernel_cmdline",
+          "source_ref": "legacy-sections/CMDLINE",
+          "status": "observed"
+        },
+        {
+          "name": "su_paths",
+          "source_ref": "legacy-sections/SU_PATHS",
+          "status": "observed"
+        },
+        {
+          "name": "magisk",
+          "source_ref": "legacy-sections/MAGISK",
+          "status": "observed"
+        },
+        {
+          "name": "processes",
+          "source_ref": "legacy-sections/PS",
+          "status": "observed"
+        }
+      ],
+      "collector_version": "legacy",
+      "errors": [],
+      "input_kind": "legacy_sectioned_text",
+      "input_schema_version": "legacy-sectioned-text-1",
+      "warnings": [
+        "legacy sectioned text has inferred command status and no collector manifest"
+      ]
+    }
+  },
   "limitations": {
     "collection_errors": [],
     "emulator_target": true,
@@ -274,7 +331,71 @@
     }
   },
   "provenance": {
-    "command_results": [],
+    "command_results": [
+      {
+        "command_id": "properties",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "boot_state",
+        "detail": null,
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      },
+      {
+        "command_id": "mounts",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "identity",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "selinux_mode",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "kernel_cmdline",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "su_paths",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "magisk",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "processes",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      }
+    ],
     "generator": {
       "name": "trustlab",
       "version": "0.3.0.dev0"

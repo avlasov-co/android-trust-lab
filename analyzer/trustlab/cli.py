@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
+from .artifacts import InputKind
 from .dataset_manifest import verify_dataset_manifest
 from .diff import make_diff
 from .exceptions import (
@@ -84,6 +85,10 @@ def _require_distinct_output(output: str, *inputs: str) -> None:
 
 def cmd_normalize(args: argparse.Namespace) -> int:
     if args.manifest is not None:
+        if args.artifact_kind != "auto":
+            raise NormalizationError(
+                "--artifact-kind applies only to direct --input normalization"
+            )
         report, verified_paths = normalize_collection_manifest_with_inputs(
             args.manifest
         )
@@ -97,6 +102,7 @@ def cmd_normalize(args: argparse.Namespace) -> int:
             collection_method=args.collection_method,
             collection_timestamp=args.collection_timestamp,
             raw_artifact_ref=args.raw_artifact_ref,
+            artifact_kind=args.artifact_kind,
         )
         input_paths = [args.input]
     if args.validate:
@@ -184,14 +190,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Verify and normalize the manifest's observed raw_report artifact",
     )
     normalize.add_argument("--output", required=True)
-    normalize.add_argument("--experiment-id", default="unknown")
+    normalize.add_argument("--experiment-id", default=None)
     normalize.add_argument(
-        "--target-type", choices=["avd", "physical", "unknown"], default="unknown"
+        "--target-type", choices=["avd", "physical", "unknown"], default=None
     )
-    normalize.add_argument(
-        "--observer", choices=tuple(OBSERVER_REGISTRY), default="adb_shell"
-    )
-    normalize.add_argument("--collection-method", default="raw_artifact")
+    normalize.add_argument("--observer", choices=tuple(OBSERVER_REGISTRY), default=None)
+    normalize.add_argument("--collection-method", default=None)
     normalize.add_argument(
         "--collection-timestamp",
         default=None,
@@ -201,6 +205,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--raw-artifact-ref",
         default=None,
         help="Optional stable artifact reference; defaults to the input basename",
+    )
+    normalize.add_argument(
+        "--artifact-kind",
+        choices=("auto", *(kind.value for kind in InputKind)),
+        default="auto",
+        help=(
+            "Select an artifact adapter explicitly; auto uses declared metadata "
+            "or the legacy text fallback"
+        ),
     )
     normalize.add_argument(
         "--no-validate",

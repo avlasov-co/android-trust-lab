@@ -19,6 +19,11 @@ Android Trust Lab is a reproducible research harness for measuring Android trust
 The analyzer supports Python 3.11, 3.12, 3.13, and 3.14. Python 3.11 is the
 minimum supported runtime.
 
+Raw inputs cross a version-aware, observer-specific typed adapter boundary
+before normalization. Adapter selection uses declared metadata, and legacy
+sectioned text remains an explicit warned compatibility path. See
+`docs/artifact_adapters.md`.
+
 It is not a root detector, bypass tool, root-hiding framework, Magisk hiding project, Play Integrity bypass project, SafetyNet bypass project, banking-app bypass project, or DuckDetector clone.
 
 The project studies a narrower and cleaner question:
@@ -53,7 +58,7 @@ host / adb / app / root collector
         ↓
 collection manifest + integrity-bound raw artifacts
         ↓
-parser
+typed artifact adapter + parser
         ↓
 content-addressed trust-report v3 JSON
         ↓
@@ -68,6 +73,7 @@ trust-diff v2 JSON + markdown summary
 |---|---|
 | Python analyzer CLI for normalize / migrate / collection and dataset validation / diff / summarize | implemented |
 | Strict portable collection-manifest v1 for every observer class | implemented |
+| Typed, versioned artifact adapters for legacy / ADB / host / app / root inputs | implemented |
 | Strict verifiable dataset-manifest v2 with deterministic freshness checks | implemented |
 | Content-addressed report v3 and exact-input diff v2 identities | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |

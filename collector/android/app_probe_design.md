@@ -23,8 +23,11 @@ Capture what a normal Android app can see.
 
 ## Portable output
 
-The future app implementation must emit
-`collector/schema/collection_manifest_v1_0_0.schema.json` with observer type
-`unprivileged_app`. Unsupported APIs, access denials, command errors, timeouts,
-and skipped probes remain separate outcomes; the manifest contains no package
-credentials, account data, device serial, or absolute path.
+The future app implementation must emit strict
+`collector/schema/app_probe_v1_0_0.schema.json` JSON with artifact kind
+`app_probe_json` and observer type `unprivileged_app`. Unsupported APIs, access
+denials, command errors, timeouts, and skipped probes remain separate outcomes.
+The artifact contains no package credentials, account data, device serial, or
+absolute path. If a later collector publishes portable bundle provenance, it
+must additionally use `collection_manifest_v1_0_0.schema.json`; the contracts
+serve different purposes and must agree on observer and event metadata.

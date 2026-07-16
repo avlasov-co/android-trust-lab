@@ -322,7 +322,7 @@ def test_normalize_parser_failure_uses_normalization_exit_code(
 ):
     monkeypatch.setattr(
         normalizer,
-        "parse_raw_text",
+        "parse_artifact_text",
         lambda *args, **kwargs: (_ for _ in ()).throw(
             ValueError("injected parser failure")
         ),

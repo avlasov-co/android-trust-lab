@@ -32,6 +32,8 @@ require_path() {
 require_path analyzer
 require_path tools
 require_path tests
+require_path collector/schema/app_probe_v1_0_0.schema.json
+require_path collector/schema/artifact_collection_manifest_v1_0_0.schema.json
 require_path collector/schema/trust_report_v1_0_0.schema.json
 require_path collector/schema/trust_report_v2_0_0.schema.json
 require_path collector/schema/trust_report_v3_0_0.schema.json

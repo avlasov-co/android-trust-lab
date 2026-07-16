@@ -255,6 +255,8 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     wheel = next(dist.glob("*.whl"))
     sdist = next(dist.glob("*.tar.gz"))
     expected = {
+        "trustlab/schemas/app_probe_v1_0_0.schema.json",
+        "trustlab/schemas/artifact_collection_manifest_v1_0_0.schema.json",
         "trustlab/schemas/collection_manifest_v1_0_0.schema.json",
         "trustlab/schemas/dataset_manifest_v1_0_0.schema.json",
         "trustlab/schemas/dataset_manifest_v2_0_0.schema.json",

@@ -1,0 +1,26 @@
+{
+  "artifact_kind": "host_collection_manifest",
+  "schema_version": "1.0.0",
+  "collector_version": "0.3.0",
+  "observer": {
+    "observer_type": "host",
+    "collection_method": "synthetic_host_fixture"
+  },
+  "collection": {
+    "experiment_id": "E16_adapter_contract",
+    "target_type": "unknown",
+    "timestamp": "2026-07-16T10:02:00Z"
+  },
+  "captures": [
+    {
+      "name": "python_version",
+      "status": "observed",
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout": "Python 3.x",
+      "stderr": "",
+      "source_ref": "captures/python-version.txt"
+    }
+  ],
+  "warnings": []
+}

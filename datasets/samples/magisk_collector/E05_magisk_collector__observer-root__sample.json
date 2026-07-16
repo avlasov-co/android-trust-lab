@@ -42,6 +42,62 @@
   },
   "experiment_id": "E05_magisk_collector",
   "extensions": {
+    "org.androidtrustlab.adapter": {
+      "captures": [
+        {
+          "name": "properties",
+          "source_ref": "legacy-sections/GETPROP",
+          "status": "observed"
+        },
+        {
+          "name": "boot_state",
+          "source_ref": "legacy-sections/BOOT_STATE",
+          "status": "observed"
+        },
+        {
+          "name": "mounts",
+          "source_ref": "legacy-sections/MOUNT",
+          "status": "observed"
+        },
+        {
+          "name": "identity",
+          "source_ref": "legacy-sections/ID",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_mode",
+          "source_ref": "legacy-sections/GETENFORCE",
+          "status": "observed"
+        },
+        {
+          "name": "kernel_cmdline",
+          "source_ref": "legacy-sections/CMDLINE",
+          "status": "observed"
+        },
+        {
+          "name": "su_paths",
+          "source_ref": "legacy-sections/SU_PATHS",
+          "status": "observed"
+        },
+        {
+          "name": "magisk",
+          "source_ref": "legacy-sections/MAGISK",
+          "status": "observed"
+        },
+        {
+          "name": "processes",
+          "source_ref": "legacy-sections/PS",
+          "status": "observed"
+        }
+      ],
+      "collector_version": "0.3.0-dev0",
+      "errors": [],
+      "input_kind": "magisk_collection_manifest",
+      "input_schema_version": "1.0.0",
+      "warnings": [
+        "portable collection manifest selected the observer-specific adapter; legacy payload has inferred per-command status"
+      ]
+    },
     "org.androidtrustlab.collection": {
       "canonical_manifest_sha256": "71ab54224911190815bf91f2192615b3c9a7da6e77a595b151ed6634ac3c9b77",
       "canonicalization": "atl-canonical-json-v1",
