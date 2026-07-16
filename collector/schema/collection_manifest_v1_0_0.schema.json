@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/collection-manifest/1.0.0",
+  "title": "Android Trust Lab Collection Manifest v1",
+  "description": "Portable provenance for one read-only collection event.",
+  "type": "object",
+  "required": [
+    "collection_id",
+    "schema_version",
+    "experiment_id",
+    "collector",
+    "observer",
+    "target",
+    "started_at",
+    "ended_at",
+    "completion_status",
+    "tool_versions",
+    "environment",
+    "warnings",
+    "redaction_policy",
+    "artifacts"
+  ],
+  "properties": {
+    "collection_id": {
+      "type": "string",
+      "pattern": "^atlcol-[a-f0-9]{16}$"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"
+    },
+    "collector": {
+      "$ref": "#/$defs/collector"
+    },
+    "observer": {
+      "$ref": "#/$defs/observer"
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "started_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "ended_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "completion_status": {
+      "enum": [
+        "complete",
+        "partial",
+        "failed"
+      ]
+    },
+    "tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "warnings": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    },
+    "redaction_policy": {
+      "$ref": "#/$defs/redactionPolicy"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/artifactEntry"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "collectorVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    },
+    "collector": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "enum": [
+            "trustlab-host",
+            "trustlab-adb",
+            "trustlab-app",
+            "trustlab-magisk",
+            "trustlab-fixture"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/collectorVersion"
+        }
+      },
+      "additionalProperties": false
+    },
+    "observer": {
+      "type": "object",
+      "required": [
+        "observer_type",
+        "privilege_level",
+        "collection_method"
+      ],
+      "properties": {
+        "observer_type": {
+          "enum": [
+            "host",
+            "adb_shell",
+            "unprivileged_app",
+            "root_collector"
+          ]
+        },
+        "privilege_level": {
+          "enum": [
+            "host",
+            "shell",
+            "app_sandbox",
+            "root"
+          ]
+        },
+        "collection_method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "pseudonymous_id",
+        "target_type"
+      ],
+      "properties": {
+        "pseudonymous_id": {
+          "type": "string",
+          "pattern": "^target-[a-f0-9]{16}$"
+        },
+        "target_type": {
+          "enum": [
+            "avd",
+            "physical",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "platform",
+        "transport",
+        "execution_context"
+      ],
+      "properties": {
+        "platform": {
+          "enum": [
+            "android",
+            "linux",
+            "macos",
+            "windows",
+            "unknown"
+          ]
+        },
+        "transport": {
+          "enum": [
+            "local",
+            "adb",
+            "on_device",
+            "app_api",
+            "fixture"
+          ]
+        },
+        "execution_context": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "redactionPolicy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "redaction_state",
+        "direct_identifiers_removed",
+        "serials_removed",
+        "secrets_removed"
+      ],
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "redaction_state": {
+          "enum": [
+            "not_required",
+            "applied"
+          ]
+        },
+        "direct_identifiers_removed": {
+          "const": true
+        },
+        "serials_removed": {
+          "const": true
+        },
+        "secrets_removed": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactEntry": {
+      "type": "object",
+      "required": [
+        "logical_name",
+        "relative_path",
+        "media_type",
+        "byte_size",
+        "sha256",
+        "probe_id",
+        "status",
+        "exit_code",
+        "timed_out",
+        "sensitivity",
+        "redaction_state",
+        "detail"
+      ],
+      "properties": {
+        "logical_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "relative_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[A-Za-z0-9._/-]+$",
+          "maxLength": 512
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+          "maxLength": 128
+        },
+        "byte_size": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "probe_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "observed_absent",
+            "inaccessible",
+            "not_collected",
+            "command_error",
+            "unsupported"
+          ]
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 255
+        },
+        "timed_out": {
+          "type": "boolean"
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "internal",
+            "sensitive",
+            "restricted"
+          ]
+        },
+        "redaction_state": {
+          "enum": [
+            "not_required",
+            "redacted",
+            "withheld"
+          ]
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "relative_path": {
+                "type": "string"
+              },
+              "byte_size": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "timed_out": {
+                "const": false
+              },
+              "redaction_state": {
+                "enum": [
+                  "not_required",
+                  "redacted"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "relative_path": {
+                "type": "null"
+              },
+              "byte_size": {
+                "type": "null"
+              },
+              "sha256": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "timed_out": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "command_error"
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

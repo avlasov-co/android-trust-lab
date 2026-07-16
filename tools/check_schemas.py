@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate project schemas and every checked-in report/diff that claims them."""
+"""Validate project schemas and checked-in report, diff, and manifest artifacts."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "analyzer"))
 from trustlab.report_writer import load_json  # noqa: E402
 from trustlab.validators import (  # noqa: E402
     check_project_schemas,
+    validate_collection_manifest,
     validate_diff,
     validate_report,
 )
@@ -43,9 +44,20 @@ def main() -> int:
     for path in diff_paths:
         validate_diff(load_json(path))
 
+    collection_manifest_paths = [
+        ROOT
+        / "datasets"
+        / "samples"
+        / "magisk_collector"
+        / "collector_manifest_sample.json"
+    ]
+    for path in collection_manifest_paths:
+        validate_collection_manifest(load_json(path))
+
     print(
         f"validated {len(schema_names)} schemas, "
-        f"{len(report_paths)} reports, and {len(diff_paths)} diffs"
+        f"{len(report_paths)} reports, {len(diff_paths)} diffs, and "
+        f"{len(collection_manifest_paths)} collection manifest"
     )
     return 0
 

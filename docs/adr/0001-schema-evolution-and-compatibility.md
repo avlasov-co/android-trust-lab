@@ -9,7 +9,7 @@
 Android Trust Lab has independently produced report, diff, dataset-manifest,
 collection-manifest, and experiment records. The original report and diff
 contracts are versioned `1.0.0`; the dataset manifest also declares `1.0.0` but
-does not yet have a JSON Schema. The collection-manifest sample uses the
+does not yet have a JSON Schema. The former collection-manifest sample used the
 pre-policy label `collection-manifest-0.1`, and experiments are unversioned
 Markdown. Treating package releases, collector releases, or these data contracts
 as one version would make compatibility and provenance ambiguous.
@@ -28,13 +28,13 @@ of them, and matching numeric values do not imply compatibility.
 | Report-schema version | Normalized trust-report contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
 | Diff-schema version | Trust-diff output contract | `1.0.0` readable and writable |
 | Dataset-manifest version | Dataset index contract | legacy `1.0.0` readable and writable; schema planned |
-| Collection-manifest version | On-device collection/provenance contract | no supported version; `1.0.0` planned |
+| Collection-manifest version | Portable collection/provenance contract | `1.0.0` readable and writable |
 | Experiment-spec version | Machine-readable experiment contract | no supported version; `1.0.0` planned |
 
 The machine-readable authority for schema support is
-`trustlab.compatibility.SCHEMA_SUPPORT`. The legacy
-`collection-manifest-0.1` sample and unversioned Markdown experiments are design
-inputs, not registered schema versions.
+`trustlab.compatibility.SCHEMA_SUPPORT`. The retired
+`collection-manifest-0.1` label is not a registered schema version; unversioned
+Markdown experiments remain design inputs.
 
 ### Identifiers and semantic versions
 
@@ -83,9 +83,9 @@ emit only `current_write_version`; readers may accept every declared readable
 version and migrate it explicitly.
 
 The dataset manifest is temporarily readable/writable legacy `1.0.0` but lacks a
-registered JSON Schema until the manifest step. Collection manifests and
-experiment specs remain unsupported until their strict schemas and validators
-are registered.
+registered JSON Schema until the dataset-manifest step. Collection manifest
+`1.0.0` is strict and registered. Experiment specs remain unsupported until
+their strict schema and validator are registered.
 
 ### Canonical evidence states
 

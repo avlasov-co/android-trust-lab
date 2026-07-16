@@ -16,10 +16,12 @@ Android trust state is distributed across boot, kernel, SELinux, mounts, propert
 
 ## Architecture summary
 
-Collectors produce raw artifacts. The analyzer parses those artifacts, normalizes
-them into strict report schema v2, validates them, and compares compatible
+Collectors describe raw artifacts with strict portable collection manifests.
+The analyzer verifies the relative path, size, and SHA-256 binding, parses the
+raw evidence, normalizes it into strict report schema v2, and compares compatible
 reports into `trust_diff.schema.json`. Frozen v1 reports remain readable and have
-an explicit v1-to-v2 migration.
+an explicit v1-to-v2 migration; legacy raw files can still be normalized
+directly.
 
 ## Expected outputs
 

@@ -11,7 +11,7 @@ Capture a privileged trust-state snapshot.
 - SELinux
 - Magisk state
 - process state
-- kernel command line
+- allowlisted boot-state evidence (the kernel command line is excluded)
 - filesystem contexts
 
 ## Must not
@@ -22,3 +22,11 @@ Capture a privileged trust-state snapshot.
 - hide root
 - spoof identity
 - weaken policy
+
+## Portable output
+
+Privileged collectors emit the same strict
+`collector/schema/collection_manifest_v1_0_0.schema.json` contract as every
+other observer. The manifest uses a pseudonymous target and relative paths and
+integrity-binds observed artifacts; partial or inaccessible probes must not be
+reported as empty successes.

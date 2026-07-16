@@ -8,6 +8,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .collection_manifest import (
+    CollectionManifest,
+    read_collection_manifest,
+    verify_collection_artifacts,
+)
+from .compatibility import EvidenceStatus
 from .exceptions import (
     CollectionError,
     MissingFileError,
@@ -15,7 +21,7 @@ from .exceptions import (
     safe_path_label,
 )
 from .observers import observer_spec
-from .parser import parse_raw_report
+from .parser import parse_raw_report, parse_raw_text
 from .report_v2 import report_v2_from_v1_shape
 
 SENSITIVE_MOUNTS = {
@@ -380,9 +386,68 @@ def normalize_raw_file(
         raise NormalizationError(
             f"could not normalize input artifact: {label}"
         ) from exc
+    return _normalize_parsed_report(
+        parsed,
+        label=label,
+        experiment_id=experiment_id,
+        target_type=target_type,
+        observer_type=observer_type,
+        collection_method=collection_method,
+        collection_timestamp=collection_timestamp,
+        raw_artifact_ref=raw_artifact_ref,
+    )
+
+
+def _normalize_raw_payload(
+    payload: bytes,
+    *,
+    label: str,
+    experiment_id: str,
+    target_type: str,
+    observer_type: str,
+    collection_method: str,
+    collection_timestamp: str | None,
+    raw_artifact_ref: str | None,
+    report_id_material_override: str | None = None,
+) -> dict[str, Any]:
+    """Normalize the exact bytes supplied by a caller after provenance checks."""
+
+    try:
+        parsed = parse_raw_text(payload.decode("utf-8"))
+    except UnicodeDecodeError as exc:
+        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
+    except (TypeError, ValueError) as exc:
+        raise NormalizationError(
+            f"could not normalize input artifact: {label}"
+        ) from exc
+    return _normalize_parsed_report(
+        parsed,
+        label=label,
+        experiment_id=experiment_id,
+        target_type=target_type,
+        observer_type=observer_type,
+        collection_method=collection_method,
+        collection_timestamp=collection_timestamp,
+        raw_artifact_ref=raw_artifact_ref,
+        report_id_material_override=report_id_material_override,
+    )
+
+
+def _normalize_parsed_report(
+    parsed: dict[str, Any],
+    *,
+    label: str,
+    experiment_id: str,
+    target_type: str,
+    observer_type: str,
+    collection_method: str,
+    collection_timestamp: str | None,
+    raw_artifact_ref: str | None,
+    report_id_material_override: str | None = None,
+) -> dict[str, Any]:
     stable_raw_artifact = raw_artifact_ref if raw_artifact_ref is not None else label
-    report_id_material = stable_raw_artifact
-    if raw_artifact_ref is None:
+    report_id_material = report_id_material_override or stable_raw_artifact
+    if raw_artifact_ref is None and report_id_material_override is None:
         canonical_evidence = json.dumps(
             parsed,
             sort_keys=True,
@@ -404,3 +469,115 @@ def normalize_raw_file(
         report_id_material=report_id_material,
         collection_timestamp=collection_timestamp,
     )
+
+
+def _canonical_manifest_payload(manifest: dict[str, Any]) -> bytes:
+    return json.dumps(
+        manifest,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def _manifest_collection_errors(manifest: CollectionManifest) -> list[str]:
+    errors: list[str] = []
+    if manifest.completion_status != "complete":
+        errors.append(
+            f"collection manifest completion status: {manifest.completion_status}"
+        )
+    errors.extend(
+        f"collection warning: {warning}"[:1024] for warning in manifest.warnings
+    )
+    for artifact in manifest.artifacts:
+        if artifact.status in {EvidenceStatus.OBSERVED, EvidenceStatus.OBSERVED_ABSENT}:
+            continue
+        detail = f": {artifact.detail}" if artifact.detail else ""
+        errors.append(
+            f"probe {artifact.probe_id}: {artifact.status.value}{detail}"[:1024]
+        )
+    return list(dict.fromkeys(errors))[:256]
+
+
+def normalize_collection_manifest_with_inputs(
+    manifest_path: str | Path,
+) -> tuple[dict[str, Any], tuple[Path, ...]]:
+    """Normalize one manifest snapshot and return its verified input paths."""
+
+    manifest = read_collection_manifest(manifest_path)
+    verified = verify_collection_artifacts(
+        manifest,
+        manifest_path,
+        retain_payloads=frozenset({"raw_report"}),
+    )
+    raw_entries = [
+        artifact
+        for artifact in manifest.artifacts
+        if artifact.logical_name == "raw_report"
+        and artifact.media_type == "text/plain"
+        and artifact.status is EvidenceStatus.OBSERVED
+    ]
+    if len(raw_entries) != 1:
+        raise NormalizationError(
+            "collection manifest must contain one observed raw_report artifact"
+        )
+    raw_entry = raw_entries[0]
+    try:
+        raw_artifact = verified[raw_entry.logical_name]
+    except KeyError as exc:
+        raise NormalizationError(
+            "collection manifest raw_report artifact was not verified"
+        ) from exc
+    if raw_artifact.payload is None:
+        raise NormalizationError(
+            "collection manifest raw_report bytes were not retained"
+        )
+    manifest_data = manifest.to_dict()
+    manifest_digest = hashlib.sha256(
+        _canonical_manifest_payload(manifest_data)
+    ).hexdigest()
+    report = _normalize_raw_payload(
+        raw_artifact.payload,
+        label=safe_path_label(raw_artifact.path),
+        experiment_id=manifest.experiment_id,
+        target_type=manifest.target.target_type,
+        observer_type=manifest.observer.observer_type,
+        collection_method=manifest.observer.collection_method,
+        collection_timestamp=manifest.ended_at,
+        raw_artifact_ref=raw_entry.relative_path,
+        report_id_material_override=(
+            f"{raw_entry.relative_path}:collection-manifest-sha256:{manifest_digest}"
+        ),
+    )
+    report["provenance"]["command_results"] = [
+        {
+            "command_id": artifact.probe_id,
+            "status": artifact.status,
+            "exit_code": artifact.exit_code,
+            "timed_out": artifact.timed_out,
+            "detail": artifact.detail,
+        }
+        for artifact in manifest.artifacts
+    ]
+    report["limitations"]["collection_errors"] = list(
+        dict.fromkeys(
+            [
+                *report["limitations"]["collection_errors"],
+                *_manifest_collection_errors(manifest),
+            ]
+        )
+    )[:256]
+    report["extensions"]["org.androidtrustlab.collection"] = {
+        "canonicalization": "json-sort-keys-no-whitespace-v1",
+        "canonical_manifest_sha256": manifest_digest,
+        "manifest": manifest_data,
+    }
+    return report, tuple(item.path for item in verified.values())
+
+
+def normalize_collection_manifest(manifest_path: str | Path) -> dict[str, Any]:
+    """Verify and normalize the exact raw-report bytes bound by a manifest."""
+
+    report, _ = normalize_collection_manifest_with_inputs(manifest_path)
+    return report

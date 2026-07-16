@@ -30,3 +30,9 @@ results/
 
 Current reports must map to `collector/schema/trust_report_v2_0_0.schema.json`;
 the versioned v1 schema is retained for read compatibility.
+
+All observer classes share
+`collector/schema/collection_manifest_v1_0_0.schema.json`. Portable manifests
+use pseudonymous targets and relative paths, bind observed artifacts by size and
+SHA-256, and preserve missing, inaccessible, failed, timed-out, unsupported, and
+successfully empty outcomes as distinct states.

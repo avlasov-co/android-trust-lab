@@ -13,6 +13,7 @@ from trustlab.report_writer import load_json
 from trustlab.validators import (
     check_project_schemas,
     load_schema,
+    validate_collection_manifest,
     validate_diff,
     validate_report,
 )
@@ -27,6 +28,7 @@ def test_project_schemas_are_valid_draft_2020_12():
 
 def test_packaged_project_schema_registry_is_meta_schema_valid():
     assert check_project_schemas() == (
+        "collection_manifest_v1_0_0.schema.json",
         "trust_diff.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
@@ -232,6 +234,13 @@ def test_sample_report_schema():
 def test_sample_diff_schema():
     diff = load_json(ROOT / "tests" / "fixtures" / "sample_diff.json")
     validate_diff(diff)
+
+
+def test_sample_collection_manifest_schema():
+    manifest = load_json(
+        ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
+    )
+    validate_collection_manifest(manifest)
 
 
 def test_all_manifest_reports_validate():

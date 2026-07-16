@@ -45,9 +45,8 @@ def test_supported_version_table_is_complete_and_exact():
             readable_versions=frozenset({"1.0.0"}),
         ),
         SchemaFamily.COLLECTION_MANIFEST: SchemaSupport(
-            current_write_version=None,
-            readable_versions=frozenset(),
-            planned_version="1.0.0",
+            current_write_version="1.0.0",
+            readable_versions=frozenset({"1.0.0"}),
         ),
         SchemaFamily.EXPERIMENT_SPEC: SchemaSupport(
             current_write_version=None,
@@ -70,6 +69,9 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
         (SchemaFamily.REPORT, "1.0.0"): "trust_report_v1_0_0.schema.json",
         (SchemaFamily.REPORT, "2.0.0"): "trust_report_v2_0_0.schema.json",
         (SchemaFamily.DIFF, "1.0.0"): "trust_diff.schema.json",
+        (SchemaFamily.COLLECTION_MANIFEST, "1.0.0"): (
+            "collection_manifest_v1_0_0.schema.json"
+        ),
     }
     assert (
         schema_resource_name(SchemaFamily.REPORT, "1.0.0")
@@ -100,11 +102,12 @@ def test_supported_schema_versions_do_not_imply_planned_support():
     assert supported_schema_versions(SchemaFamily.REPORT) == frozenset(
         {"1.0.0", "2.0.0"}
     )
-    assert supported_schema_versions(SchemaFamily.COLLECTION_MANIFEST) == frozenset()
+    assert supported_schema_versions(SchemaFamily.COLLECTION_MANIFEST) == frozenset(
+        {"1.0.0"}
+    )
     assert supported_schema_versions(SchemaFamily.EXPERIMENT_SPEC) == frozenset()
     assert current_write_version(SchemaFamily.REPORT) == "2.0.0"
-    with pytest.raises(SchemaValidationError):
-        current_write_version(SchemaFamily.COLLECTION_MANIFEST)
+    assert current_write_version(SchemaFamily.COLLECTION_MANIFEST) == "1.0.0"
 
 
 def test_writers_emit_literal_versions_declared_by_the_support_table():

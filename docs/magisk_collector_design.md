@@ -36,7 +36,8 @@ The module must not modify properties, patch SELinux, remount partitions, mount 
 - `post-fs-data.sh`: intentionally minimal in the MVP
 - `service.sh`: waits for boot completion, writes one report, exits
 - `action.sh`: manual collection entrypoint
-- `uninstall.sh`: preserves private report directories; no separate temporary state exists
+- `uninstall.sh`: preserves private report directories and the stable private
+  target pseudonym; no temporary state exists outside per-run directories
 
 ## Output paths
 
@@ -53,9 +54,18 @@ raw.txt
 collector_manifest.json
 ```
 
-The manifest is not a normalized trust report. It records provenance for the
-raw root-side snapshot. The host analyzer converts `raw.txt` into
-the current `trust_report_v2_0_0.schema.json` format.
+The strict collection-manifest v1 document is not a normalized trust report. It
+uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
+records a pseudonymous target, and marks missing per-command results as
+`not_collected`. The host analyzer verifies the binding and converts `raw.txt`
+into the current `trust_report_v2_0_0.schema.json` format.
+
+The pseudonymous target is a randomly generated 64-bit token stored once as
+`/data/adb/android-trust-lab/target_pseudonym` with mode `0600`. Reusing that
+private random token keeps target identity stable across collections without
+hashing or retaining a device serial or observation content. The module validates
+every dynamic value interpolated into the manifest, including its schema-safe
+collector version, before publishing JSON.
 
 ## Permissions
 

@@ -21,4 +21,5 @@ jobs:
           test -f docs/reviewer_quickstart.md
           test -f collector/schema/trust_report_v1_0_0.schema.json
           test -f collector/schema/trust_report_v2_0_0.schema.json
+          test -f collector/schema/collection_manifest_v1_0_0.schema.json
           test -f collector/schema/trust_diff.schema.json

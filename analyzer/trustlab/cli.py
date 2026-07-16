@@ -20,10 +20,10 @@ from .exceptions import (
     UnsupportedSchemaVersionError,
 )
 from .migrations import migrate_report_v1_to_v2
-from .normalizer import normalize_raw_file
+from .normalizer import normalize_collection_manifest_with_inputs, normalize_raw_file
 from .observers import OBSERVER_REGISTRY
 from .report_writer import diff_to_markdown, load_json, report_to_markdown, write_json
-from .validators import validate_diff, validate_report
+from .validators import validate_collection_manifest, validate_diff, validate_report
 
 EXIT_INTERNAL_ERROR = 1
 EXIT_USAGE_ERROR = 2
@@ -82,18 +82,25 @@ def _require_distinct_output(output: str, *inputs: str) -> None:
 
 
 def cmd_normalize(args: argparse.Namespace) -> int:
-    report = normalize_raw_file(
-        args.input,
-        experiment_id=args.experiment_id,
-        target_type=args.target_type,
-        observer_type=args.observer,
-        collection_method=args.collection_method,
-        collection_timestamp=args.collection_timestamp,
-        raw_artifact_ref=args.raw_artifact_ref,
-    )
+    if args.manifest is not None:
+        report, verified_paths = normalize_collection_manifest_with_inputs(
+            args.manifest
+        )
+        input_paths = [args.manifest, *(str(path) for path in verified_paths)]
+    else:
+        report = normalize_raw_file(
+            args.input,
+            experiment_id=args.experiment_id,
+            target_type=args.target_type,
+            observer_type=args.observer,
+            collection_method=args.collection_method,
+            collection_timestamp=args.collection_timestamp,
+            raw_artifact_ref=args.raw_artifact_ref,
+        )
+        input_paths = [args.input]
     if args.validate:
         validate_report(report)
-    _require_distinct_output(args.output, args.input)
+    _require_distinct_output(args.output, *input_paths)
     write_json(report, args.output)
     return 0
 
@@ -130,6 +137,12 @@ def cmd_validate_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate_collection_manifest(args: argparse.Namespace) -> int:
+    validate_collection_manifest(load_json(args.manifest))
+    _print_status("valid collection manifest")
+    return 0
+
+
 def cmd_summarize(args: argparse.Namespace) -> int:
     data = load_json(args.path)
     if "diff_id" in data:
@@ -157,7 +170,12 @@ def build_parser() -> argparse.ArgumentParser:
     normalize = sub.add_parser(
         "normalize", help="Normalize raw artifact into trust report JSON"
     )
-    normalize.add_argument("--input", required=True)
+    normalize_source = normalize.add_mutually_exclusive_group(required=True)
+    normalize_source.add_argument("--input")
+    normalize_source.add_argument(
+        "--manifest",
+        help="Verify and normalize the manifest's observed raw_report artifact",
+    )
     normalize.add_argument("--output", required=True)
     normalize.add_argument("--experiment-id", default="unknown")
     normalize.add_argument(
@@ -206,6 +224,13 @@ def build_parser() -> argparse.ArgumentParser:
     vd = sub.add_parser("validate-diff", help="Validate a trust diff")
     vd.add_argument("diff")
     vd.set_defaults(func=cmd_validate_diff)
+
+    vcm = sub.add_parser(
+        "validate-collection-manifest",
+        help="Validate a portable collection manifest",
+    )
+    vcm.add_argument("manifest")
+    vcm.set_defaults(func=cmd_validate_collection_manifest)
 
     sm = sub.add_parser("summarize", help="Print markdown summary")
     sm.add_argument("path")

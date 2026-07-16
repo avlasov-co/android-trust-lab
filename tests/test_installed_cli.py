@@ -168,6 +168,36 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
         == "2.0.0"
     )
 
+    collection_manifest = (
+        ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
+    )
+    validate_manifest = run_installed(
+        "validate-collection-manifest",
+        str(collection_manifest),
+        cwd=tmp_path,
+    )
+    assert validate_manifest.returncode == 0
+    assert validate_manifest.stdout == "valid collection manifest\n"
+    assert validate_manifest.stderr == ""
+
+    manifest_report = tmp_path / "manifest-report.json"
+    normalize_manifest = run_installed(
+        "normalize",
+        "--manifest",
+        str(collection_manifest),
+        "--output",
+        str(manifest_report),
+        cwd=tmp_path,
+    )
+    assert normalize_manifest.returncode == 0, normalize_manifest.stderr
+    assert normalize_manifest.stdout == normalize_manifest.stderr == ""
+    assert (
+        json.loads(manifest_report.read_text(encoding="utf-8"))["observer"][
+            "observer_type"
+        ]
+        == "root_collector"
+    )
+
 
 def test_installed_entry_point_failure_paths_are_stable(tmp_path):
     invalid = tmp_path / "invalid.json"
@@ -214,6 +244,17 @@ def test_installed_entry_point_failure_paths_are_stable(tmp_path):
             ("validate-diff", str(invalid)),
             6,
             "error: diff schema validation failed",
+        ),
+        (
+            (
+                "validate-collection-manifest",
+                str(
+                    ROOT
+                    / "tests/fixtures/collection_manifest_invalid_absolute_path.json"
+                ),
+            ),
+            6,
+            "error: collection manifest schema validation failed",
         ),
         (
             ("summarize", str(invalid)),

@@ -1,14 +1,70 @@
 {
-  "manifest_id": "atl-root-manifest-20260425T155000Z",
-  "schema_version": "collection-manifest-0.1",
-  "collection_timestamp": "2026-04-25T15:50:00Z",
+  "collection_id": "atlcol-b7e7f4381ab857f2",
+  "schema_version": "1.0.0",
   "experiment_id": "E05_magisk_collector",
+  "collector": {
+    "name": "trustlab-magisk",
+    "version": "0.3.0-dev0"
+  },
   "observer": {
     "observer_type": "root_collector",
     "privilege_level": "root",
     "collection_method": "magisk_module_manual"
   },
-  "raw_artifact": "datasets/samples/magisk_collector/raw_sample.txt",
-  "normalization": "Run trustlab normalize --observer root_collector --collection-method magisk_module_manual --input datasets/samples/magisk_collector/raw_sample.txt",
-  "note": "Read-only root-side raw snapshot manifest. This file is not a normalized trust report."
+  "target": {
+    "pseudonymous_id": "target-a6c2b5ce9178d304",
+    "target_type": "avd"
+  },
+  "started_at": "2026-04-25T15:49:58Z",
+  "ended_at": "2026-04-25T15:50:00Z",
+  "completion_status": "partial",
+  "tool_versions": {
+    "android_shell": "toybox",
+    "trustlab_magisk": "0.3.0-dev0"
+  },
+  "environment": {
+    "platform": "android",
+    "transport": "on_device",
+    "execution_context": "magisk_module"
+  },
+  "warnings": [
+    "Synthetic AVD-limited fixture; individual command exit codes were not retained by the legacy capture."
+  ],
+  "redaction_policy": {
+    "policy_id": "atl_portable_v1",
+    "redaction_state": "applied",
+    "direct_identifiers_removed": true,
+    "serials_removed": true,
+    "secrets_removed": true
+  },
+  "artifacts": [
+    {
+      "logical_name": "raw_report",
+      "relative_path": "raw_sample.txt",
+      "media_type": "text/plain",
+      "byte_size": 1751,
+      "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
+      "probe_id": "magisk.readonly_snapshot",
+      "status": "observed",
+      "exit_code": 0,
+      "timed_out": false,
+      "sensitivity": "sensitive",
+      "redaction_state": "redacted",
+      "detail": "Consolidated read-only raw observation."
+    },
+    {
+      "logical_name": "command_results",
+      "relative_path": null,
+      "media_type": "application/json",
+      "byte_size": null,
+      "sha256": null,
+      "probe_id": "magisk.command_results",
+      "status": "not_collected",
+      "exit_code": null,
+      "timed_out": false,
+      "sensitivity": "internal",
+      "redaction_state": "withheld",
+      "detail": "The legacy fixture did not retain per-command results."
+    }
+  ]
 }

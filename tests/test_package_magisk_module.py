@@ -83,6 +83,46 @@ def test_module_safety_rejects_broad_property_collection(tmp_path):
     assert any("only individual allowlisted properties" in error for error in errors)
 
 
+def test_module_safety_requires_portable_integrity_bound_manifest(tmp_path):
+    copied = module_copy(tmp_path)
+    script = copied / "scripts/write_report.sh"
+    content = script.read_text(encoding="utf-8")
+    content = content.replace('"schema_version": "1.0.0"', '"schema_version": "0.1"')
+    content = content.replace('"relative_path": "raw.txt"', '"relative_path": "$RAW"')
+    content = content.replace('sha256sum "$RAW"', "printf missing-digest")
+    script.write_text(content, encoding="utf-8")
+
+    errors = package_magisk_module.validate_private_collection(copied)
+    assert any("schema 1.0.0" in error for error in errors)
+    assert any("portable and relative" in error for error in errors)
+    assert any("bind the raw artifact digest" in error for error in errors)
+
+
+def test_module_metadata_rejects_json_unsafe_collector_version(tmp_path):
+    copied = module_copy(tmp_path)
+    metadata = copied / "module.prop"
+    metadata.write_text(
+        metadata.read_text(encoding="utf-8").replace(
+            "version=0.3.0-dev0", 'version=0.3.0-quote"\\escape'
+        ),
+        encoding="utf-8",
+    )
+
+    errors = package_magisk_module.validate_module_metadata(copied)
+    assert errors == ["module.prop version must be one schema-safe collector version"]
+    with pytest.raises(SystemExit, match="schema-safe collector version"):
+        package_magisk_module.validate_module(copied)
+
+
+def test_magisk_emitter_uses_stable_random_target_pseudonym():
+    script = (ROOT / "module/trustlab-magisk/scripts/write_report.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'TARGET_TOKEN_FILE="$BASE_DIR/target_pseudonym"' in script
+    assert "dd if=/dev/urandom" in script
+    assert 'TARGET_TOKEN="$(printf \'%s\' "$RAW_SHA256"' not in script
+
+
 def test_module_safety_rejects_kernel_command_line_capture(tmp_path):
     copied = module_copy(tmp_path)
     script = copied / "scripts/collect_boot_state.sh"

@@ -34,6 +34,7 @@ require_path tools
 require_path tests
 require_path collector/schema/trust_report_v1_0_0.schema.json
 require_path collector/schema/trust_report_v2_0_0.schema.json
+require_path collector/schema/collection_manifest_v1_0_0.schema.json
 require_path collector/schema/trust_diff.schema.json
 require_path datasets/manifest.json
 require_path results/artifact_manifest.json

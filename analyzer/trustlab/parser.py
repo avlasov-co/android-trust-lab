@@ -167,8 +167,9 @@ def parse_processes(text: str) -> dict[str, Any]:
     }
 
 
-def parse_raw_report(path: str | Path) -> dict[str, Any]:
-    text = Path(path).read_text(encoding="utf-8")
+def parse_raw_text(text: str) -> dict[str, Any]:
+    """Parse one already-decoded raw report snapshot."""
+
     sections = split_sections(text)
     return {
         "sections": sections,
@@ -189,3 +190,9 @@ def parse_raw_report(path: str | Path) -> dict[str, Any]:
             sections.get("PS", "") or sections.get("PROCESSES", "")
         ),
     }
+
+
+def parse_raw_report(path: str | Path) -> dict[str, Any]:
+    """Read and parse a raw report from a filesystem path."""
+
+    return parse_raw_text(Path(path).read_text(encoding="utf-8"))

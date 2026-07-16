@@ -33,6 +33,12 @@ command output. In particular, do not collect the kernel command line, broad
 property dumps, or full process command lines. Treat the raw artifact as private
 and redact unique identifiers before it leaves the authorized lab target.
 
+Publish collection provenance with
+`collector/schema/collection_manifest_v1_0_0.schema.json`. Record each command
+or probe as a distinct artifact outcome; a command that did not run is
+`not_collected`, not an empty observed file. Only relative artifact paths may be
+published.
+
 ## Suggested raw artifact format
 
 Use section markers:

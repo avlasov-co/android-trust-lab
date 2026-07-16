@@ -20,25 +20,33 @@ OBSERVER_REGISTRY = {
         observer_id="host",
         privilege_level="host",
         label="Host observer",
-        supported_artifact_adapters=("raw_report_text",),
+        supported_artifact_adapters=("raw_report_text", "collection_manifest_v1"),
     ),
     "adb_shell": ObserverSpec(
         observer_id="adb_shell",
         privilege_level="shell",
         label="ADB shell observer",
-        supported_artifact_adapters=("raw_report_text", "adb_shell_snapshot"),
+        supported_artifact_adapters=(
+            "raw_report_text",
+            "adb_shell_snapshot",
+            "collection_manifest_v1",
+        ),
     ),
     "unprivileged_app": ObserverSpec(
         observer_id="unprivileged_app",
         privilege_level="app_sandbox",
         label="Unprivileged app observer",
-        supported_artifact_adapters=("raw_report_text",),
+        supported_artifact_adapters=("raw_report_text", "collection_manifest_v1"),
     ),
     "root_collector": ObserverSpec(
         observer_id="root_collector",
         privilege_level="root",
         label="Privileged read-only collector",
-        supported_artifact_adapters=("raw_report_text", "magisk_collector_raw"),
+        supported_artifact_adapters=(
+            "raw_report_text",
+            "magisk_collector_raw",
+            "collection_manifest_v1",
+        ),
     ),
 }
 

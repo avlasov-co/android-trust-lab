@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import re
 import secrets
+from fractions import Fraction
 from importlib.resources import files
+from pathlib import PurePosixPath
 from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -27,10 +29,13 @@ from .migration_codec import encode_legacy_report, legacy_report_digest
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
+SUPPORTED_COLLECTION_MANIFEST_SCHEMA_VERSIONS = supported_schema_versions(
+    SchemaFamily.COLLECTION_MANIFEST
+)
 RFC3339_DATE_TIME_RE = re.compile(
     r"^(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})[Tt]"
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
-    r"(?:\.[0-9]+)?(?:[Zz]|(?P<offset_sign>[+-])"
+    r"(?:\.(?P<fraction>[0-9]+))?(?:[Zz]|(?P<offset_sign>[+-])"
     r"(?P<offset_hour>[0-9]{2}):(?P<offset_minute>[0-9]{2}))$"
 )
 FORMAT_CHECKER = FormatChecker()
@@ -349,3 +354,278 @@ def validate_diff(data: object) -> None:
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
+
+
+def _collection_manifest_semantic_error(detail: str) -> SchemaValidationError:
+    return SchemaValidationError(
+        f"collection manifest semantic validation failed: {detail}"
+    )
+
+
+def _manifest_strings(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _manifest_strings(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in _manifest_strings(item)]
+    return []
+
+
+def _validate_manifest_portability(data: dict[str, Any]) -> None:
+    strings = _manifest_strings(data)
+    path_patterns = (
+        re.compile(r"(?:^|[\s('\"\[=:])/(?:$|[A-Za-z0-9._~-])"),
+        re.compile(r"(?:^|[\s('\"\[=])//[^/\s]+/"),
+        re.compile(r"(?:^|[\s('\"\[=:])[A-Za-z]:[\\/]"),
+        re.compile(r"(?:^|[\s('\"\[=:])\\\\(?:[^\\/\s]+[\\/]|[?.]\\)"),
+        re.compile(r"(?:^|[\s('\"\[=:])\\[^\\/\s]+\\"),
+        re.compile(r"(?i)(?:^|[\s('\"\[=:])file:(?://)?/"),
+        re.compile(r"(?:^|[\s('\"\[=:])~(?:[A-Za-z0-9._-]+)?/"),
+    )
+    if any(pattern.search(value) for value in strings for pattern in path_patterns):
+        raise _collection_manifest_semantic_error(
+            "portable manifests must not contain absolute paths"
+        )
+
+    free_text = [
+        *data["warnings"],
+        *(
+            artifact["detail"]
+            for artifact in data["artifacts"]
+            if artifact["detail"] is not None
+        ),
+    ]
+    labeled_sensitive_patterns = (
+        re.compile(
+            r"(?i)\b(?:device\s+)?serial(?:\s+number)?\b"
+            r"(?:\s*(?:[:=]|\bis\b)\s*|\s+)"
+            r"(?!is\b|was\b|has\b|not\b|removed\b|redacted\b|withheld\b|"
+            r"unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(
+            r"(?i)\badb(?:\.exe)?\s+-s\s+"
+            r"(?!redacted\b|withheld\b|unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(
+            r"(?i)\badb\s+target\b(?:\s*[:=]\s*|\s+)"
+            r"(?!unknown\b|redacted\b|unavailable\b)\S+"
+        ),
+        re.compile(
+            r"(?i)\b(?:authorization\s*:\s*)?bearer\s+"
+            r"(?!redacted\b|withheld\b|unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(
+            r"(?i)\b(?:password|passwd|token|secret|api[_ -]?key|"
+            r"access[_ -]?token|refresh[_ -]?token)\b\s*(?:[:=]|\bis\b)\s*"
+            r"(?!removed\b|redacted\b|withheld\b|unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----"),
+    )
+    identifier_patterns = (
+        re.compile(r"(?i)\bemulator-[0-9]{4,}\b"),
+        re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{12,20}(?![0-9A-Fa-f])"),
+        re.compile(r"(?i)\b[0-9a-f]{2}(?::[0-9a-f]{2}){5}\b"),
+        re.compile(
+            r"\b(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})"
+            r"(?:\.(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})){3}\b"
+        ),
+        re.compile(
+            r"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-"
+            r"[89ab][0-9a-f]{3}-[0-9a-f]{12}\b"
+        ),
+        re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"),
+    )
+    if any(
+        pattern.search(value)
+        for value in strings
+        for pattern in labeled_sensitive_patterns
+    ) or any(
+        pattern.search(value) for value in free_text for pattern in identifier_patterns
+    ):
+        raise _collection_manifest_semantic_error(
+            "portable manifests must not contain identifiers or secrets"
+        )
+
+
+def _validate_manifest_artifacts(data: dict[str, Any]) -> None:
+    artifacts = data["artifacts"]
+    logical_names = [artifact["logical_name"] for artifact in artifacts]
+    if len(logical_names) != len(set(logical_names)):
+        raise _collection_manifest_semantic_error(
+            "artifact logical names must be unique"
+        )
+    paths = [
+        artifact["relative_path"]
+        for artifact in artifacts
+        if artifact["relative_path"] is not None
+    ]
+    if len(paths) != len(set(paths)):
+        raise _collection_manifest_semantic_error("artifact paths must be unique")
+    for path in paths:
+        pure_path = PurePosixPath(path)
+        if (
+            pure_path.is_absolute()
+            or path != pure_path.as_posix()
+            or any(part in {"", ".", ".."} for part in pure_path.parts)
+        ):
+            raise _collection_manifest_semantic_error(
+                "artifact paths must be normalized relative paths"
+            )
+
+    for artifact in artifacts:
+        if artifact["status"] in {"observed", "observed_absent"} and artifact[
+            "exit_code"
+        ] not in {
+            None,
+            0,
+        }:
+            raise _collection_manifest_semantic_error(
+                "successful artifact outcomes cannot record a failed exit code"
+            )
+
+
+def _validate_manifest_completion(data: dict[str, Any]) -> None:
+    available = {"observed", "observed_absent"}
+    statuses = {artifact["status"] for artifact in data["artifacts"]}
+    completion = data["completion_status"]
+    if completion == "complete" and statuses & {
+        "inaccessible",
+        "not_collected",
+        "command_error",
+    }:
+        raise _collection_manifest_semantic_error(
+            "complete collections cannot contain failed or omitted probes"
+        )
+    if completion == "partial" and not (
+        statuses & available and statuses - available - {"unsupported"}
+    ):
+        raise _collection_manifest_semantic_error(
+            "partial collections require both usable and unavailable evidence"
+        )
+    if completion == "failed" and statuses & available:
+        raise _collection_manifest_semantic_error(
+            "failed collections cannot contain usable artifacts"
+        )
+
+
+def _validate_manifest_timestamps(data: dict[str, Any]) -> None:
+    def order_key(value: str) -> tuple[int, int, Fraction]:
+        match = RFC3339_DATE_TIME_RE.fullmatch(value)
+        if match is None:  # Schema format validation runs before semantics.
+            raise _collection_manifest_semantic_error("invalid collection timestamp")
+        year, month, day = (int(part) for part in match.group("date").split("-"))
+        days_before_year = (
+            0
+            if year == 0
+            else (
+                365 * year + (year + 3) // 4 - (year + 99) // 100 + (year + 399) // 400
+            )
+        )
+        days_before_month = sum(
+            _days_in_gregorian_month(year, prior_month)
+            for prior_month in range(1, month)
+        )
+        day_index = days_before_year + days_before_month + day - 1
+        offset_minutes = 0
+        if match.group("offset_hour") is not None:
+            offset_minutes = int(match.group("offset_hour")) * 60 + int(
+                match.group("offset_minute")
+            )
+            if match.group("offset_sign") == "-":
+                offset_minutes = -offset_minutes
+        utc_minute = (
+            day_index * 1_440
+            + int(match.group("hour")) * 60
+            + int(match.group("minute"))
+            - offset_minutes
+        )
+        fraction_digits = match.group("fraction") or "0"
+        return (
+            utc_minute,
+            int(match.group("second")),
+            Fraction(int(fraction_digits), 10 ** len(fraction_digits)),
+        )
+
+    started = order_key(data["started_at"])
+    ended = order_key(data["ended_at"])
+    if ended < started:
+        raise _collection_manifest_semantic_error(
+            "collection end timestamp precedes its start"
+        )
+
+
+def _validate_collection_manifest_semantics(data: object) -> None:
+    if not isinstance(data, dict):
+        return
+    _validate_manifest_portability(data)
+    observer = data["observer"]
+    expected_privileges = {
+        "host": "host",
+        "adb_shell": "shell",
+        "unprivileged_app": "app_sandbox",
+        "root_collector": "root",
+    }
+    if expected_privileges[observer["observer_type"]] != observer["privilege_level"]:
+        raise _collection_manifest_semantic_error(
+            "observer privilege does not match observer type"
+        )
+    collector_name = data["collector"]["name"]
+    expected_observers = {
+        "trustlab-host": "host",
+        "trustlab-adb": "adb_shell",
+        "trustlab-app": "unprivileged_app",
+        "trustlab-magisk": "root_collector",
+    }
+    if (
+        collector_name in expected_observers
+        and observer["observer_type"] != expected_observers[collector_name]
+    ):
+        raise _collection_manifest_semantic_error(
+            "collector identity does not match observer type"
+        )
+    expected_transports = {
+        "trustlab-host": "local",
+        "trustlab-adb": "adb",
+        "trustlab-app": "app_api",
+        "trustlab-magisk": "on_device",
+        "trustlab-fixture": "fixture",
+    }
+    if data["environment"]["transport"] != expected_transports[collector_name]:
+        raise _collection_manifest_semantic_error(
+            "collector identity does not match environment transport"
+        )
+    expected_platforms = {
+        "trustlab-host": {"linux", "macos", "windows", "unknown"},
+        "trustlab-adb": {"android"},
+        "trustlab-app": {"android"},
+        "trustlab-magisk": {"android"},
+    }
+    if (
+        collector_name in expected_platforms
+        and data["environment"]["platform"] not in expected_platforms[collector_name]
+    ):
+        raise _collection_manifest_semantic_error(
+            "collector identity does not match environment platform"
+        )
+    _validate_manifest_artifacts(data)
+    _validate_manifest_completion(data)
+    _validate_manifest_timestamps(data)
+
+
+def validate_collection_manifest(data: object) -> None:
+    """Validate a portable collection manifest and its semantic invariants."""
+
+    version = data.get("schema_version") if isinstance(data, dict) else None
+    resource_version = (
+        version
+        if isinstance(version, str)
+        else current_write_version(SchemaFamily.COLLECTION_MANIFEST)
+    )
+    validate_with_schema(
+        data,
+        schema_resource_name(SchemaFamily.COLLECTION_MANIFEST, resource_version),
+        artifact_name="collection manifest",
+        supported_versions=SUPPORTED_COLLECTION_MANIFEST_SCHEMA_VERSIONS,
+    )
+    _validate_collection_manifest_semantics(data)

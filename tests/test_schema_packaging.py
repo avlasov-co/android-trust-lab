@@ -150,20 +150,29 @@ def _create_clean_environment(environment_dir, *, cwd):
     return python, purelib
 
 
-def _installed_smoke(python, *, purelib, report, v1_report, diff, cwd):
+def _installed_smoke(python, *, purelib, report, v1_report, diff, manifest, cwd):
     smoke = (
         "from pathlib import Path;"
         "import trustlab;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
-        "from trustlab.validators import validate_report,validate_diff;"
+        "from trustlab.validators import validate_collection_manifest,validate_report,validate_diff;"
         "validate_report(load_json(__import__('sys').argv[1]));"
         "validate_diff(load_json(__import__('sys').argv[2]));"
         "validate_report(migrate_report_v1_to_v2(load_json(__import__('sys').argv[3])));"
+        "validate_collection_manifest(load_json(__import__('sys').argv[4]));"
         "print(Path(trustlab.__file__).resolve())"
     )
     result = _run(
-        [str(python), "-c", smoke, str(report), str(diff), str(v1_report)],
+        [
+            str(python),
+            "-c",
+            smoke,
+            str(report),
+            str(diff),
+            str(v1_report),
+            str(manifest),
+        ],
         cwd=cwd,
     )
     assert Path(result.stdout.strip()).is_relative_to(purelib)
@@ -199,6 +208,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     wheel = next(dist.glob("*.whl"))
     sdist = next(dist.glob("*.tar.gz"))
     expected = {
+        "trustlab/schemas/collection_manifest_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v2_0_0.schema.json",
         "trustlab/schemas/trust_diff.schema.json",
@@ -222,12 +232,18 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     report = tmp_path / "report.json"
     diff = tmp_path / "diff.json"
     v1_report = tmp_path / "v1-report.json"
+    manifest = tmp_path / "collection-manifest.json"
     report.write_bytes(
         (ROOT / "tests/fixtures/sample_normalized_report.json").read_bytes()
     )
     diff.write_bytes((ROOT / "tests/fixtures/sample_diff.json").read_bytes())
     v1_report.write_bytes(
         (ROOT / "tests/fixtures/report_v1_historical.json").read_bytes()
+    )
+    manifest.write_bytes(
+        (
+            ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
+        ).read_bytes()
     )
     wheelhouse = _offline_wheelhouse(tmp_path / "wheelhouse")
     wheel_python, wheel_purelib = _create_clean_environment(
@@ -252,6 +268,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         report=report,
         v1_report=v1_report,
         diff=diff,
+        manifest=manifest,
         cwd=tmp_path,
     )
 
@@ -292,6 +309,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         report=report,
         v1_report=v1_report,
         diff=diff,
+        manifest=manifest,
         cwd=tmp_path,
     )
 
@@ -301,10 +319,11 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "import trustlab;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
-        "from trustlab.validators import validate_report,validate_diff;"
+        "from trustlab.validators import validate_collection_manifest,validate_report,validate_diff;"
         "validate_report(load_json(sys.argv[2]));"
         "validate_diff(load_json(sys.argv[3]));"
         "validate_report(migrate_report_v1_to_v2(load_json(sys.argv[4])));"
+        "validate_collection_manifest(load_json(sys.argv[5]));"
         "print(trustlab.__file__)"
     )
     zip_result = _run(
@@ -317,6 +336,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
             str(report),
             str(diff),
             str(v1_report),
+            str(manifest),
         ],
         cwd=tmp_path,
     )

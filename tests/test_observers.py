@@ -62,6 +62,7 @@ def test_observer_registry_is_complete_and_matches_schema():
         assert spec.observer_id == observer_id
         assert spec.label
         assert spec.supported_artifact_adapters
+        assert "collection_manifest_v1" in spec.supported_artifact_adapters
 
 
 def test_unsupported_observer_raises_typed_library_error():

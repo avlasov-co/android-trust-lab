@@ -1,0 +1,31 @@
+{
+  "collection_id": "atlcol-2222222222222222",
+  "schema_version": "1.0.0",
+  "experiment_id": "E01_stock_avd",
+  "collector": {"name": "trustlab-fixture", "version": "0.3.0-dev0"},
+  "observer": {"observer_type": "adb_shell", "privilege_level": "shell", "collection_method": "fixture_snapshot"},
+  "target": {"pseudonymous_id": "target-2222222222222222", "target_type": "avd"},
+  "started_at": "2026-04-25T15:06:20Z",
+  "ended_at": "2026-04-25T15:06:21Z",
+  "completion_status": "complete",
+  "tool_versions": {"trustlab_fixture": "0.3.0-dev0"},
+  "environment": {"platform": "android", "transport": "fixture", "execution_context": "test_fixture"},
+  "warnings": [],
+  "redaction_policy": {"policy_id": "atl_portable_v1", "redaction_state": "applied", "direct_identifiers_removed": true, "serials_removed": true, "secrets_removed": true},
+  "artifacts": [
+    {
+      "logical_name": "raw_report",
+      "relative_path": null,
+      "media_type": "text/plain",
+      "byte_size": null,
+      "sha256": null,
+      "probe_id": "fixture.raw_report",
+      "status": "not_collected",
+      "exit_code": null,
+      "timed_out": false,
+      "sensitivity": "sensitive",
+      "redaction_state": "withheld",
+      "detail": "The command was not run."
+    }
+  ]
+}

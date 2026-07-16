@@ -50,7 +50,7 @@ The optional Magisk module is only a privileged collector. It does not change sy
 ```text
 host / adb / app / root collector
         ↓
-raw artifacts
+collection manifest + integrity-bound raw artifacts
         ↓
 parser
         ↓
@@ -65,7 +65,8 @@ trust_diff.schema.json + markdown summary
 
 | Capability | Status |
 |---|---|
-| Python analyzer CLI for normalize / migrate / validate / diff / summarize | implemented |
+| Python analyzer CLI for normalize / migrate / manifest and report validation / diff / summarize | implemented |
+| Strict portable collection-manifest v1 for every observer class | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |

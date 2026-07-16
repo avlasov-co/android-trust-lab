@@ -85,6 +85,11 @@ ALLOWED_PROCESS_QUERY_LINES = {
     "BASIC_OUTPUT=$(ps 2>/dev/null)",
 }
 
+COLLECTOR_VERSION_RE = re.compile(
+    r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+)
+
 
 def iter_module_files(module_dir: Path = MODULE_DIR) -> Iterable[Path]:
     for path in sorted(module_dir.rglob("*")):
@@ -107,6 +112,22 @@ def validate_required_files(module_dir: Path = MODULE_DIR) -> list[str]:
         if not path.is_file():
             errors.append(f"missing required module file: {rel}")
     return errors
+
+
+def validate_module_metadata(module_dir: Path = MODULE_DIR) -> list[str]:
+    """Require the runtime-interpolated module version to be schema-safe."""
+
+    path = module_dir / "module.prop"
+    if not path.is_file() or path.is_symlink():
+        return []
+    versions = [
+        line.removeprefix("version=")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("version=")
+    ]
+    if len(versions) != 1 or COLLECTOR_VERSION_RE.fullmatch(versions[0]) is None:
+        return ["module.prop version must be one schema-safe collector version"]
+    return []
 
 
 def validate_no_mutating_payloads(module_dir: Path = MODULE_DIR) -> list[str]:
@@ -186,6 +207,35 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
             lambda: "RUN_ID=${RUN_DIR##*/}" in active_write_lines,
             "collector manifest IDs must include the exclusive run identifier",
         ),
+        (
+            lambda: any(
+                '"schema_version": "1.0.0"' in line for line in active_write_lines
+            ),
+            "collector must emit collection-manifest schema 1.0.0",
+        ),
+        (
+            lambda: any(
+                '"relative_path": "raw.txt"' in line for line in active_write_lines
+            ),
+            "collector manifest artifact paths must be portable and relative",
+        ),
+        (
+            lambda: any('sha256sum "$RAW"' in line for line in active_write_lines),
+            "collector manifest must bind the raw artifact digest",
+        ),
+        (
+            lambda: (
+                'TARGET_TOKEN_FILE="$BASE_DIR/target_pseudonym"' in active_write_lines
+            ),
+            "collector must persist a random privacy-preserving target pseudonym",
+        ),
+        (
+            lambda: any(
+                "COLLECTOR_VERSION" in line and "grep -Eq" in line
+                for line in active_write_lines
+            ),
+            "collector must validate dynamic manifest versions before JSON emission",
+        ),
     )
     for predicate, message in required_write_guards:
         if not predicate():
@@ -238,6 +288,7 @@ def validate_module(module_dir: Path = MODULE_DIR) -> None:
         errors.append(f"module directory does not exist: {module_dir}")
     else:
         errors.extend(validate_required_files(module_dir))
+        errors.extend(validate_module_metadata(module_dir))
         errors.extend(validate_no_mutating_payloads(module_dir))
         errors.extend(validate_private_collection(module_dir))
     if errors:

@@ -20,3 +20,11 @@ Capture what a normal Android app can see.
 - bypass checks
 - provide app-specific evasion logic
 - attempt stealth
+
+## Portable output
+
+The future app implementation must emit
+`collector/schema/collection_manifest_v1_0_0.schema.json` with observer type
+`unprivileged_app`. Unsupported APIs, access denials, command errors, timeouts,
+and skipped probes remain separate outcomes; the manifest contains no package
+credentials, account data, device serial, or absolute path.
