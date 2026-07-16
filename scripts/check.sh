@@ -44,6 +44,9 @@ require_path collector/schema/collection_manifest_v1_0_0.schema.json
 require_path collector/schema/dataset_manifest_v1_0_0.schema.json
 require_path collector/schema/dataset_manifest_v2_0_0.schema.json
 require_path collector/schema/dataset_source_v1_0_0.schema.json
+require_path collector/schema/trust_dimension_registry_v1_0_0.schema.json
+require_path analyzer/trustlab/registry/trust_dimensions_v1_0_0.json
+require_path docs/trust_dimension_registry.md
 require_path collector/schema/trust_diff.schema.json
 require_path collector/schema/trust_diff_v2_0_0.schema.json
 require_path collector/schema/trust_diff_v2_1_0.schema.json

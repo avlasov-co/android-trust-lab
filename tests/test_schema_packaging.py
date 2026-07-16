@@ -193,6 +193,7 @@ def _installed_smoke(
         "from pathlib import Path;"
         "import trustlab;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
+        "from trustlab.dimension_registry import TRUST_DIMENSION_DEFINITIONS;"
         "from trustlab.report_writer import load_json;"
         "from trustlab.validators import validate_collection_manifest,validate_dataset_manifest,validate_dataset_source,validate_report,validate_diff;"
         "from trustlab.dataset_manifest import verify_dataset_manifest;"
@@ -203,6 +204,7 @@ def _installed_smoke(
         "validate_dataset_manifest(load_json(__import__('sys').argv[5]));"
         "validate_dataset_source(load_json(Path(__import__('sys').argv[5]).with_name('source.json')));"
         "verify_dataset_manifest(__import__('sys').argv[5]);"
+        "assert len(TRUST_DIMENSION_DEFINITIONS)==30;"
         "print(Path(trustlab.__file__).resolve())"
     )
     result = _run(
@@ -276,6 +278,8 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "trustlab/schemas/trust_diff_v2_5_0.schema.json",
         "trustlab/schemas/trust_diff_v2_6_0.schema.json",
         "trustlab/schemas/trust_diff_v2_7_0.schema.json",
+        "trustlab/schemas/trust_dimension_registry_v1_0_0.schema.json",
+        "trustlab/registry/trust_dimensions_v1_0_0.json",
     }
     with zipfile.ZipFile(wheel) as archive:
         assert expected <= set(archive.namelist())
@@ -388,6 +392,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "import sys;"
         "sys.path.insert(0,sys.argv[1]);"
         "import trustlab;"
+        "from trustlab.dimension_registry import TRUST_DIMENSION_DEFINITIONS;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
         "from trustlab.validators import validate_collection_manifest,validate_dataset_manifest,validate_dataset_source,validate_report,validate_diff;"
@@ -399,6 +404,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "validate_dataset_manifest(load_json(sys.argv[6]));"
         "validate_dataset_source(load_json(__import__('pathlib').Path(sys.argv[6]).with_name('source.json')));"
         "verify_dataset_manifest(sys.argv[6]);"
+        "assert len(TRUST_DIMENSION_DEFINITIONS)==30;"
         "print(trustlab.__file__)"
     )
     zip_result = _run(

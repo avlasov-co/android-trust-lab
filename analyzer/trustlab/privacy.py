@@ -10,6 +10,7 @@ from typing import Any, cast
 
 from .assessment import confidence_assessment, direction_assessment
 from .comparison import observer_protocol
+from .dimension_registry import DEFAULT_DIMENSIONS, TRUST_DIMENSIONS_BY_ID
 from .exceptions import SchemaValidationError
 from .transitions import (
     classify_status_transition,
@@ -19,7 +20,6 @@ from .transitions import (
     signal_direction,
     transition_interpretation,
 )
-from .trust_dimensions import materiality_for_dimension
 
 _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:+/@-]{1,255}$", flags=re.ASCII)
 _SAFE_ANDROID_PATHS = frozenset(
@@ -1193,44 +1193,20 @@ def validate_portable_historical_report(report: object) -> None:
     _validate_report_extensions(report)
 
 
-_DIFF_DIMENSION_PATHS = {
-    "bootloader_lock_state": "verified_boot.flash_locked",
-    "verified_boot_state": "verified_boot.verified_boot_state",
-    "vbmeta_state": "verified_boot.vbmeta_device_state",
-    "verity_mode": "verified_boot.verity_mode",
-    "selinux_mode": "selinux.policy_mode",
-    "selinux_current_context": "selinux.current_context",
-    "selinux_denial_collection": "selinux.denial_collection",
-    "selected_process_visibility": "process_state.selected_processes",
-    "mount_integrity": "mounts.integrity_summary",
-    "system_mount_resolution": "mounts.system_resolution",
-    "dynamic_partition_state": "mounts.dynamic_partitions",
-    "apex_mount_set": "mounts.apex_set",
+_LEGACY_DIFF_DIMENSION_PATHS = {
     "observer_uid_root": "root_state.observer_effective_uid_is_root",
-    "root_shell_availability": "root_state.root_shell_available",
-    "su_binary_visibility": "root_state.su_binary_observed",
-    "su_invocation_tested": "root_state.su_invocation_tested",
-    "su_invocation_result": "root_state.su_invocation_result",
-    "root_management_artifact": "root_state.root_management_artifact_observed",
-    "magisk_binary_visibility": "magisk_state.binary_visibility",
-    "magisk_daemon_visibility": "magisk_state.daemon_visibility",
-    "magisk_process_visibility": "magisk_state.process_visibility",
-    "zygisk_visibility": "magisk_state.zygisk_visibility",
-    "magisk_version_name": "magisk_state.version_name",
-    "magisk_version_code": "magisk_state.version_code",
-    "magisk_module_context": "magisk_state.module_context",
-    "magisk_command_status": "magisk_state.command_status",
-    "property_consistency": "properties.security",
-    "emulator_state": "emulator_state.is_emulator",
     "observer_privilege": "observer.privilege_level",
 }
+_DIFF_DIMENSION_PATHS = {
+    **{
+        definition.id: definition.evidence_paths[0] for definition in DEFAULT_DIMENSIONS
+    },
+    **_LEGACY_DIFF_DIMENSION_PATHS,
+}
 _VERIFIED_BOOT_DIFF_DIMENSIONS = frozenset(
-    {
-        "bootloader_lock_state",
-        "verified_boot_state",
-        "vbmeta_state",
-        "verity_mode",
-    }
+    definition.id
+    for definition in DEFAULT_DIMENSIONS
+    if definition.category == "boot_integrity"
 )
 _DIFF_SEVERITIES = {
     "bootloader_lock_state": "high",
@@ -1264,19 +1240,7 @@ _DIFF_SEVERITIES = {
     "observer_privilege": "info",
 }
 _DIFF_INTERPRETATIONS = {
-    "bootloader_lock_state": "Bootloader lock evidence changed. On virtual targets this is property evidence only, not hardware-backed proof.",
-    "mount_integrity": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
-    "system_mount_resolution": "The resolved Android system root changed. Review the referenced mount records and source quality.",
-    "dynamic_partition_state": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
-    "apex_mount_set": "The observed APEX package mount set changed. Review capture completeness and package mount records.",
-    "selinux_mode": "SELinux mode changed. This affects runtime MAC boundary interpretation.",
-    "selinux_current_context": "Observer SELinux context visibility changed. This is scoped evidence, not complete policy inspection.",
-    "selinux_denial_collection": "SELinux denial collection status changed; compare collection scope before interpreting absence.",
-    "selected_process_visibility": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
-    "verified_boot_state": "Verified boot property evidence changed. Emulator evidence remains limited for hardware-backed conclusions.",
-    "vbmeta_state": "vbmeta device-state evidence changed. Interpret according to target class and observer.",
-    "verity_mode": "dm-verity-related property evidence changed.",
-    "property_consistency": "Security-relevant property group changed. This does not imply bypass by itself.",
+    **{definition.id: definition.interpretation for definition in DEFAULT_DIMENSIONS},
     "observer_privilege": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
 }
 _DEFAULT_DIFF_INTERPRETATION = "Trust-state dimension changed between reports."
@@ -1890,13 +1854,16 @@ def _validate_structured_signal_portability(
 def _validate_diff_assessment(
     diff: dict[str, Any], item: dict[str, Any], dimension: str
 ) -> None:
+    definition = TRUST_DIMENSIONS_BY_ID.get(dimension)
+    if definition is None:
+        raise SchemaValidationError("current diff dimension is undocumented")
     direction, direction_rationale = direction_assessment(
-        dimension,
+        definition.direction_rule.policy_id,
         item["before"],
         item["after"],
         transition_class=item["transition"]["classification"],
     )
-    if item.get("materiality") != materiality_for_dimension(dimension):
+    if item.get("materiality") != definition.materiality_rule.value:
         raise SchemaValidationError("diff materiality is not canonical")
     if item.get("direction") != direction:
         raise SchemaValidationError("diff direction is not canonical")

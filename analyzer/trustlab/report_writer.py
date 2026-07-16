@@ -10,6 +10,8 @@ from typing import Any
 
 from .bounded_io import read_bounded_regular_file
 from .canonical_json import MAX_CANONICAL_BYTES
+from .dimension_registry import TRUST_DIMENSIONS_BY_ID
+from .dimension_rendering import dimension_label, render_dimension
 from .exceptions import (
     InvalidJSONError,
     OutputWriteError,
@@ -130,6 +132,12 @@ def _evidence_value(value: Any) -> Any:
     return value
 
 
+def _registered_dimension_label(dimension: object, *, include_id: bool = True) -> str:
+    if isinstance(dimension, str) and dimension in TRUST_DIMENSIONS_BY_ID:
+        return dimension_label(dimension, include_id=include_id)
+    return str(dimension)
+
+
 def diff_to_markdown(diff: dict[str, Any]) -> str:
     validate_portable_diff(diff)
     compatibility = diff.get("compatibility", {})
@@ -194,7 +202,7 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
         confidence = item.get("confidence", {}).get("level", "not recorded")
         rationale = ", ".join(item.get("rationale", [])) or "not recorded"
         lines.append(
-            f"| {item['dimension']} | {materiality} | "
+            f"| {_registered_dimension_label(item['dimension'])} | {materiality} | "
             f"{item.get('direction', 'not recorded')} | {confidence} | "
             f"{transition.get('classification', 'unknown')} "
             f"({transition.get('before_status', 'unknown')} → "
@@ -219,14 +227,14 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
         for signal in signals:
             if isinstance(signal, str):
                 lines.append(
-                    f"| {signal} | legacy | not recorded | not recorded | legacy | "
+                    f"| {_registered_dimension_label(signal)} | legacy | not recorded | not recorded | legacy | "
                     "legacy | indeterminate | `unknown` | `unknown` | `unknown` | "
                     "not recorded | Historical diff did not record structured status "
                     "transition metadata. |"
                 )
                 continue
             lines.append(
-                f"| {signal['dimension']} | "
+                f"| {_registered_dimension_label(signal['dimension'])} | "
                 f"{signal.get('materiality', 'not recorded')} | "
                 f"{signal.get('direction', 'not recorded')} | "
                 f"{signal.get('confidence', {}).get('level', 'not recorded')} | "
@@ -287,26 +295,26 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         "",
         "## Key dimensions",
         "",
-        f"- SELinux mode: `{_evidence_value(selinux.get('policy_mode', selinux.get('mode', 'not_collected')))}`",
-        f"- SELinux current context: `{_evidence_value(selinux.get('current_context', 'not_collected'))}`",
-        f"- SELinux denial collection: `{_status(selinux.get('denial_collection'))}`",
+        f"- {_registered_dimension_label('selinux_mode', include_id=False)}: `{render_dimension(report, 'selinux_mode')}`",
+        f"- {_registered_dimension_label('selinux_current_context', include_id=False)}: `{render_dimension(report, 'selinux_current_context')}`",
+        f"- {_registered_dimension_label('selinux_denial_collection', include_id=False)}: `{_status(selinux.get('denial_collection'))}`",
         f"- Process capture: `{process_capture}` (scope `{process_state.get('scope', 'unknown')}`, completeness `{process_state.get('completeness', 'unknown')}`)",
-        f"- Selected processes (visibility/context): `{_selected_process_summary(process_state)}`",
+        f"- {_registered_dimension_label('selected_process_visibility', include_id=False)} (visibility/context): `{_selected_process_summary(process_state)}`",
         f"- Process limitations: `{', '.join(process_limitations) if process_limitations else 'none'}`",
         f"- Observer effective UID is root: `{_evidence_value(root_state.get('observer_effective_uid_is_root', 'not_collected'))}`",
-        f"- Root shell available: `{_evidence_value(root_state.get('root_shell_available', 'not_collected'))}`",
-        f"- su binary visible: `{_evidence_value(root_state.get('su_binary_observed', 'not_collected'))}`",
-        f"- su invocation tested: `{_evidence_value(root_state.get('su_invocation_tested', 'not_collected'))}`",
-        f"- su invocation result: `{_evidence_value(root_state.get('su_invocation_result', 'not_collected'))}`",
-        f"- Root-management artifact visible: `{_evidence_value(root_state.get('root_management_artifact_observed', 'not_collected'))}`",
-        f"- Magisk binary visible: `{_evidence_value(magisk_state.get('binary_visibility', 'not_collected'))}`",
-        f"- Magisk daemon visible: `{_evidence_value(magisk_state.get('daemon_visibility', 'not_collected'))}`",
-        f"- Magisk process visible: `{_evidence_value(magisk_state.get('process_visibility', 'not_collected'))}`",
-        f"- Zygisk indicator visible: `{_evidence_value(magisk_state.get('zygisk_visibility', 'not_collected'))}`",
-        f"- Magisk version: name `{_evidence_value(magisk_state.get('version_name', 'not_collected'))}`, code `{_evidence_value(magisk_state.get('version_code', 'not_collected'))}`",
-        f"- Magisk module context: `{_evidence_value(magisk_state.get('module_context', 'not_collected'))}`",
-        f"- Magisk command status: `{_status(magisk_state.get('command_status'))}`",
+        f"- {_registered_dimension_label('root_shell_availability', include_id=False)}: `{render_dimension(report, 'root_shell_availability')}`",
+        f"- {_registered_dimension_label('su_binary_visibility', include_id=False)}: `{render_dimension(report, 'su_binary_visibility')}`",
+        f"- {_registered_dimension_label('su_invocation_tested', include_id=False)}: `{render_dimension(report, 'su_invocation_tested')}`",
+        f"- {_registered_dimension_label('su_invocation_result', include_id=False)}: `{render_dimension(report, 'su_invocation_result')}`",
+        f"- {_registered_dimension_label('root_management_artifact', include_id=False)}: `{render_dimension(report, 'root_management_artifact')}`",
+        f"- {_registered_dimension_label('magisk_binary_visibility', include_id=False)}: `{render_dimension(report, 'magisk_binary_visibility')}`",
+        f"- {_registered_dimension_label('magisk_daemon_visibility', include_id=False)}: `{render_dimension(report, 'magisk_daemon_visibility')}`",
+        f"- {_registered_dimension_label('magisk_process_visibility', include_id=False)}: `{render_dimension(report, 'magisk_process_visibility')}`",
+        f"- {_registered_dimension_label('zygisk_visibility', include_id=False)}: `{render_dimension(report, 'zygisk_visibility')}`",
+        f"- {_registered_dimension_label('magisk_version_name', include_id=False)}: `{render_dimension(report, 'magisk_version_name')}`; {_registered_dimension_label('magisk_version_code', include_id=False)}: `{render_dimension(report, 'magisk_version_code')}`",
+        f"- {_registered_dimension_label('magisk_module_context', include_id=False)}: `{render_dimension(report, 'magisk_module_context')}`",
+        f"- {_registered_dimension_label('magisk_command_status', include_id=False)}: `{_status(magisk_state.get('command_status'))}`",
         f"- Verified-boot confidence: `{confidence.get('level', 'unassessed')}` (source `{confidence.get('source_quality', 'unavailable')}`, command `{confidence.get('command_success', 'not_collected')}`, observer `{confidence.get('observer_capability', 'unspecified')}`)",
-        f"- Emulator: `{_evidence_value(report.get('emulator_state', {}).get('is_emulator', 'not_collected'))}`",
+        f"- {_registered_dimension_label('emulator_state', include_id=False)}: `{render_dimension(report, 'emulator_state')}`",
     ]
     return "\n".join(lines) + "\n"

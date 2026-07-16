@@ -20,7 +20,7 @@
 
 | Dimension | Materiality | Direction | Confidence | Transition | Before | After | Rationale |
 |---|---|---|---|---|---|---|---|
-| su_binary_visibility | moderate | context_change | low | context_change (observed_absent → observed) | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` | materiality_from_dimension_policy, observer_or_target_context_changed, confidence_from_explicit_factors |
+| su binary visibility (`su_binary_visibility`) | moderate | context_change | low | context_change (observed_absent → observed) | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` | materiality_from_dimension_policy, observer_or_target_context_changed, confidence_from_explicit_factors |
 
 ## Signals Became Available
 

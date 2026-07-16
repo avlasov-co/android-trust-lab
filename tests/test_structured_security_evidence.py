@@ -651,9 +651,9 @@ def test_report_summary_retains_structured_statuses_without_source_details(
     assert "init=observed/u:r:init:s0" in markdown
     assert "adbd=observed_absent/observed_absent" in markdown
     assert "Observer effective UID is root: `not_collected`" in markdown
-    assert "su binary visible: `not_collected`" in markdown
+    assert "su binary visibility: `not_collected`" in markdown
     assert "su invocation tested: `not_collected`" in markdown
-    assert "Magisk binary visible: `not_collected`" in markdown
+    assert "Magisk binary visibility: `not_collected`" in markdown
     assert "Verified-boot confidence:" in markdown
     assert "evidence_refs" not in markdown
     assert "7654321" not in markdown

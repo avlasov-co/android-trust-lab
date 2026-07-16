@@ -45,6 +45,7 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
         "trust_diff_v2_5_0.schema.json",
         "trust_diff_v2_6_0.schema.json",
         "trust_diff_v2_7_0.schema.json",
+        "trust_dimension_registry_v1_0_0.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
         "trust_report_v3_0_0.schema.json",

@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab.dataset_manifest import verify_dataset_manifest  # noqa: E402
+from trustlab.dimension_registry import (  # noqa: E402
+    TRUST_DIMENSION_DEFINITIONS,
+)
 from trustlab.report_writer import load_json  # noqa: E402
 from trustlab.validators import (  # noqa: E402
     check_project_schemas,
@@ -69,6 +72,7 @@ def main() -> int:
 
     print(
         f"validated {len(schema_names)} schemas, "
+        f"{len(TRUST_DIMENSION_DEFINITIONS)} dimensions in 1 registry, "
         f"{len(report_paths)} reports, {len(diff_paths)} diffs, and "
         f"{len(collection_manifest_paths)} collection manifest, "
         f"{len(historical_manifest_paths) + 1} dataset manifests, "

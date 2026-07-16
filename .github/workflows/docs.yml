@@ -24,6 +24,7 @@ jobs:
           test -f docs/report_schema_v3.md
           test -f docs/artifact_adapters.md
           test -f docs/parser_limits.md
+          test -f docs/trust_dimension_registry.md
           test -f collector/schema/app_probe_v1_0_0.schema.json
           test -f collector/schema/artifact_collection_manifest_v1_0_0.schema.json
           test -f collector/schema/trust_report_v1_0_0.schema.json
@@ -35,6 +36,7 @@ jobs:
           test -f collector/schema/dataset_manifest_v1_0_0.schema.json
           test -f collector/schema/dataset_manifest_v2_0_0.schema.json
           test -f collector/schema/dataset_source_v1_0_0.schema.json
+          test -f collector/schema/trust_dimension_registry_v1_0_0.schema.json
           test -f collector/schema/trust_diff.schema.json
           test -f collector/schema/trust_diff_v2_0_0.schema.json
           test -f collector/schema/trust_diff_v2_1_0.schema.json

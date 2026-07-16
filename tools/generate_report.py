@@ -33,6 +33,12 @@ from trustlab.dataset_manifest import (
     validate_dataset_collection_relationships,
 )
 from trustlab.diff import make_diff
+from trustlab.dimension_rendering import (
+    MATRIX_DIMENSIONS,
+    dimension_label,
+    registry_markdown,
+    render_dimension,
+)
 from trustlab.exceptions import MissingFileError
 from trustlab.normalizer import normalize_collection_payload, normalize_raw_bytes
 from trustlab.validators import (
@@ -219,14 +225,6 @@ def publish_outputs(
     return changed
 
 
-def presence(value: Any) -> str:
-    if value is True:
-        return "present"
-    if value is False:
-        return "absent"
-    return str(value)
-
-
 def evidence_value(value: Any) -> Any:
     if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
         if value["status"] in {"observed", "observed_absent"}:
@@ -292,12 +290,18 @@ def sample_report(
 
 
 def summary_table(reports: list[dict[str, Any]]) -> str:
+    root_title = dimension_label("root_shell_availability", include_id=False)
+    magisk_title = dimension_label("magisk_binary_visibility", include_id=False)
+    selinux_title = dimension_label("selinux_mode", include_id=False)
+    mount_title = dimension_label("mount_integrity", include_id=False)
+    verified_title = dimension_label("verified_boot_state", include_id=False)
+    bootloader_title = dimension_label("bootloader_lock_state", include_id=False)
     lines = [
         "# Summary Table",
         "",
         "This table is generated from checked-in sample reports. Current samples are synthetic / AVD-limited and do not support physical-device boot-chain claims.",
         "",
-        "| experiment | target | observer | method | root shell | Magisk binary | selinux | writable sensitive mounts | overlay | verified boot | bootloader locked | confidence | status |",
+        f"| experiment | target | observer | method | {root_title} | {magisk_title} | {selinux_title} | {mount_title}: writable sensitive mounts | {mount_title}: overlay | {verified_title} | {bootloader_title} | confidence | status |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for report in reports:
@@ -309,17 +313,13 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
                 target=report["target"]["target_type"],
                 observer=report["observer"]["observer_type"],
                 method=report["observer"]["collection_method"],
-                root=presence(
-                    evidence_value(report["root_state"]["root_shell_available"])
-                ),
-                magisk=presence(
-                    evidence_value(report["magisk_state"]["binary_visibility"])
-                ),
-                selinux=evidence_value(report["selinux"]["policy_mode"]),
+                root=render_dimension(report, "root_shell_availability"),
+                magisk=render_dimension(report, "magisk_binary_visibility"),
+                selinux=render_dimension(report, "selinux_mode"),
                 writable=fmt(evidence_value(mounts["writable_sensitive_mounts"])),
                 overlay=str(evidence_value(mounts["overlay_detected"])).lower(),
-                vb=evidence_value(verified["verified_boot_state"]),
-                locked=evidence_value(verified["flash_locked"]),
+                vb=render_dimension(report, "verified_boot_state"),
+                locked=render_dimension(report, "bootloader_lock_state"),
                 confidence=verified["confidence"]["level"],
             )
         )
@@ -374,7 +374,7 @@ def diff_markdown(
             for item in diff["changed_dimensions"]:
                 transition = item["transition"]
                 lines.append(
-                    f"| {item['dimension']} | {item['materiality']} | "
+                    f"| {dimension_label(item['dimension'])} | {item['materiality']} | "
                     f"{item['direction']} | {item['confidence']['level']} | "
                     f"{transition['classification']} "
                     f"({transition['before_status']} → {transition['after_status']}) | "
@@ -401,7 +401,7 @@ def diff_markdown(
                 ]
                 for signal in signals:
                     lines.append(
-                        f"| {signal['dimension']} | {signal['materiality']} | "
+                        f"| {dimension_label(signal['dimension'])} | {signal['materiality']} | "
                         f"{signal['direction']} | {signal['confidence']['level']} | "
                         f"{signal['before_status']} → "
                         f"{signal['after_status']} | {signal['classification']} | "
@@ -417,28 +417,7 @@ def diff_markdown(
 
 
 def dimension_value(report: dict[str, Any], dimension: str) -> str:
-    if dimension == "bootloader_lock_state":
-        return str(evidence_value(report["verified_boot"]["flash_locked"]))
-    if dimension == "verified_boot_state":
-        return str(evidence_value(report["verified_boot"]["verified_boot_state"]))
-    if dimension == "vbmeta_state":
-        return str(evidence_value(report["verified_boot"]["vbmeta_device_state"]))
-    if dimension == "verity_mode":
-        return str(evidence_value(report["verified_boot"]["verity_mode"]))
-    if dimension == "selinux_mode":
-        return str(evidence_value(report["selinux"]["policy_mode"]))
-    if dimension == "mount_integrity":
-        integrity = report["mounts"]["integrity_summary"]
-        writable = evidence_value(integrity["writable_sensitive_mounts"])
-        overlay = evidence_value(integrity["overlay_detected"])
-        return f"writable={fmt(writable)}; overlay={str(overlay).lower()}"
-    if dimension == "root_shell_availability":
-        return presence(evidence_value(report["root_state"]["root_shell_available"]))
-    if dimension == "magisk_binary_visibility":
-        return presence(evidence_value(report["magisk_state"]["binary_visibility"]))
-    if dimension == "property_consistency":
-        return fmt(evidence_value(report["properties"]["security"]))
-    return "unknown"
+    return render_dimension(report, dimension)
 
 
 def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
@@ -450,17 +429,6 @@ def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
         ("Class E physical baseline", None),
         ("Class F physical rooted", None),
     ]
-    dimensions = [
-        "bootloader_lock_state",
-        "verified_boot_state",
-        "vbmeta_state",
-        "verity_mode",
-        "selinux_mode",
-        "mount_integrity",
-        "root_shell_availability",
-        "magisk_binary_visibility",
-        "property_consistency",
-    ]
     lines = [
         "# Trust Dimensions Matrix",
         "",
@@ -469,13 +437,13 @@ def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
         "| Dimension | " + " | ".join(label for label, _ in classes) + " |",
         "|---" + "|---" * len(classes) + "|",
     ]
-    for dimension in dimensions:
-        row = [dimension]
+    for definition in MATRIX_DIMENSIONS:
+        row = [dimension_label(definition)]
         for _, exp in classes:
             if exp is None:
-                row.append("not collected")
+                row.append("not_collected")
             else:
-                row.append(dimension_value(reports_by_exp[exp], dimension))
+                row.append(dimension_value(reports_by_exp[exp], definition.id))
         lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines) + "\n"
 
@@ -614,6 +582,7 @@ def build_outputs() -> dict[Path, bytes]:
     outputs[ROOT / "results/figures/trust_dimensions_matrix.md"] = matrix_markdown(
         reports_by_exp
     ).encode()
+    outputs[ROOT / "docs/trust_dimension_registry.md"] = registry_markdown().encode()
 
     artifact_specs: list[tuple[Path, str]] = [
         (manifest_path, "verifiable_dataset_manifest"),
@@ -640,6 +609,10 @@ def build_outputs() -> dict[Path, bytes]:
             (
                 ROOT / "results/figures/trust_dimensions_matrix.md",
                 "generated_matrix",
+            ),
+            (
+                ROOT / "docs/trust_dimension_registry.md",
+                "generated_registry_documentation",
             ),
         ]
     )

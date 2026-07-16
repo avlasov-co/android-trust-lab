@@ -1,37 +1,11 @@
-"""Canonical trust dimensions and state-class helpers."""
+"""Trust-dimension compatibility exports and state-class helpers."""
 
-TRUST_DIMENSIONS = [
-    "bootloader_lock_state",
-    "verified_boot_state",
-    "vbmeta_state",
-    "verity_mode",
-    "selinux_mode",
-    "selinux_current_context",
-    "selinux_denial_collection",
-    "selected_process_visibility",
-    "mount_integrity",
-    "system_mount_resolution",
-    "dynamic_partition_state",
-    "apex_mount_set",
-    "root_shell_availability",
-    "su_binary_visibility",
-    "su_invocation_tested",
-    "su_invocation_result",
-    "root_management_artifact",
-    "magisk_binary_visibility",
-    "magisk_daemon_visibility",
-    "magisk_process_visibility",
-    "zygisk_visibility",
-    "magisk_version_name",
-    "magisk_version_code",
-    "magisk_module_context",
-    "magisk_command_status",
-    "property_consistency",
-    "emulator_state",
-    "physical_device_state",
-    "app_visible_state",
-    "root_visible_state",
-]
+from .dimension_registry import (
+    CONTEXTUAL_DIMENSION_DEFINITIONS,
+    TRUST_DIMENSION_DEFINITIONS,
+)
+
+TRUST_DIMENSIONS = [definition.id for definition in TRUST_DIMENSION_DEFINITIONS]
 
 VISIBILITY_CONTEXT_FIELDS = [
     "observer_type",
@@ -44,9 +18,7 @@ VISIBILITY_CONTEXT_FIELDS = [
 # reports include direct supporting payloads. They are not mapped to generic
 # target or observer metadata by default because that creates misleading signal.
 CONTEXTUAL_DIMENSIONS = [
-    "physical_device_state",
-    "app_visible_state",
-    "root_visible_state",
+    definition.id for definition in CONTEXTUAL_DIMENSION_DEFINITIONS
 ]
 
 STATE_CLASSES = {
@@ -58,37 +30,14 @@ STATE_CLASSES = {
     "F": "physical rooted device",
 }
 
-MATERIALITY_BY_DIMENSION = {
-    "bootloader_lock_state": "high",
+_LEGACY_MATERIALITY_BY_DIMENSION = {
     "observer_uid_root": "moderate",
-    "root_shell_availability": "moderate",
-    "su_binary_visibility": "moderate",
-    "su_invocation_tested": "low",
-    "su_invocation_result": "moderate",
-    "root_management_artifact": "moderate",
-    "magisk_binary_visibility": "moderate",
-    "magisk_daemon_visibility": "moderate",
-    "magisk_process_visibility": "moderate",
-    "zygisk_visibility": "moderate",
-    "magisk_version_name": "informational",
-    "magisk_version_code": "informational",
-    "magisk_module_context": "informational",
-    "magisk_command_status": "low",
-    "mount_integrity": "high",
-    "system_mount_resolution": "moderate",
-    "dynamic_partition_state": "low",
-    "apex_mount_set": "moderate",
-    "selinux_mode": "high",
-    "selinux_current_context": "moderate",
-    "selinux_denial_collection": "low",
-    "selected_process_visibility": "moderate",
-    "verified_boot_state": "high",
-    "vbmeta_state": "high",
-    "verity_mode": "high",
-    "property_consistency": "moderate",
     "observer_privilege": "informational",
-    "emulator_state": "informational",
 }
+MATERIALITY_BY_DIMENSION = {
+    definition.id: definition.materiality_rule.value
+    for definition in TRUST_DIMENSION_DEFINITIONS
+} | _LEGACY_MATERIALITY_BY_DIMENSION
 
 
 def materiality_for_dimension(dimension: str) -> str:

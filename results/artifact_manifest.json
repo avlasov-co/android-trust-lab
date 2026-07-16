@@ -87,23 +87,30 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/summary_table.md",
-      "sha256": "806db24282ff15e5581dd2fca7cb8e98bc45cf277fd35dbd9bae66a2e42aaf86",
+      "sha256": "d691c403e764df52b13462ed98f6f1c49ccfb4ed35eabb7b796672745d0652f3",
       "status": "checked",
       "type": "generated_table"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "76bf5072080ce3a992feaee04e06bf7a10f7b4ffb246ddcb343010846851414c",
+      "sha256": "8af41b5fcdbc2a5b902693002cc8e2c975e1560e4ff81812de2da8c24448ac88",
       "status": "checked",
       "type": "generated_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/figures/trust_dimensions_matrix.md",
-      "sha256": "71314df1199beaee38b45f84786b61dba4c4af15b1dcc18da4ce3df9503da41b",
+      "sha256": "02a3faf6da618bb8c84a8fab8a400258be8c571887b139e8b56526bf35069955",
       "status": "checked",
       "type": "generated_matrix"
+    },
+    {
+      "generated_by": "python tools/generate_report.py",
+      "path": "docs/trust_dimension_registry.md",
+      "sha256": "dfff71c58ca9eddf507ddfc0aec952637dfc1b846c40b316fbf83cddc9738a23",
+      "status": "checked",
+      "type": "generated_registry_documentation"
     }
   ],
   "notes": [

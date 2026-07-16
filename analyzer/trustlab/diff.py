@@ -13,6 +13,13 @@ from .compatibility import (
     current_write_version,
     prepare_report_for_comparison,
 )
+from .dimension_registry import (
+    DEFAULT_DIMENSIONS,
+    TrustDimension,
+    comparison_value,
+    dimensions_equal,
+    extract_dimension,
+)
 from .transitions import (
     classify_status_transition,
     confidence_impact,
@@ -21,72 +28,12 @@ from .transitions import (
     signal_direction,
     transition_interpretation,
 )
-from .trust_dimensions import materiality_for_dimension
-
-# Default dimensions must represent actual measured trust-state fields.
-# App-visible/root-visible dimensions are intentionally not included here until
-# the compared reports contain real app-probe/root-probe payloads. Mapping those
-# to observer_type creates fake signal when only the observer changed.
-DIMENSION_PATHS = {
-    "bootloader_lock_state": ["verified_boot", "flash_locked"],
-    "verified_boot_state": ["verified_boot", "verified_boot_state"],
-    "vbmeta_state": ["verified_boot", "vbmeta_device_state"],
-    "verity_mode": ["verified_boot", "verity_mode"],
-    "selinux_mode": ["selinux", "policy_mode"],
-    "selinux_current_context": ["selinux", "current_context"],
-    "selinux_denial_collection": ["selinux", "denial_collection"],
-    "selected_process_visibility": ["process_state", "selected_processes"],
-    "mount_integrity": ["mounts", "integrity_summary"],
-    "system_mount_resolution": ["mounts", "system_resolution"],
-    "dynamic_partition_state": ["mounts", "dynamic_partitions"],
-    "apex_mount_set": ["mounts", "apex_set"],
-    "root_shell_availability": ["root_state", "root_shell_available"],
-    "su_binary_visibility": ["root_state", "su_binary_observed"],
-    "su_invocation_tested": ["root_state", "su_invocation_tested"],
-    "su_invocation_result": ["root_state", "su_invocation_result"],
-    "root_management_artifact": [
-        "root_state",
-        "root_management_artifact_observed",
-    ],
-    "magisk_binary_visibility": ["magisk_state", "binary_visibility"],
-    "magisk_daemon_visibility": ["magisk_state", "daemon_visibility"],
-    "magisk_process_visibility": ["magisk_state", "process_visibility"],
-    "zygisk_visibility": ["magisk_state", "zygisk_visibility"],
-    "magisk_version_name": ["magisk_state", "version_name"],
-    "magisk_version_code": ["magisk_state", "version_code"],
-    "magisk_module_context": ["magisk_state", "module_context"],
-    "magisk_command_status": ["magisk_state", "command_status"],
-    "property_consistency": ["properties", "security"],
-    "emulator_state": ["emulator_state", "is_emulator"],
-}
 
 VERIFIED_BOOT_DIMENSIONS = frozenset(
-    {
-        "bootloader_lock_state",
-        "verified_boot_state",
-        "vbmeta_state",
-        "verity_mode",
-    }
+    definition.id
+    for definition in DEFAULT_DIMENSIONS
+    if definition.category == "boot_integrity"
 )
-
-
-def _comparison_value(value: Any) -> Any:
-    if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
-        return {"status": value["status"], "value": value["value"]}
-    if (
-        isinstance(value, dict)
-        and {"status", "reason", "evidence_refs"} <= value.keys()
-    ):
-        return {"status": value["status"]}
-    if isinstance(value, dict):
-        return {
-            key: _comparison_value(item)
-            for key, item in value.items()
-            if key != "evidence_refs"
-        }
-    if isinstance(value, list):
-        return [_comparison_value(item) for item in value]
-    return value
 
 
 def get_raw_path(obj: dict[str, Any], path: list[str]) -> Any:
@@ -99,7 +46,7 @@ def get_raw_path(obj: dict[str, Any], path: list[str]) -> Any:
 
 
 def get_path(obj: dict[str, Any], path: list[str]) -> Any:
-    return _comparison_value(get_raw_path(obj, path))
+    return comparison_value(get_raw_path(obj, path))
 
 
 def _source_evidence(value: Any) -> list[str]:
@@ -120,8 +67,8 @@ def _observed_value(value: Any, status: str) -> Any:
     if not evidence_is_available(status):
         return None
     if isinstance(value, dict) and value.get("status") == status:
-        return _comparison_value(value.get("value"))
-    return _comparison_value(value)
+        return comparison_value(value.get("value"))
+    return comparison_value(value)
 
 
 def _transition(
@@ -206,7 +153,7 @@ def _corroborating_evidence_count(
 
 
 def _dimension_assessment(
-    dimension: str,
+    definition: TrustDimension,
     before: Any,
     after: Any,
     before_raw: Any,
@@ -219,7 +166,7 @@ def _dimension_assessment(
     comparison: dict[str, Any],
 ) -> dict[str, Any]:
     direction, direction_rationale = direction_assessment(
-        dimension,
+        definition.direction_rule.policy_id,
         before,
         after,
         transition_class=transition["classification"],
@@ -230,17 +177,17 @@ def _dimension_assessment(
     confidence = confidence_assessment(
         before_status=transition["before_status"],
         after_status=transition["after_status"],
-        before_field_confidence=_field_confidence(base, dimension),
-        after_field_confidence=_field_confidence(compare, dimension),
+        before_field_confidence=_field_confidence(base, definition.id),
+        after_field_confidence=_field_confidence(compare, definition.id),
         corroborating_evidence_count=_corroborating_evidence_count(
-            base, compare, dimension, before_raw, after_raw
+            base, compare, definition.id, before_raw, after_raw
         ),
         migration_count=migration_count,
         comparability=comparison["comparability"],
         warning_count=len(comparison["warnings"]),
     )
     return {
-        "materiality": materiality_for_dimension(dimension),
+        "materiality": definition.materiality_rule.value,
         "direction": direction,
         "confidence": confidence,
         "rationale": [
@@ -249,28 +196,6 @@ def _dimension_assessment(
             "confidence_from_explicit_factors",
         ],
     }
-
-
-def interpretation(dimension: str) -> str:
-    messages = {
-        "bootloader_lock_state": "Bootloader lock evidence changed. On virtual targets this is property evidence only, not hardware-backed proof.",
-        "root_presence": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
-        "magisk_presence": "Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it.",
-        "mount_integrity": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
-        "system_mount_resolution": "The resolved Android system root changed. Review the referenced mount records and source quality.",
-        "dynamic_partition_state": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
-        "apex_mount_set": "The observed APEX package mount set changed. Review capture completeness and package mount records.",
-        "selinux_mode": "SELinux mode changed. This affects runtime MAC boundary interpretation.",
-        "selinux_current_context": "Observer SELinux context visibility changed. This is scoped evidence, not complete policy inspection.",
-        "selinux_denial_collection": "SELinux denial collection status changed; compare collection scope before interpreting absence.",
-        "selected_process_visibility": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
-        "verified_boot_state": "Verified boot property evidence changed. Emulator evidence remains limited for hardware-backed conclusions.",
-        "vbmeta_state": "vbmeta device-state evidence changed. Interpret according to target class and observer.",
-        "verity_mode": "dm-verity-related property evidence changed.",
-        "property_consistency": "Security-relevant property group changed. This does not imply bypass by itself.",
-        "observer_privilege": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
-    }
-    return messages.get(dimension, "Trust-state dimension changed between reports.")
 
 
 def make_diff(
@@ -316,19 +241,21 @@ def make_diff(
     missing_signals: list[dict[str, Any]] = []
     confidence_changes = []
 
-    for dimension, path in DIMENSION_PATHS.items():
-        before_raw = get_raw_path(base, path)
-        after_raw = get_raw_path(compare, path)
-        before = _comparison_value(before_raw)
-        after = _comparison_value(after_raw)
-        if before != after:
+    for definition in DEFAULT_DIMENSIONS:
+        dimension = definition.id
+        evidence_path = definition.evidence_paths[0]
+        before_raw = extract_dimension(base, definition)
+        after_raw = extract_dimension(compare, definition)
+        before = comparison_value(before_raw)
+        after = comparison_value(after_raw)
+        if not dimensions_equal(definition, before_raw, after_raw):
             transition = _transition(
                 evidence_status(before_raw),
                 evidence_status(after_raw),
                 comparison_axis=comparison["axis"],
             )
             assessment = _dimension_assessment(
-                dimension,
+                definition,
                 before,
                 after,
                 before_raw,
@@ -346,8 +273,8 @@ def make_diff(
                     "after": after,
                     "transition": transition,
                     **assessment,
-                    "interpretation": interpretation(dimension),
-                    "evidence_paths": [".".join(path)],
+                    "interpretation": definition.interpretation,
+                    "evidence_paths": [evidence_path],
                 }
             )
             direction = signal_direction(
@@ -360,7 +287,7 @@ def make_diff(
                     after_raw,
                     transition,
                     assessment,
-                    ".".join(path),
+                    evidence_path,
                 )
                 (new_signals if direction == "new" else missing_signals).append(entry)
         else:

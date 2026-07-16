@@ -32,6 +32,9 @@ SCHEMA_IDS = {
     "dataset_source_v1_0_0.schema.json": (
         f"{REPOSITORY_URL}/schema/dataset-source/1.0.0"
     ),
+    "trust_dimension_registry_v1_0_0.schema.json": (
+        f"{REPOSITORY_URL}/schema/trust-dimension-registry/1.0.0"
+    ),
     "trust_diff.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_diff.schema.json",
     "trust_diff_v2_0_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.0.0",
     "trust_diff_v2_1_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.1.0",

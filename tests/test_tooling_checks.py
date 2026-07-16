@@ -109,7 +109,10 @@ def test_repository_tool_entry_points_pass(capsys):
     output = capsys.readouterr().out
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
-    assert "validated 21 schemas, 8 reports, 6 diffs" in output
+    assert (
+        "validated 22 schemas, 30 dimensions in 1 registry, 8 reports, 6 diffs"
+        in output
+    )
     assert "1 collection manifest" in output
     assert "Magisk module safety checks passed" in output
 
@@ -223,6 +226,9 @@ def isolated_generated_tree(tmp_path, monkeypatch):
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source, destination)
+    generated_documentation = Path("docs/trust_dimension_registry.md")
+    (tmp_path / generated_documentation).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / generated_documentation, tmp_path / generated_documentation)
     monkeypatch.setattr(generate_report, "ROOT", tmp_path)
     return tmp_path
 

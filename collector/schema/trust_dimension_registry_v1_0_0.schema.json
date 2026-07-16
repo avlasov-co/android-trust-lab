@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/trust-dimension-registry/1.0.0",
+  "title": "Android Trust Lab Trust Dimension Registry v1.0",
+  "type": "object",
+  "required": ["schema_version", "registry_id", "dimensions"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "registry_id": {"const": "android-trust-lab-dimensions"},
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/dimension"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "dimensionId": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "evidencePath": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$", "maxLength": 512},
+    "materialityRule": {
+      "type": "object",
+      "required": ["policy_id", "value"],
+      "properties": {
+        "policy_id": {"const": "fixed_v1"},
+        "value": {"enum": ["informational", "low", "moderate", "high"]}
+      },
+      "additionalProperties": false
+    },
+    "directionRule": {
+      "type": "object",
+      "required": ["policy_id"],
+      "properties": {
+        "policy_id": {
+          "enum": [
+            "indeterminate_v1",
+            "ordered_bootloader_lock_v1",
+            "ordered_verified_boot_v1",
+            "ordered_vbmeta_state_v1",
+            "ordered_verity_mode_v1",
+            "ordered_selinux_mode_v1",
+            "ordered_mount_integrity_v1",
+            "context_only_v1"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "confidencePolicy": {
+      "type": "object",
+      "required": ["policy_id"],
+      "properties": {"policy_id": {"const": "factorized_evidence_v1"}},
+      "additionalProperties": false
+    },
+    "rendererHints": {
+      "type": "object",
+      "required": ["renderer_id", "matrix_order"],
+      "properties": {
+        "renderer_id": {
+          "enum": ["evidence_v1", "presence_v1", "mount_integrity_v1", "property_map_v1", "not_applicable_v1"]
+        },
+        "matrix_order": {"type": ["integer", "null"], "minimum": 1, "maximum": 128}
+      },
+      "additionalProperties": false
+    },
+    "dimension": {
+      "type": "object",
+      "required": [
+        "id", "title", "description", "interpretation", "category",
+        "supported_report_versions", "extractor_id", "comparator_id",
+        "expected_statuses", "materiality_rule", "direction_rule",
+        "confidence_policy", "evidence_paths", "renderer_hints",
+        "contextual", "enabled_by_default"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/dimensionId"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 128},
+        "description": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "interpretation": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "category": {
+          "enum": [
+            "boot_integrity", "mandatory_access_control", "process_visibility",
+            "mount_integrity", "root_visibility", "magisk_visibility",
+            "properties", "environment", "contextual"
+          ]
+        },
+        "supported_report_versions": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/semver"}
+        },
+        "extractor_id": {"enum": ["nested_path_v1", "contextual_unavailable_v1"]},
+        "comparator_id": {"enum": ["canonical_equality_v1", "contextual_unavailable_v1"]},
+        "expected_statuses": {
+          "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true,
+          "items": {"enum": ["observed", "observed_absent", "inaccessible", "not_collected", "command_error", "unsupported"]}
+        },
+        "materiality_rule": {"$ref": "#/$defs/materialityRule"},
+        "direction_rule": {"$ref": "#/$defs/directionRule"},
+        "confidence_policy": {"$ref": "#/$defs/confidencePolicy"},
+        "evidence_paths": {
+          "type": "array", "maxItems": 8, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/evidencePath"}
+        },
+        "renderer_hints": {"$ref": "#/$defs/rendererHints"},
+        "contextual": {"type": "boolean"},
+        "enabled_by_default": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

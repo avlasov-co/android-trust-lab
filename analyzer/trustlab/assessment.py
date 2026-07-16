@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from typing import Any
 
+from .dimension_registry import TRUST_DIMENSION_DEFINITIONS
 from .transitions import evidence_is_available
 
 CONFIDENCE_LEVELS = ("low", "moderate", "high")
@@ -28,25 +30,61 @@ def _mount_integrity_rank(value: Any) -> int | None:
     return 0 if overlay or writable else 1
 
 
-def _ordered_rank(dimension: str, value: Any) -> int | None:
+def _ordered_value_rank(value: Any, ordered_values: Mapping[str, int]) -> int | None:
     plain = _direct_value(value)
-    ordered_values = {
-        "bootloader_lock_state": {"0": 0, "1": 1},
-        "verified_boot_state": {"red": 0, "orange": 1, "yellow": 1, "green": 2},
-        "vbmeta_state": {"unlocked": 0, "locked": 1},
-        "verity_mode": {"disabled": 0, "logging": 1, "eio": 1, "enforcing": 2},
-        "selinux_mode": {"disabled": 0, "permissive": 1, "enforcing": 2},
-    }
-    if dimension == "mount_integrity":
-        return _mount_integrity_rank(value)
-    mapping = ordered_values.get(dimension)
-    if mapping is None or not isinstance(plain, str):
+    if not isinstance(plain, str):
         return None
-    return mapping.get(plain)
+    return ordered_values.get(plain)
+
+
+DirectionRanker = Callable[[Any], int | None]
+
+
+def _indeterminate_rank(value: Any) -> int | None:
+    del value
+    return None
+
+
+def _rank_bootloader_lock(value: Any) -> int | None:
+    return _ordered_value_rank(value, {"0": 0, "1": 1})
+
+
+def _rank_verified_boot(value: Any) -> int | None:
+    return _ordered_value_rank(value, {"red": 0, "orange": 1, "yellow": 1, "green": 2})
+
+
+def _rank_vbmeta_state(value: Any) -> int | None:
+    return _ordered_value_rank(value, {"unlocked": 0, "locked": 1})
+
+
+def _rank_verity_mode(value: Any) -> int | None:
+    return _ordered_value_rank(
+        value, {"disabled": 0, "logging": 1, "eio": 1, "enforcing": 2}
+    )
+
+
+def _rank_selinux_mode(value: Any) -> int | None:
+    return _ordered_value_rank(value, {"disabled": 0, "permissive": 1, "enforcing": 2})
+
+
+DIRECTION_RANKERS: Mapping[str, DirectionRanker] = {
+    "indeterminate_v1": _indeterminate_rank,
+    "ordered_bootloader_lock_v1": _rank_bootloader_lock,
+    "ordered_verified_boot_v1": _rank_verified_boot,
+    "ordered_vbmeta_state_v1": _rank_vbmeta_state,
+    "ordered_verity_mode_v1": _rank_verity_mode,
+    "ordered_selinux_mode_v1": _rank_selinux_mode,
+    "ordered_mount_integrity_v1": _mount_integrity_rank,
+    "context_only_v1": _indeterminate_rank,
+}
+if set(DIRECTION_RANKERS) != {
+    definition.direction_rule.policy_id for definition in TRUST_DIMENSION_DEFINITIONS
+}:
+    raise RuntimeError("trust-dimension direction rules are not fully implemented")
 
 
 def direction_assessment(
-    dimension: str,
+    direction_rule_id: str,
     before: Any,
     after: Any,
     *,
@@ -60,8 +98,12 @@ def direction_assessment(
         return "visibility_change", "evidence_visibility_changed"
     if transition_class == "collection_quality_change":
         return "indeterminate", "collection_quality_is_not_target_direction"
-    before_rank = _ordered_rank(dimension, before)
-    after_rank = _ordered_rank(dimension, after)
+    try:
+        ranker = DIRECTION_RANKERS[direction_rule_id]
+    except KeyError as exc:
+        raise ValueError(f"unknown direction rule: {direction_rule_id}") from exc
+    before_rank = ranker(before)
+    after_rank = ranker(after)
     if before_rank is None or after_rank is None or before_rank == after_rank:
         return "indeterminate", "no_justified_direction_rule"
     if after_rank > before_rank:
