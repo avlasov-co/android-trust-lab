@@ -45,8 +45,8 @@ def test_every_supported_observer_normalizes_to_valid_privilege(
 
 
 def test_observer_registry_is_complete_and_matches_schema():
-    schema = load_json(ROOT / "collector/schema/trust_report.schema.json")
-    observer_schema = schema["properties"]["observer"]["properties"]
+    schema = load_json(ROOT / "collector/schema/trust_report_v2_0_0.schema.json")
+    observer_schema = schema["$defs"]["observerMetadata"]["properties"]
 
     assert list(OBSERVER_REGISTRY) == [
         "host",

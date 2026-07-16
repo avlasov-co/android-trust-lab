@@ -6,6 +6,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
 from trustlab.normalizer import normalize_properties, normalize_raw_file
+from trustlab.validators import validate_report
 
 
 def test_normalize_fixture():
@@ -16,10 +17,10 @@ def test_normalize_fixture():
         observer_type="adb_shell",
     )
     assert report["target"]["target_type"] == "avd"
-    assert report["selinux"]["mode"] == "enforcing"
-    assert report["root_state"]["su_present"] is False
+    assert report["selinux"]["mode"]["value"] == "enforcing"
+    assert report["root_state"]["su_present"]["status"] == "observed_absent"
     assert report["mounts"]["system_mount"]["classification"] == "read-only"
-    assert report["emulator_state"]["is_emulator"] is True
+    assert report["emulator_state"]["is_emulator"]["value"] is True
 
 
 def test_normalize_magisk_sample():
@@ -36,8 +37,8 @@ def test_normalize_magisk_sample():
         collection_timestamp="2026-04-25T15:50:00Z",
         raw_artifact_ref="datasets/samples/magisk_collector/raw_sample.txt",
     )
-    assert report["root_state"]["su_present"] is True
-    assert report["magisk_state"]["magisk_binary_present"] is True
+    assert report["root_state"]["su_present"]["value"] is True
+    assert report["magisk_state"]["magisk_binary_present"]["value"] is True
     assert report["observer"]["collection_method"] == "magisk_module_manual"
 
 
@@ -55,14 +56,14 @@ def test_normalize_writable_system_sample():
         collection_timestamp="2026-04-25T15:08:21Z",
         raw_artifact_ref="datasets/samples/writable_system_avd/raw_sample.txt",
     )
-    assert report["mounts"]["overlay_detected"] is True
-    assert "/system" in report["mounts"]["writable_sensitive_mounts"]
+    integrity = report["mounts"]["integrity_summary"]
+    assert integrity["overlay_detected"]["value"] is True
+    assert "/system" in integrity["writable_sensitive_mounts"]["value"]
 
 
-def test_legacy_normalized_snapshot_remains_compatible():
-    # This pre-Step-10 snapshot is retained for serialization compatibility;
-    # it is neither generator-owned nor an independent semantic oracle. Manual
-    # behavior expectations and their provenance live under tests/golden.
+def test_current_normalized_snapshot_is_generator_owned():
+    # This snapshot is regenerated from the same raw fixture by the canonical
+    # sample generator; independent behavior expectations remain in goldens.
     import json
 
     fixture_dir = Path(__file__).parent / "fixtures"
@@ -93,6 +94,32 @@ def test_default_raw_artifact_reference_does_not_embed_host_path(tmp_path):
     report = normalize_raw_file(raw, collection_timestamp="2026-04-25T15:06:21Z")
     assert report["raw_artifacts"] == ["raw.txt"]
     assert str(tmp_path) not in str(report)
+
+
+def test_missing_probes_do_not_become_affirmative_absence(tmp_path):
+    raw = tmp_path / "empty.raw"
+    raw.write_text("", encoding="utf-8")
+
+    report = normalize_raw_file(
+        raw,
+        collection_timestamp="2026-04-25T15:06:21Z",
+        raw_artifact_ref="empty.raw",
+    )
+
+    evidence = (
+        report["boot_state"]["kernel_cmdline_present"],
+        report["mounts"]["integrity_summary"]["overlay_detected"],
+        report["mounts"]["integrity_summary"]["writable_sensitive_mounts"],
+        report["properties"]["security"],
+        report["root_state"]["su_present"],
+        report["magisk_state"]["magisk_binary_present"],
+        report["process_state"]["init_visible"],
+        report["process_state"]["process_contexts_available"],
+        report["emulator_state"]["is_emulator"],
+    )
+    assert {item["status"] for item in evidence} == {"not_collected"}
+    assert report["properties"]["all_count"]["status"] == "not_collected"
+    validate_report(report)
 
 
 def test_default_provenance_distinguishes_same_named_artifacts(tmp_path):

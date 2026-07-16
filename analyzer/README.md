@@ -1,6 +1,8 @@
 # Analyzer
 
-The analyzer parses raw Android Trust Lab artifacts, normalizes reports, validates JSON schemas, computes diffs, and writes summaries.
+The analyzer parses raw Android Trust Lab artifacts, writes strict report v2,
+validates versioned JSON schemas, explicitly migrates v1 reports, computes diffs,
+and writes summaries.
 
 ## Install
 
@@ -22,6 +24,7 @@ by the complete repository gate.
 
 ```bash
 trustlab normalize --input ../tests/fixtures/sample_raw_report.txt --output /tmp/report.json
+trustlab migrate-report --input ../tests/fixtures/report_v1_historical.json --output /tmp/migrated-v2.json
 trustlab validate-report /tmp/report.json
 trustlab diff --base ../datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --output /tmp/diff.json
 trustlab diff --base ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json --output /tmp/observer_diff.json

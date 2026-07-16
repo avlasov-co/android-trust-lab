@@ -28,4 +28,5 @@ datasets/samples/<experiment_class>/normalized/
 results/
 ```
 
-Reports must map to `collector/schema/trust_report.schema.json`.
+Current reports must map to `collector/schema/trust_report_v2_0_0.schema.json`;
+the versioned v1 schema is retained for read compatibility.

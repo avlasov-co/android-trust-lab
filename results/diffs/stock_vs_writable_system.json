@@ -3,14 +3,26 @@
   "changed_dimensions": [
     {
       "after": {
-        "overlay_detected": true,
-        "writable_sensitive_mounts": [
-          "/system"
-        ]
+        "overlay_detected": {
+          "status": "observed",
+          "value": true
+        },
+        "writable_sensitive_mounts": {
+          "status": "observed",
+          "value": [
+            "/system"
+          ]
+        }
       },
       "before": {
-        "overlay_detected": false,
-        "writable_sensitive_mounts": []
+        "overlay_detected": {
+          "status": "observed_absent",
+          "value": false
+        },
+        "writable_sensitive_mounts": {
+          "status": "observed_absent",
+          "value": []
+        }
       },
       "dimension": "mount_integrity",
       "evidence_paths": [
@@ -22,9 +34,24 @@
   ],
   "compare_report": "atl-170932c614ddfe76",
   "confidence_changes": [],
-  "diff_id": "atldiff-fbd58409566ef7e9",
+  "diff_id": "atldiff-5c32d035399c4a47",
   "missing_signals": [],
   "new_signals": [],
+  "provenance": {
+    "base": {
+      "applied_migrations": [],
+      "common_report_id": "atl-345035d528ae68c9",
+      "original_report_id": "atl-345035d528ae68c9",
+      "original_schema_version": "2.0.0"
+    },
+    "common_report_schema_version": "2.0.0",
+    "compare": {
+      "applied_migrations": [],
+      "common_report_id": "atl-170932c614ddfe76",
+      "original_report_id": "atl-170932c614ddfe76",
+      "original_schema_version": "2.0.0"
+    }
+  },
   "schema_version": "1.0.0",
   "summary": "1 dimensions changed, 10 dimensions unchanged.",
   "unchanged_dimensions": [

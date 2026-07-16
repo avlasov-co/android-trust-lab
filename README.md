@@ -54,7 +54,7 @@ raw artifacts
         ↓
 parser
         ↓
-normalized trust_report.schema.json
+normalized versioned trust-report JSON
         ↓
 diff engine
         ↓
@@ -65,7 +65,7 @@ trust_diff.schema.json + markdown summary
 
 | Capability | Status |
 |---|---|
-| Python analyzer CLI for normalize / validate / diff / summarize | implemented |
+| Python analyzer CLI for normalize / migrate / validate / diff / summarize | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |

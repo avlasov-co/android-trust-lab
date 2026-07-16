@@ -25,7 +25,7 @@ of them, and matching numeric values do not imply compatibility.
 |---|---|---|
 | Analyzer package version | Python distribution and CLI implementation release | PEP 440 `0.3.0.dev0` |
 | Collector version | Magisk collector implementation release plus monotonic Android `versionCode` | `0.3.0-dev0`, code `300` |
-| Report-schema version | Normalized trust-report contract | `1.0.0` readable and writable; `2.0.0` planned |
+| Report-schema version | Normalized trust-report contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
 | Diff-schema version | Trust-diff output contract | `1.0.0` readable and writable |
 | Dataset-manifest version | Dataset index contract | legacy `1.0.0` readable and writable; schema planned |
 | Collection-manifest version | On-device collection/provenance contract | no supported version; `1.0.0` planned |

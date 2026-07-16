@@ -38,6 +38,7 @@ def run_installed(*arguments: str, cwd: Path) -> subprocess.CompletedProcess[str
 def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     report_path = tmp_path / "report.json"
     diff_path = tmp_path / "diff.json"
+    migrated_path = tmp_path / "migrated.json"
     normalize = run_installed(
         "normalize",
         "--input",
@@ -63,20 +64,36 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
     expected_report = GOLDEN["normalize"]
-    for key in (
-        "report_id",
-        "collection_timestamp",
-        "experiment_id",
-        "target",
-        "observer",
-    ):
+    for key in ("report_id", "collection_timestamp", "experiment_id", "observer"):
         assert report[key] == expected_report[key]
-    assert report["selinux"]["mode"] == expected_report["selinux_mode"]
+    target = {"target_type": report["target"]["target_type"]}
+    target.update(
+        {
+            key: report["target"][key]["value"]
+            for key in (
+                "device_codename",
+                "manufacturer",
+                "model",
+                "android_version",
+                "sdk",
+                "build_fingerprint",
+            )
+        }
+    )
+    assert target == expected_report["target"]
+    assert report["selinux"]["mode"]["value"] == expected_report["selinux_mode"]
     assert {
         key: report["mounts"]["system_mount"][key]
         for key in ("mount_point", "fs_type", "options", "classification")
     } == expected_report["system_mount"]
-    assert report["root_state"] == expected_report["root_state"]
+    assert {
+        "su_present": report["root_state"]["su_present"]["value"],
+        "uid": report["root_state"]["uid"]["value"],
+        "gid": report["root_state"]["gid"]["value"],
+        "root_shell_available": report["root_state"]["root_shell_available"]["value"],
+        "root_paths": report["root_state"]["root_paths"]["value"],
+    } == expected_report["root_state"]
+    assert report["root_state"]["su_present"]["status"] == "observed_absent"
     assert report["raw_artifacts"] == expected_report["raw_artifacts"]
 
     validate_report = run_installed("validate-report", str(report_path), cwd=tmp_path)
@@ -106,12 +123,19 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     assert diff_document["summary"] == expected_diff["summary"]
     projected_changes = [
         {
-            key: change[key]
-            for key in ("dimension", "before", "after", "severity", "evidence_paths")
+            "dimension": change["dimension"],
+            "before": change["before"]["value"],
+            "after": change["after"]["value"],
+            "severity": change["severity"],
+            "evidence_paths": change["evidence_paths"],
         }
         for change in diff_document["changed_dimensions"]
     ]
     assert projected_changes == expected_diff["changed_dimensions"]
+    assert diff_document["changed_dimensions"][0]["before"]["status"] == (
+        "observed_absent"
+    )
+    assert diff_document["changed_dimensions"][0]["after"]["status"] == "observed"
 
     validate_diff = run_installed("validate-diff", str(diff_path), cwd=tmp_path)
     assert validate_diff.returncode == 0
@@ -125,6 +149,24 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     )
     assert summarize.stdout.rstrip() + "\n" == expected_summary
     assert summarize.stderr == ""
+
+    v1_source = ROOT / "tests/fixtures/report_v1_historical.json"
+    before = v1_source.read_bytes()
+    migrate = run_installed(
+        "migrate-report",
+        "--input",
+        str(v1_source),
+        "--output",
+        str(migrated_path),
+        cwd=tmp_path,
+    )
+    assert migrate.returncode == 0, migrate.stderr
+    assert migrate.stdout == migrate.stderr == ""
+    assert v1_source.read_bytes() == before
+    assert (
+        json.loads(migrated_path.read_text(encoding="utf-8"))["schema_version"]
+        == "2.0.0"
+    )
 
 
 def test_installed_entry_point_failure_paths_are_stable(tmp_path):
@@ -158,6 +200,17 @@ def test_installed_entry_point_failure_paths_are_stable(tmp_path):
             "error: report schema validation failed",
         ),
         (
+            (
+                "migrate-report",
+                "--input",
+                str(valid_report),
+                "--output",
+                str(output),
+            ),
+            5,
+            "error: report migration requires schema version 1.0.0\n",
+        ),
+        (
             ("validate-diff", str(invalid)),
             6,
             "error: diff schema validation failed",
@@ -173,5 +226,8 @@ def test_installed_entry_point_failure_paths_are_stable(tmp_path):
         result = run_installed(*arguments, cwd=tmp_path)
         assert result.returncode == expected_code
         assert result.stdout == ""
-        assert expected_error in result.stderr
+        if arguments[0] == "migrate-report":
+            assert result.stderr == expected_error
+        else:
+            assert expected_error in result.stderr
         assert "Traceback" not in result.stderr

@@ -28,6 +28,16 @@ def split_sections(text: str) -> dict[str, str]:
     }
 
 
+def section_names(text: str) -> frozenset[str]:
+    """Return every declared section, including sections with empty output."""
+
+    return frozenset(
+        match.group(1).strip().upper().replace(" ", "_")
+        for line in text.splitlines()
+        if (match := SECTION_RE.match(line.strip())) is not None
+    )
+
+
 def parse_getprop(text: str) -> dict[str, str]:
     props: dict[str, str] = {}
     for line in text.splitlines():
@@ -162,6 +172,7 @@ def parse_raw_report(path: str | Path) -> dict[str, Any]:
     sections = split_sections(text)
     return {
         "sections": sections,
+        "section_names": sorted(section_names(text)),
         "properties": parse_getprop(
             sections.get("GETPROP", "") or sections.get("PROPS", "")
         ),

@@ -2,8 +2,14 @@
   "base_report": "atl-40b3dd9d667c204d",
   "changed_dimensions": [
     {
-      "after": true,
-      "before": false,
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "observed_absent",
+        "value": false
+      },
       "dimension": "magisk_presence",
       "evidence_paths": [
         "magisk_state.magisk_binary_present"
@@ -24,9 +30,24 @@
   ],
   "compare_report": "atl-f08292bce61027ec",
   "confidence_changes": [],
-  "diff_id": "atldiff-41c04f6e87743cac",
+  "diff_id": "atldiff-503333d61a2e8393",
   "missing_signals": [],
   "new_signals": [],
+  "provenance": {
+    "base": {
+      "applied_migrations": [],
+      "common_report_id": "atl-40b3dd9d667c204d",
+      "original_report_id": "atl-40b3dd9d667c204d",
+      "original_schema_version": "2.0.0"
+    },
+    "common_report_schema_version": "2.0.0",
+    "compare": {
+      "applied_migrations": [],
+      "common_report_id": "atl-f08292bce61027ec",
+      "original_report_id": "atl-f08292bce61027ec",
+      "original_schema_version": "2.0.0"
+    }
+  },
   "schema_version": "1.0.0",
   "summary": "2 dimensions changed, 9 dimensions unchanged.",
   "unchanged_dimensions": [

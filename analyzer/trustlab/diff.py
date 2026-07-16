@@ -6,7 +6,9 @@ import hashlib
 from typing import Any
 
 from .compatibility import SchemaFamily, current_write_version
+from .migrations import migrate_report_v1_to_v2
 from .trust_dimensions import severity_for_dimension
+from .validators import validate_report
 
 
 def json_like_for_hash(value: Any) -> str:
@@ -37,13 +39,47 @@ DIMENSION_PATHS = {
 }
 
 
+def _comparison_value(value: Any) -> Any:
+    if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
+        return {"status": value["status"], "value": value["value"]}
+    if isinstance(value, dict):
+        return {key: _comparison_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_comparison_value(item) for item in value]
+    return value
+
+
 def get_path(obj: dict[str, Any], path: list[str]) -> Any:
     current: Any = obj
     for part in path:
         if not isinstance(current, dict):
             return "unknown"
         current = current.get(part, "unknown")
-    return current
+    return _comparison_value(current)
+
+
+def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    original_id = report.get("report_id", "unknown")
+    original_version = report.get("schema_version")
+    if original_version == "1.0.0":
+        common = migrate_report_v1_to_v2(report)
+        migrations = [
+            {
+                "migration_id": "report-v1-to-v2",
+                "source_schema_version": "1.0.0",
+                "target_schema_version": "2.0.0",
+            }
+        ]
+    else:
+        validate_report(report)
+        common = report
+        migrations = []
+    return common, {
+        "original_report_id": original_id,
+        "original_schema_version": original_version,
+        "common_report_id": common.get("report_id", "unknown"),
+        "applied_migrations": migrations,
+    }
 
 
 def interpretation(dimension: str) -> str:
@@ -63,6 +99,16 @@ def interpretation(dimension: str) -> str:
 
 
 def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
+    base, base_provenance = _report_for_diff(base)
+    compare, compare_provenance = _report_for_diff(compare)
+    common_version = base.get("schema_version")
+    if compare.get("schema_version") != common_version:
+        raise ValueError("report migration did not produce one common schema version")
+    provenance = {
+        "common_report_schema_version": common_version,
+        "base": base_provenance,
+        "compare": compare_provenance,
+    }
     changed = []
     unchanged = []
     confidence_changes = []
@@ -102,6 +148,7 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
             "changed_dimensions": changed,
             "unchanged_dimensions": unchanged,
             "confidence_changes": confidence_changes,
+            "provenance": provenance,
         }
     )
     diff_id = (
@@ -125,4 +172,5 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
         "missing_signals": [],
         "confidence_changes": confidence_changes,
         "summary": summary,
+        "provenance": provenance,
     }

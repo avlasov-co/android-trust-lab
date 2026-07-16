@@ -14,9 +14,24 @@
   ],
   "compare_report": "atl-c8fa4179191f3eee",
   "confidence_changes": [],
-  "diff_id": "atldiff-cc75e10a680d1214",
+  "diff_id": "atldiff-a49a10b93d61033a",
   "missing_signals": [],
   "new_signals": [],
+  "provenance": {
+    "base": {
+      "applied_migrations": [],
+      "common_report_id": "atl-40b3dd9d667c204d",
+      "original_report_id": "atl-40b3dd9d667c204d",
+      "original_schema_version": "2.0.0"
+    },
+    "common_report_schema_version": "2.0.0",
+    "compare": {
+      "applied_migrations": [],
+      "common_report_id": "atl-c8fa4179191f3eee",
+      "original_report_id": "atl-c8fa4179191f3eee",
+      "original_schema_version": "2.0.0"
+    }
+  },
   "schema_version": "1.0.0",
   "summary": "1 dimensions changed, 10 dimensions unchanged.",
   "unchanged_dimensions": [

@@ -33,9 +33,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_supported_version_table_is_complete_and_exact():
     assert dict(SCHEMA_SUPPORT) == {
         SchemaFamily.REPORT: SchemaSupport(
-            current_write_version="1.0.0",
-            readable_versions=frozenset({"1.0.0"}),
-            planned_version="2.0.0",
+            current_write_version="2.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0"}),
         ),
         SchemaFamily.DIFF: SchemaSupport(
             current_write_version="1.0.0",
@@ -68,14 +67,16 @@ def test_supported_version_table_is_complete_and_exact():
 
 def test_schema_resource_registry_is_exact_and_fail_closed():
     assert dict(SCHEMA_RESOURCE_REGISTRY) == {
-        (SchemaFamily.REPORT, "1.0.0"): "trust_report.schema.json",
+        (SchemaFamily.REPORT, "1.0.0"): "trust_report_v1_0_0.schema.json",
+        (SchemaFamily.REPORT, "2.0.0"): "trust_report_v2_0_0.schema.json",
         (SchemaFamily.DIFF, "1.0.0"): "trust_diff.schema.json",
     }
     assert (
-        schema_resource_name(SchemaFamily.REPORT, "1.0.0") == "trust_report.schema.json"
+        schema_resource_name(SchemaFamily.REPORT, "1.0.0")
+        == "trust_report_v1_0_0.schema.json"
     )
     with pytest.raises(UnsupportedSchemaVersionError):
-        schema_resource_name(SchemaFamily.REPORT, "2.0.0")
+        schema_resource_name(SchemaFamily.REPORT, "3.0.0")
     with pytest.raises(SchemaValidationError):
         schema_resource_name(SchemaFamily.DATASET_MANIFEST, "1.0.0")
 
@@ -85,21 +86,23 @@ def test_schema_registries_and_support_records_are_immutable():
     with pytest.raises(TypeError):
         cast(Any, SCHEMA_SUPPORT)[SchemaFamily.REPORT] = report_support
     with pytest.raises(TypeError):
-        cast(Any, SCHEMA_RESOURCE_REGISTRY)[SchemaFamily.REPORT, "2.0.0"] = (
+        cast(Any, SCHEMA_RESOURCE_REGISTRY)[SchemaFamily.REPORT, "3.0.0"] = (
             "other.schema.json"
         )
     with pytest.raises(FrozenInstanceError):
-        cast(Any, report_support).current_write_version = "2.0.0"
+        cast(Any, report_support).current_write_version = "3.0.0"
     with pytest.raises(AttributeError):
-        cast(Any, report_support.readable_versions).add("2.0.0")
-    assert current_write_version(SchemaFamily.REPORT) == "1.0.0"
+        cast(Any, report_support.readable_versions).add("3.0.0")
+    assert current_write_version(SchemaFamily.REPORT) == "2.0.0"
 
 
 def test_supported_schema_versions_do_not_imply_planned_support():
-    assert supported_schema_versions(SchemaFamily.REPORT) == frozenset({"1.0.0"})
+    assert supported_schema_versions(SchemaFamily.REPORT) == frozenset(
+        {"1.0.0", "2.0.0"}
+    )
     assert supported_schema_versions(SchemaFamily.COLLECTION_MANIFEST) == frozenset()
     assert supported_schema_versions(SchemaFamily.EXPERIMENT_SPEC) == frozenset()
-    assert current_write_version(SchemaFamily.REPORT) == "1.0.0"
+    assert current_write_version(SchemaFamily.REPORT) == "2.0.0"
     with pytest.raises(SchemaValidationError):
         current_write_version(SchemaFamily.COLLECTION_MANIFEST)
 
@@ -117,7 +120,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         "diff": diff["schema_version"],
         "dataset_manifest": dataset_manifest["schema_version"],
     } == {
-        "report": "1.0.0",
+        "report": "2.0.0",
         "diff": "1.0.0",
         "dataset_manifest": "1.0.0",
     }
@@ -134,7 +137,12 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         (
             validate_report,
             "tests/fixtures/sample_normalized_report.json",
-            "trust_report.schema.json",
+            "trust_report_v2_0_0.schema.json",
+        ),
+        (
+            validate_report,
+            "tests/fixtures/report_v1_historical.json",
+            "trust_report_v1_0_0.schema.json",
         ),
         (
             validate_diff,

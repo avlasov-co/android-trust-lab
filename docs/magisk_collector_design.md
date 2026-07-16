@@ -55,7 +55,7 @@ collector_manifest.json
 
 The manifest is not a normalized trust report. It records provenance for the
 raw root-side snapshot. The host analyzer converts `raw.txt` into
-`trust_report.schema.json` format.
+the current `trust_report_v2_0_0.schema.json` format.
 
 ## Permissions
 

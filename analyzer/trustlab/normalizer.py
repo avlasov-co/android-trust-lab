@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .compatibility import SchemaFamily, current_write_version
 from .exceptions import (
     CollectionError,
     MissingFileError,
@@ -17,6 +16,7 @@ from .exceptions import (
 )
 from .observers import observer_spec
 from .parser import parse_raw_report
+from .report_v2 import report_v2_from_v1_shape
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -91,7 +91,7 @@ def normalize_properties(props: dict[str, str]) -> dict[str, Any]:
             if key.startswith(prefix) and key in REPORTABLE_PROPERTY_KEYS
         }
     grouped["security"] = {
-        key: props.get(key, "unknown") for key in SECURITY_PROPERTIES
+        key: props[key] for key in SECURITY_PROPERTIES if key in props
     }
     grouped["all_count"] = len(props)
     return grouped
@@ -224,12 +224,15 @@ def verified_boot_state(
         "ro.boot.vbmeta.device_state",
         "ro.boot.veritymode",
     ]
-    raw = {key: _lookup_with_boot_fallback(props, boot_state, key) for key in raw_keys}
+    values = {
+        key: _lookup_with_boot_fallback(props, boot_state, key) for key in raw_keys
+    }
+    raw = {key: values[key] for key in raw_keys if key in props or key in boot_state}
     return {
-        "verified_boot_state": raw["ro.boot.verifiedbootstate"],
-        "flash_locked": raw["ro.boot.flash.locked"],
-        "vbmeta_device_state": raw["ro.boot.vbmeta.device_state"],
-        "verity_mode": raw["ro.boot.veritymode"],
+        "verified_boot_state": values["ro.boot.verifiedbootstate"],
+        "flash_locked": values["ro.boot.flash.locked"],
+        "vbmeta_device_state": values["ro.boot.vbmeta.device_state"],
+        "verity_mode": values["ro.boot.veritymode"],
         "raw_properties": raw,
         "confidence": "low" if target_type == "avd" else "medium",
     }
@@ -268,9 +271,32 @@ def build_report(
     if not mounts:
         collection_errors.append("missing mount section")
 
-    return {
+    section_names = set(parsed.get("section_names", []))
+
+    def section_was_collected(*names: str) -> bool:
+        return bool(section_names.intersection(names))
+
+    observed_probes = frozenset(
+        probe
+        for probe, observed in {
+            "properties": section_was_collected("GETPROP", "PROPS"),
+            "boot_state": section_was_collected("BOOT_STATE"),
+            "mounts": section_was_collected("MOUNT", "MOUNTS"),
+            "identity": section_was_collected("ID"),
+            "selinux": section_was_collected("GETENFORCE", "SELINUX"),
+            "cmdline": section_was_collected("CMDLINE", "BOOT_STATE"),
+            "su_paths": section_was_collected("SU_PATHS"),
+            "magisk": section_was_collected("MAGISK"),
+            "processes": section_was_collected("PS", "PROCESSES"),
+            "emulator_basis": section_was_collected("GETPROP", "PROPS")
+            or target_type in {"avd", "physical"},
+        }.items()
+        if observed
+    )
+
+    legacy_shape = {
         "report_id": report_id,
-        "schema_version": current_write_version(SchemaFamily.REPORT),
+        "schema_version": "1.0.0",
         "collection_timestamp": timestamp,
         "experiment_id": experiment_id,
         "target": {
@@ -322,6 +348,11 @@ def build_report(
         },
         "raw_artifacts": [raw_artifact],
     }
+    return report_v2_from_v1_shape(
+        legacy_shape,
+        preserve_legacy_source=False,
+        observed_probes=observed_probes,
+    )
 
 
 def normalize_raw_file(

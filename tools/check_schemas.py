@@ -34,6 +34,7 @@ def main() -> int:
         ROOT / sample["report_path"] for sample in manifest.get("samples", [])
     ]
     report_paths.append(ROOT / "tests" / "fixtures" / "sample_normalized_report.json")
+    report_paths.append(ROOT / "tests" / "fixtures" / "report_v1_historical.json")
     for path in report_paths:
         validate_report(load_json(path))
 

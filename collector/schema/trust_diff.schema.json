@@ -91,7 +91,74 @@
     },
     "summary": {
       "type": "string"
+    },
+    "provenance": {
+      "description": "Original report contracts and migrations used to reach the common comparison model.",
+      "type": "object",
+      "required": [
+        "common_report_schema_version",
+        "base",
+        "compare"
+      ],
+      "properties": {
+        "common_report_schema_version": {
+          "type": "string"
+        },
+        "base": {
+          "$ref": "#/$defs/reportInputProvenance"
+        },
+        "compare": {
+          "$ref": "#/$defs/reportInputProvenance"
+        }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "$defs": {
+    "reportInputProvenance": {
+      "type": "object",
+      "required": [
+        "original_report_id",
+        "original_schema_version",
+        "common_report_id",
+        "applied_migrations"
+      ],
+      "properties": {
+        "original_report_id": {
+          "type": "string"
+        },
+        "original_schema_version": {
+          "type": "string"
+        },
+        "common_report_id": {
+          "type": "string"
+        },
+        "applied_migrations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "migration_id",
+              "source_schema_version",
+              "target_schema_version"
+            ],
+            "properties": {
+              "migration_id": {
+                "type": "string"
+              },
+              "source_schema_version": {
+                "type": "string"
+              },
+              "target_schema_version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

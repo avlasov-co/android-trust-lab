@@ -1,20 +1,45 @@
 {
   "boot_state": {
-    "boot_completed": "1",
-    "boot_reason": "unknown",
-    "kernel_cmdline_present": true,
-    "slot_suffix": "unknown"
+    "boot_completed": {
+      "reason": null,
+      "status": "observed",
+      "value": "1"
+    },
+    "boot_reason": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "kernel_cmdline_present": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "slot_suffix": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    }
   },
   "collection_timestamp": "2026-04-25T15:06:21Z",
   "emulator_state": {
-    "indicators": [
-      "fingerprint",
-      "model",
-      "ro.kernel.qemu"
-    ],
-    "is_emulator": true
+    "indicators": {
+      "reason": null,
+      "status": "observed",
+      "value": [
+        "fingerprint",
+        "model",
+        "ro.kernel.qemu"
+      ]
+    },
+    "is_emulator": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    }
   },
   "experiment_id": "E01_stock_avd",
+  "extensions": {},
   "limitations": {
     "collection_errors": [],
     "emulator_target": true,
@@ -23,11 +48,31 @@
     "missing_tee_validation": true
   },
   "magisk_state": {
-    "magisk_binary_present": false,
-    "magisk_path": "unknown",
-    "magisk_version": "unknown",
-    "module_context": "unknown",
-    "zygisk_visible_indicators": []
+    "magisk_binary_present": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": false
+    },
+    "magisk_path": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "magisk_version": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "module_context": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "zygisk_visible_indicators": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": []
+    }
   },
   "mounts": {
     "apex_mount": {
@@ -38,7 +83,9 @@
         "ro",
         "seclabel"
       ],
-      "raw": "tmpfs on /apex type tmpfs (ro,seclabel)"
+      "raw": "tmpfs on /apex type tmpfs (ro,seclabel)",
+      "reason": null,
+      "status": "observed"
     },
     "data_mount": {
       "classification": "read-write",
@@ -50,11 +97,21 @@
         "nosuid",
         "nodev"
       ],
-      "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)"
+      "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)",
+      "reason": null,
+      "status": "observed"
     },
     "integrity_summary": {
-      "overlay_detected": false,
-      "writable_sensitive_mounts": []
+      "overlay_detected": {
+        "reason": "collection completed and the signal was absent",
+        "status": "observed_absent",
+        "value": false
+      },
+      "writable_sensitive_mounts": {
+        "reason": "collection completed and the signal was absent",
+        "status": "observed_absent",
+        "value": []
+      }
     },
     "odm_mount": {
       "classification": "read-only",
@@ -65,9 +122,10 @@
         "seclabel",
         "relatime"
       ],
-      "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)"
+      "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)",
+      "reason": null,
+      "status": "observed"
     },
-    "overlay_detected": false,
     "product_mount": {
       "classification": "read-only",
       "fs_type": "ext4",
@@ -77,7 +135,9 @@
         "seclabel",
         "relatime"
       ],
-      "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)"
+      "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)",
+      "reason": null,
+      "status": "observed"
     },
     "system_ext_mount": {
       "classification": "read-only",
@@ -88,7 +148,9 @@
         "seclabel",
         "relatime"
       ],
-      "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)"
+      "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)",
+      "reason": null,
+      "status": "observed"
     },
     "system_mount": {
       "classification": "read-only",
@@ -99,7 +161,9 @@
         "seclabel",
         "relatime"
       ],
-      "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)"
+      "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)",
+      "reason": null,
+      "status": "observed"
     },
     "vendor_mount": {
       "classification": "read-only",
@@ -110,9 +174,10 @@
         "seclabel",
         "relatime"
       ],
-      "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)"
-    },
-    "writable_sensitive_mounts": []
+      "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)",
+      "reason": null,
+      "status": "observed"
+    }
   },
   "observer": {
     "collection_method": "adb_shell_snapshot",
@@ -120,77 +185,214 @@
     "privilege_level": "shell"
   },
   "process_state": {
-    "adbd_visible": true,
-    "init_visible": true,
-    "magisk_processes_visible": false,
-    "process_contexts_available": true,
-    "raw_line_count": 4,
-    "system_server_visible": true,
-    "zygote_visible": true
+    "adbd_visible": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "init_visible": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "magisk_processes_visible": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": false
+    },
+    "process_contexts_available": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "raw_line_count": {
+      "reason": null,
+      "status": "observed",
+      "value": 4
+    },
+    "system_server_visible": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "zygote_visible": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    }
   },
   "properties": {
-    "all_count": 15,
+    "all_count": {
+      "reason": null,
+      "status": "observed",
+      "value": 15
+    },
     "boot": {
-      "ro.boot.flash.locked": "1",
-      "ro.boot.vbmeta.device_state": "locked",
-      "ro.boot.verifiedbootstate": "green",
-      "ro.boot.veritymode": "enforcing"
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.boot.flash.locked": "1",
+        "ro.boot.vbmeta.device_state": "locked",
+        "ro.boot.verifiedbootstate": "green",
+        "ro.boot.veritymode": "enforcing"
+      }
     },
     "build": {
-      "ro.build.fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
-      "ro.build.version.release": "14",
-      "ro.build.version.sdk": "34"
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.build.fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
+        "ro.build.version.release": "14",
+        "ro.build.version.sdk": "34"
+      }
     },
-    "crypto": {},
+    "crypto": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": {}
+    },
     "product": {
-      "ro.product.device": "generic_x86_64",
-      "ro.product.manufacturer": "Google",
-      "ro.product.model": "sdk_gphone64_x86_64"
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.product.device": "generic_x86_64",
+        "ro.product.manufacturer": "Google",
+        "ro.product.model": "sdk_gphone64_x86_64"
+      }
     },
     "security": {
-      "ro.adb.secure": "1",
-      "ro.debuggable": "0",
-      "ro.secure": "1",
-      "sys.boot_completed": "1"
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.adb.secure": "1",
+        "ro.debuggable": "0",
+        "ro.secure": "1",
+        "sys.boot_completed": "1"
+      }
     }
+  },
+  "provenance": {
+    "command_results": [],
+    "migration_history": [],
+    "normalizer": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
+    "source_schema_version": "raw"
   },
   "raw_artifacts": [
     "datasets/samples/stock_avd/raw_sample.txt"
   ],
   "report_id": "atl-345035d528ae68c9",
   "root_state": {
-    "gid": "2000",
-    "root_paths": [],
-    "root_shell_available": false,
-    "su_present": false,
-    "uid": "2000"
+    "gid": {
+      "reason": null,
+      "status": "observed",
+      "value": "2000"
+    },
+    "root_paths": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": []
+    },
+    "root_shell_available": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": false
+    },
+    "su_present": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": false
+    },
+    "uid": {
+      "reason": null,
+      "status": "observed",
+      "value": "2000"
+    }
   },
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "selinux": {
-    "denials_collected": false,
-    "mode": "enforcing",
-    "policy_visible": true
+    "denials_collected": {
+      "reason": "SELinux denials were not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "mode": {
+      "reason": null,
+      "status": "observed",
+      "value": "enforcing"
+    },
+    "policy_visible": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    }
   },
   "target": {
-    "android_version": "14",
-    "build_fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
-    "device_codename": "generic_x86_64",
-    "manufacturer": "Google",
-    "model": "sdk_gphone64_x86_64",
-    "sdk": "34",
+    "android_version": {
+      "reason": null,
+      "status": "observed",
+      "value": "14"
+    },
+    "build_fingerprint": {
+      "reason": null,
+      "status": "observed",
+      "value": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys"
+    },
+    "device_codename": {
+      "reason": null,
+      "status": "observed",
+      "value": "generic_x86_64"
+    },
+    "manufacturer": {
+      "reason": null,
+      "status": "observed",
+      "value": "Google"
+    },
+    "model": {
+      "reason": null,
+      "status": "observed",
+      "value": "sdk_gphone64_x86_64"
+    },
+    "sdk": {
+      "reason": null,
+      "status": "observed",
+      "value": "34"
+    },
     "target_type": "avd"
   },
   "verified_boot": {
     "confidence": "low",
-    "flash_locked": "1",
-    "raw_properties": {
-      "ro.boot.flash.locked": "1",
-      "ro.boot.vbmeta.device_state": "locked",
-      "ro.boot.verifiedbootstate": "green",
-      "ro.boot.veritymode": "enforcing"
+    "flash_locked": {
+      "reason": null,
+      "status": "observed",
+      "value": "1"
     },
-    "vbmeta_device_state": "locked",
-    "verified_boot_state": "green",
-    "verity_mode": "enforcing"
+    "raw_properties": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.boot.flash.locked": "1",
+        "ro.boot.vbmeta.device_state": "locked",
+        "ro.boot.verifiedbootstate": "green",
+        "ro.boot.veritymode": "enforcing"
+      }
+    },
+    "vbmeta_device_state": {
+      "reason": null,
+      "status": "observed",
+      "value": "locked"
+    },
+    "verified_boot_state": {
+      "reason": null,
+      "status": "observed",
+      "value": "green"
+    },
+    "verity_mode": {
+      "reason": null,
+      "status": "observed",
+      "value": "enforcing"
+    }
   }
 }

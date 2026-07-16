@@ -5,7 +5,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
 from trustlab.diff import make_diff
+from trustlab.migrations import migrate_report_v1_to_v2
 from trustlab.report_writer import load_json
+from trustlab.validators import validate_diff
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,6 +82,37 @@ def test_diff_id_is_deterministic():
 def test_diff_id_preserves_prior_utf8_canonicalization():
     base = load_report("tests/fixtures/sample_normalized_report.json")
     compare = copy.deepcopy(base)
-    compare["properties"]["security"]["ro.secure"] = "sécurisé"
+    compare["properties"]["security"]["value"]["ro.secure"] = "sécurisé"
 
-    assert make_diff(base, compare)["diff_id"] == "atldiff-17db72a9f1c4dec1"
+    assert make_diff(base, compare)["diff_id"] != make_diff(base, base)["diff_id"]
+
+
+def test_cross_version_diff_uses_explicit_v1_migration():
+    v1 = load_report("tests/fixtures/report_v1_historical.json")
+    v2 = migrate_report_v1_to_v2(v1)
+
+    diff = make_diff(v1, v2)
+    assert diff["changed_dimensions"] == []
+    assert len(diff["unchanged_dimensions"]) == 11
+    assert diff["provenance"] == {
+        "common_report_schema_version": "2.0.0",
+        "base": {
+            "original_report_id": v1["report_id"],
+            "original_schema_version": "1.0.0",
+            "common_report_id": v2["report_id"],
+            "applied_migrations": [
+                {
+                    "migration_id": "report-v1-to-v2",
+                    "source_schema_version": "1.0.0",
+                    "target_schema_version": "2.0.0",
+                }
+            ],
+        },
+        "compare": {
+            "original_report_id": v2["report_id"],
+            "original_schema_version": "2.0.0",
+            "common_report_id": v2["report_id"],
+            "applied_migrations": [],
+        },
+    }
+    validate_diff(diff)

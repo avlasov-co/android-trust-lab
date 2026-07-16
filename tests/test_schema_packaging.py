@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import importlib.util
 import os
@@ -29,17 +30,29 @@ SPEC.loader.exec_module(schema_consistency)
 def test_validator_loads_packaged_resource_not_cwd_shadow(tmp_path, monkeypatch):
     shadow = tmp_path / "collector/schema"
     shadow.mkdir(parents=True)
-    (shadow / "trust_report.schema.json").write_text(
+    (shadow / "trust_report_v2_0_0.schema.json").write_text(
         '{"type":"object"}\n', encoding="utf-8"
     )
     monkeypatch.chdir(tmp_path)
-    assert load_schema("trust_report.schema.json")["$id"].startswith(
+    assert load_schema("trust_report_v2_0_0.schema.json")["$id"].startswith(
         "https://github.com/avlasov-co/android-trust-lab/"
     )
 
 
 def test_schema_compatibility_copies_match_packaged_resources():
     schema_consistency.check_schema_directories(CANONICAL, COMPATIBILITY)
+
+
+def test_frozen_v1_report_schema_has_reviewed_literal_digest():
+    expected = (
+        "a75f1ad4e4785a750f3545458aa39a84"  # pragma: allowlist secret
+        "d8d955b1995298b7f98d0815c2eb669e"  # pragma: allowlist secret
+    )
+    for schema in (
+        CANONICAL / "trust_report_v1_0_0.schema.json",
+        COMPATIBILITY / "trust_report_v1_0_0.schema.json",
+    ):
+        assert hashlib.sha256(schema.read_bytes()).hexdigest() == expected
 
 
 def test_schema_consistency_detects_byte_drift(tmp_path):
@@ -137,18 +150,20 @@ def _create_clean_environment(environment_dir, *, cwd):
     return python, purelib
 
 
-def _installed_smoke(python, *, purelib, report, diff, cwd):
+def _installed_smoke(python, *, purelib, report, v1_report, diff, cwd):
     smoke = (
         "from pathlib import Path;"
         "import trustlab;"
+        "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
         "from trustlab.validators import validate_report,validate_diff;"
         "validate_report(load_json(__import__('sys').argv[1]));"
         "validate_diff(load_json(__import__('sys').argv[2]));"
+        "validate_report(migrate_report_v1_to_v2(load_json(__import__('sys').argv[3])));"
         "print(Path(trustlab.__file__).resolve())"
     )
     result = _run(
-        [str(python), "-c", smoke, str(report), str(diff)],
+        [str(python), "-c", smoke, str(report), str(diff), str(v1_report)],
         cwd=cwd,
     )
     assert Path(result.stdout.strip()).is_relative_to(purelib)
@@ -184,7 +199,8 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     wheel = next(dist.glob("*.whl"))
     sdist = next(dist.glob("*.tar.gz"))
     expected = {
-        "trustlab/schemas/trust_report.schema.json",
+        "trustlab/schemas/trust_report_v1_0_0.schema.json",
+        "trustlab/schemas/trust_report_v2_0_0.schema.json",
         "trustlab/schemas/trust_diff.schema.json",
     }
     with zipfile.ZipFile(wheel) as archive:
@@ -205,10 +221,14 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
 
     report = tmp_path / "report.json"
     diff = tmp_path / "diff.json"
+    v1_report = tmp_path / "v1-report.json"
     report.write_bytes(
         (ROOT / "tests/fixtures/sample_normalized_report.json").read_bytes()
     )
     diff.write_bytes((ROOT / "tests/fixtures/sample_diff.json").read_bytes())
+    v1_report.write_bytes(
+        (ROOT / "tests/fixtures/report_v1_historical.json").read_bytes()
+    )
     wheelhouse = _offline_wheelhouse(tmp_path / "wheelhouse")
     wheel_python, wheel_purelib = _create_clean_environment(
         tmp_path / "wheel-env", cwd=tmp_path
@@ -230,6 +250,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         wheel_python,
         purelib=wheel_purelib,
         report=report,
+        v1_report=v1_report,
         diff=diff,
         cwd=tmp_path,
     )
@@ -269,6 +290,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         sdist_python,
         purelib=sdist_purelib,
         report=report,
+        v1_report=v1_report,
         diff=diff,
         cwd=tmp_path,
     )
@@ -277,10 +299,12 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "import sys;"
         "sys.path.insert(0,sys.argv[1]);"
         "import trustlab;"
+        "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
         "from trustlab.validators import validate_report,validate_diff;"
         "validate_report(load_json(sys.argv[2]));"
         "validate_diff(load_json(sys.argv[3]));"
+        "validate_report(migrate_report_v1_to_v2(load_json(sys.argv[4])));"
         "print(trustlab.__file__)"
     )
     zip_result = _run(
@@ -292,6 +316,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
             str(wheel),
             str(report),
             str(diff),
+            str(v1_report),
         ],
         cwd=tmp_path,
     )

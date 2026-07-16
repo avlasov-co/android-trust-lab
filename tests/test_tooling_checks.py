@@ -106,7 +106,7 @@ def test_repository_tool_entry_points_pass(capsys):
     output = capsys.readouterr().out
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
-    assert "validated 2 schemas" in output
+    assert "validated 3 schemas" in output
     assert "Magisk module safety checks passed" in output
 
 
@@ -124,6 +124,10 @@ def test_secret_detector_rejects_new_unbaselined_credential(tmp_path):
     candidate = "AK" + "IA" + "QWERTYUIOPASDFGH"
     source = tmp_path / "--no-verify"
     source.write_text(candidate + "\n", encoding="utf-8")
+    baseline = tmp_path / ".secrets.baseline"
+    baseline.write_bytes((ROOT / ".secrets.baseline").read_bytes())
+    subprocess.run(["git", "init", "--quiet"], cwd=tmp_path, check=True, timeout=30)
+    subprocess.run(["git", "add", baseline.name], cwd=tmp_path, check=True, timeout=30)
 
     result = subprocess.run(
         [
@@ -131,7 +135,7 @@ def test_secret_detector_rejects_new_unbaselined_credential(tmp_path):
             "-m",
             "detect_secrets.pre_commit_hook",
             "--baseline",
-            str(ROOT / ".secrets.baseline"),
+            baseline.name,
             "--no-verify",
             "--",
             source.name,

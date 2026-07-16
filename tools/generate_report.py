@@ -157,6 +157,7 @@ DIFFS: list[DiffSpec] = [
 
 ARTIFACT_SPECS = [
     ("datasets/manifest.json", "sample_manifest"),
+    ("tests/fixtures/sample_normalized_report.json", "generated_test_report"),
     (
         "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
         "normalized_sample_report",
@@ -251,6 +252,14 @@ def presence(value: bool) -> str:
     return "present" if value else "absent"
 
 
+def evidence_value(value: Any) -> Any:
+    if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
+        if value["status"] in {"observed", "observed_absent"}:
+            return value["value"]
+        return value["status"]
+    return value
+
+
 def fmt(value: Any) -> str:
     if isinstance(value, list):
         return ", ".join(map(str, value)) if value else "none"
@@ -303,7 +312,7 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for report in reports:
-        mounts = report["mounts"]
+        mounts = report["mounts"]["integrity_summary"]
         verified = report["verified_boot"]
         lines.append(
             "| {experiment} | {target} | {observer} | {method} | {root} | {magisk} | {selinux} | {writable} | {overlay} | {vb} | {locked} | {confidence} | sample |".format(
@@ -311,13 +320,15 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
                 target=report["target"]["target_type"],
                 observer=report["observer"]["observer_type"],
                 method=report["observer"]["collection_method"],
-                root=presence(report["root_state"]["su_present"]),
-                magisk=presence(report["magisk_state"]["magisk_binary_present"]),
-                selinux=report["selinux"]["mode"],
-                writable=fmt(mounts["writable_sensitive_mounts"]),
-                overlay=str(mounts["overlay_detected"]).lower(),
-                vb=verified["verified_boot_state"],
-                locked=verified["flash_locked"],
+                root=presence(evidence_value(report["root_state"]["su_present"])),
+                magisk=presence(
+                    evidence_value(report["magisk_state"]["magisk_binary_present"])
+                ),
+                selinux=evidence_value(report["selinux"]["mode"]),
+                writable=fmt(evidence_value(mounts["writable_sensitive_mounts"])),
+                overlay=str(evidence_value(mounts["overlay_detected"])).lower(),
+                vb=evidence_value(verified["verified_boot_state"]),
+                locked=evidence_value(verified["flash_locked"]),
                 confidence=verified["confidence"],
             )
         )
@@ -354,25 +365,26 @@ def diff_markdown(diff_entries: list[tuple[DiffSpec, dict[str, Any]]]) -> str:
 
 def dimension_value(report: dict[str, Any], dimension: str) -> str:
     if dimension == "bootloader_lock_state":
-        return cast(str, report["verified_boot"]["flash_locked"])
+        return str(evidence_value(report["verified_boot"]["flash_locked"]))
     if dimension == "verified_boot_state":
-        return cast(str, report["verified_boot"]["verified_boot_state"])
+        return str(evidence_value(report["verified_boot"]["verified_boot_state"]))
     if dimension == "vbmeta_state":
-        return cast(str, report["verified_boot"]["vbmeta_device_state"])
+        return str(evidence_value(report["verified_boot"]["vbmeta_device_state"]))
     if dimension == "verity_mode":
-        return cast(str, report["verified_boot"]["verity_mode"])
+        return str(evidence_value(report["verified_boot"]["verity_mode"]))
     if dimension == "selinux_mode":
-        return cast(str, report["selinux"]["mode"])
+        return str(evidence_value(report["selinux"]["mode"]))
     if dimension == "mount_integrity":
-        writable = report["mounts"]["writable_sensitive_mounts"]
-        overlay = report["mounts"]["overlay_detected"]
+        integrity = report["mounts"]["integrity_summary"]
+        writable = evidence_value(integrity["writable_sensitive_mounts"])
+        overlay = evidence_value(integrity["overlay_detected"])
         return f"writable={fmt(writable)}; overlay={str(overlay).lower()}"
     if dimension == "root_presence":
-        return presence(report["root_state"]["su_present"])
+        return presence(evidence_value(report["root_state"]["su_present"]))
     if dimension == "magisk_presence":
-        return presence(report["magisk_state"]["magisk_binary_present"])
+        return presence(evidence_value(report["magisk_state"]["magisk_binary_present"]))
     if dimension == "property_consistency":
-        return fmt(report["properties"]["security"])
+        return fmt(evidence_value(report["properties"]["security"]))
     if dimension == "observer_privilege":
         return cast(str, report["observer"]["privilege_level"])
     return "unknown"
@@ -440,6 +452,23 @@ def main(argv: list[str] | None = None) -> int:
         write_json_if_changed(
             ROOT / sample["report"], report, check=args.check, changed=changed
         )
+        if sample["sample_id"] == "stock-avd-adb-sample":
+            fixture_report = normalize_raw_file(
+                ROOT / "tests/fixtures/sample_raw_report.txt",
+                experiment_id="E01_stock_avd",
+                target_type="avd",
+                observer_type="adb_shell",
+                collection_method="raw_artifact",
+                collection_timestamp="2026-04-25T15:06:21Z",
+                raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
+            )
+            validate_report(fixture_report)
+            write_json_if_changed(
+                ROOT / "tests/fixtures/sample_normalized_report.json",
+                fixture_report,
+                check=args.check,
+                changed=changed,
+            )
 
     write_json_if_changed(
         ROOT / "datasets/manifest.json",

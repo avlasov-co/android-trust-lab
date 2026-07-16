@@ -9,64 +9,71 @@
     },
     {
       "generated_by": "python tools/generate_report.py",
+      "path": "tests/fixtures/sample_normalized_report.json",
+      "sha256": "94071f0fe2b12f1a80f0a353c641cfa167b82fd65831727c56754b60f6e93fae",
+      "status": "checked",
+      "type": "generated_test_report"
+    },
+    {
+      "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-      "sha256": "4cccb7393710de14d7d495f4d143f5d5a2c78f130461ec6c9b0dc167d8ac6f2e",
+      "sha256": "7431c6bb37643d4819f0202265060269f436138cf3033979c0f5b440d1ac0fc9",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-      "sha256": "0463afc900dbbfc2f6a3f94770bbd2a0a3d414089ca5272c6187ada68f757ef0",
+      "sha256": "8248cf5a0609275ac614f2c3e30d21f03d9616418e14f2f55b9fb9ab025d86b8",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-      "sha256": "708e0965d2db20b210292b4f9cc572d160393166d1c293f006e814ac222d879a",
+      "sha256": "9fbbcfb74077287bddc14564b2fda7b65b5a88ef469bec43a2003ce92b2fed4a",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-      "sha256": "122c6f488827fb905c31a03e54cb917d7686ee9e74cefcb96772e8e283227496",
+      "sha256": "14624e791516ee82c12d9c75283cef320cb5538295d1d0d750e19c7a9627aa57",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-      "sha256": "d4b76acc965f96dedbc12c0d9ea4bf7c038b540f925feefc973332f76b49b6f5",
+      "sha256": "b78f9b0234533ee13f0462ec55905267f176a60f6d0073b85368d5e0c68a04ab",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/diffs/stock_adb_vs_rooted_adb.json",
-      "sha256": "82c514b1c78972af3759e126985e916c10c2aaa9233c28262c0064c17004176f",
+      "sha256": "87034810c7d837ca695b71b018ebf670dbf3ce3be33c329699174c67fe11a1b0",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/diffs/rooted_adb_vs_rooted_root.json",
-      "sha256": "4e0bef6d61bab1174077c2cad02f609bfe3ac01e7121ff8747d3fe1b27b20476",
+      "sha256": "d1ce2411fb719d536ec167953a613225c3b87672b9bae4ee1d134f3b7e3ae685",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/diffs/stock_vs_writable_system.json",
-      "sha256": "98f5f4fdc6d14436e35b2946371165605c546ff427d9d784e3630f6a4d9ed670",
+      "sha256": "ad0f9fc1785a481c8b91fed0f6fe6246b76ece1f27a9cac1bdf7b4a54e709cf3",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/diffs/rooted_adb_vs_magisk_root_collector.json",
-      "sha256": "07bda4c7761f0f7c8325583f5e4ed97882f931ba8f7371e5ba4ccdf38f01bf93",
+      "sha256": "654f4a739ec5091f89784b9c17037f121bce23dab9e07a0fba3af74971fad4dd",
       "status": "checked",
       "type": "generated_diff"
     },
@@ -80,7 +87,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "976c9d68da31257c1021d1e8c6eab79202a5145c906f19aa2721a079826ac2b1",
+      "sha256": "d90f2ca3d05bde3f9b9236de2093df8a10894050187037fc2bdebbd9a8eb9fc2",
       "status": "checked",
       "type": "generated_report"
     },

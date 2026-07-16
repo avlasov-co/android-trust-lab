@@ -226,7 +226,7 @@ def test_diff_unicode_encoding_failure_is_clean_and_preserves_destination(
 ):
     base = valid_report()
     compare = copy.deepcopy(base)
-    compare["properties"]["security"]["ro.secure"] = "\ud800"
+    compare["properties"]["security"]["value"]["ro.secure"] = "\ud800"
     base_path = tmp_path / "base.json"
     compare_path = tmp_path / "compare.json"
     write_document(base_path, base)

@@ -10,7 +10,7 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Raw artifact parser | Implemented | `analyzer/trustlab/parser.py`, `tests/test_parser.py` |
 | Trust report normalization | Implemented | `analyzer/trustlab/normalizer.py`, `tests/test_normalizer.py` |
 | Trust diff generation | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py` |
-| JSON schemas | Implemented | `collector/schema/trust_report.schema.json`, `collector/schema/trust_diff.schema.json` |
+| JSON schemas | Implemented | versioned report v1/v2 schemas and `collector/schema/trust_diff.schema.json` |
 | Synthetic / AVD-limited samples | Implemented | `datasets/samples/`, `datasets/manifest.json` |
 | Generated result tables and diffs | Implemented | `results/`, `tools/generate_report.py` |
 | Read-only Magisk root collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md` |

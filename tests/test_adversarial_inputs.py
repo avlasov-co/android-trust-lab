@@ -50,11 +50,12 @@ def test_checked_in_adversarial_fixture_preserves_evidence_semantics():
         raw_artifact_ref="tests/fixtures/adversarial_raw_report.txt",
     )
     validate_report(report)
-    assert report["properties"]["security"]["ro.secure"] == "unknown"
-    assert report["properties"]["all_count"] == 4
+    assert report["properties"]["security"]["value"]["ro.secure"] == "unknown"
+    assert report["properties"]["all_count"]["value"] == 4
     assert report["mounts"]["system_mount"]["classification"] == "overlay"
     assert report["mounts"]["vendor_mount"]["classification"] == "tmpfs"
-    assert report["mounts"]["product_mount"]["classification"] == "bind mount"
+    assert report["mounts"]["product_mount"]["classification"] == "other"
+    assert report["mounts"]["product_mount"]["raw"].endswith("rw,bind")
     assert report["limitations"]["collection_errors"] == []
 
 

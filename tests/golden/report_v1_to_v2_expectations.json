@@ -1,0 +1,15 @@
+{
+  "expected": {
+    "build_fingerprint_status": "observed",
+    "crypto_properties_status": "not_collected",
+    "denials_collected_status": "not_collected",
+    "migration_id": "report-v1-to-v2",
+    "root_presence_status": "not_collected",
+    "schema_version": "2.0.0",
+    "source_schema_version": "1.0.0",
+    "target_schema_version": "2.0.0"
+  },
+  "migrated_canonical_sha256": "afb3f7621246f97e103bf7ef96ead65b171749949f7b4861f9383b3d3149f38c",
+  "source": "tests/fixtures/report_v1_historical.json",
+  "source_file_sha256": "076c0e08a42e0eaad63313231cf81195ea70e22717cef089d8ee6469d9932c9c"
+}

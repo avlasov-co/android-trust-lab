@@ -3,6 +3,8 @@
 The `trustlab` CLI validates authoritative JSON artifacts before publishing them.
 Normalize validates its in-memory report before writing. Diff always validates
 both input reports and the generated diff before writing.
+`migrate-report` accepts only validated report v1 input, validates its v2 result,
+and publishes a separate output without replacing the historical source.
 
 Validation uses Draft 2020-12 with explicit format checking. All detected
 schema errors are reported in deterministic JSON-pointer order; diagnostics
@@ -48,8 +50,8 @@ failure (exit 4). Decoding never substitutes replacement characters.
 Successful write commands are silent, so a closed or encoding-incompatible
 stdout cannot turn a completed publication into a failed command. Validation
 commands emit short ASCII status text without echoing user paths. Normalize
-refuses an output that aliases its raw input, and diff refuses an output that
-aliases either input report.
+refuses an output that aliases its raw input, diff refuses an output that aliases
+either input report, and migration refuses an output that aliases its source.
 
 Place `--debug` before the subcommand to retain exception chaining and show a
 traceback for an expected project error. Schema-validation causes retain native

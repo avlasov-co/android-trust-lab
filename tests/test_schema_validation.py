@@ -28,8 +28,59 @@ def test_project_schemas_are_valid_draft_2020_12():
 def test_packaged_project_schema_registry_is_meta_schema_valid():
     assert check_project_schemas() == (
         "trust_diff.schema.json",
-        "trust_report.schema.json",
+        "trust_report_v1_0_0.schema.json",
+        "trust_report_v2_0_0.schema.json",
     )
+
+
+def test_v2_schema_declares_required_defs_and_closes_structured_objects():
+    schema = load_schema("trust_report_v2_0_0.schema.json")
+    assert set(schema["required"]) == set(schema["properties"])
+    assert schema["additionalProperties"] is False
+    definitions = schema["$defs"]
+    assert {
+        "reportId",
+        "experimentId",
+        "semver",
+        "timestamp",
+        "observerMetadata",
+        "targetMetadata",
+        "evidenceStatus",
+        "confidence",
+        "provenance",
+        "mountObservation",
+        "commandResult",
+        "limitations",
+    } <= set(definitions)
+
+    strict_objects = {
+        "evidenceString",
+        "evidenceBoolean",
+        "evidenceStringList",
+        "evidenceStringMap",
+        "evidenceInteger",
+        "observerMetadata",
+        "targetMetadata",
+        "bootState",
+        "verifiedBoot",
+        "selinuxState",
+        "mountObservation",
+        "mountState",
+        "propertyState",
+        "rootState",
+        "magiskState",
+        "processState",
+        "emulatorState",
+        "commandResult",
+        "migrationRecord",
+        "provenance",
+        "limitations",
+    }
+    for name in strict_objects:
+        definition = definitions[name]
+        assert definition["type"] == "object"
+        assert definition["additionalProperties"] is False
+        assert set(definition["required"]) == set(definition["properties"])
 
 
 def test_invalid_date_time_format_is_rejected():

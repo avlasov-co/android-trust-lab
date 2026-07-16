@@ -23,7 +23,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `results/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
-| JSON schemas | Implemented | `collector/schema/trust_report.schema.json`, `collector/schema/trust_diff.schema.json`, `tests/test_schema_validation.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py` |
+| JSON schemas and migration | Implemented | `collector/schema/trust_report_v1_0_0.schema.json`, `collector/schema/trust_report_v2_0_0.schema.json`, `analyzer/trustlab/migrations.py`, `tests/test_report_migration.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_report_migration.py` |
 | Sample reports | Implemented | `datasets/samples/`, `datasets/manifest.json` | `python tools/generate_report.py --check` |
 | Generated diffs/tables | Implemented | `results/diffs/`, `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md` | `python tools/generate_report.py --check` |
 | Magisk collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md`, `module/trustlab-magisk/README.md` | `find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;` |
@@ -128,15 +128,15 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 40 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 22 analyzer and tool modules |
-| Unit tests | Gate step 5 | 180 passed on Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 95.06% statements (674/709); 83.14% branches (143/172); floors 85%/80% |
-| Tools coverage | Gate step 5 | 87.68% statements (619/706); 74.83% branches (220/294); floors 70%/60% |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 44 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 25 analyzer and tool modules |
+| Unit tests | Gate step 5 | 203 passed on Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 94.96% statements (904/952); 84.62% branches (220/260); floors 85%/80% |
+| Tools coverage | Gate step 5 | 87.60% statements (629/718); 74.67% branches (224/300); floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
-| Schema and checked-in artifacts | Gate step 10 | 2 schemas, 6 reports, and 5 diffs validated |
+| Schema and checked-in artifacts | Gate step 10 | 3 schemas, 7 reports, and 5 diffs validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk package safety | Gate step 12 | Pass |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
@@ -152,8 +152,9 @@ from an activated environment containing `analyzer[dev]`.
 schema versions, canonical evidence states, exact registry lookup, migration and
 cross-version diff rules, canonical JSON identity, deprecation windows, and
 sample-retention policy. The supported-version table and schema-resource
-registry are machine-tested in `tests/test_compatibility_policy.py`. Report and
-diff v1 are registered; report v2, collection manifests, and experiment specs
+registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1
+is a read-only compatibility input, report v2 is the current validated writer
+format, and diff v1 remains current. Collection manifests and experiment specs
 remain planned rather than falsely advertised as supported.
 
 ## Known limitations

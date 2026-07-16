@@ -22,7 +22,7 @@ versions remain independent and must not be synchronized mechanically:
 
 | Contract | Current version source | Current value |
 |---|---|---|
-| Trust report schema | compatibility registry and report schema | `1.0.0` |
+| Trust report schema | compatibility registry and versioned schemas | `2.0.0` writes; `1.0.0` and `2.0.0` reads |
 | Trust diff schema | compatibility registry and diff schema | `1.0.0` |
 | Dataset manifest | compatibility registry and report generator | legacy `1.0.0` |
 | Collection manifest | compatibility registry | none; `collection-manifest-0.1` is a pre-policy sample |

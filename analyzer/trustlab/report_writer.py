@@ -105,6 +105,14 @@ def _cell(value: Any) -> str:
     return str(value).replace("|", "\\|")
 
 
+def _evidence_value(value: Any) -> Any:
+    if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
+        if value["status"] in {"observed", "observed_absent"}:
+            return value["value"]
+        return value["status"]
+    return value
+
+
 def diff_to_markdown(diff: dict[str, Any]) -> str:
     lines = [
         f"# Trust Diff {diff.get('diff_id', '')}",
@@ -131,9 +139,9 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         "",
         "## Key dimensions",
         "",
-        f"- SELinux: `{report.get('selinux', {}).get('mode', 'unknown')}`",
-        f"- Root present: `{report.get('root_state', {}).get('su_present', 'unknown')}`",
-        f"- Magisk present: `{report.get('magisk_state', {}).get('magisk_binary_present', 'unknown')}`",
-        f"- Emulator: `{report.get('emulator_state', {}).get('is_emulator', 'unknown')}`",
+        f"- SELinux: `{_evidence_value(report.get('selinux', {}).get('mode', 'not_collected'))}`",
+        f"- Root present: `{_evidence_value(report.get('root_state', {}).get('su_present', 'not_collected'))}`",
+        f"- Magisk present: `{_evidence_value(report.get('magisk_state', {}).get('magisk_binary_present', 'not_collected'))}`",
+        f"- Emulator: `{_evidence_value(report.get('emulator_state', {}).get('is_emulator', 'not_collected'))}`",
     ]
     return "\n".join(lines) + "\n"

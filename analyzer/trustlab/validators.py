@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 from importlib.resources import files
 from typing import Any
 
@@ -22,6 +23,7 @@ from .exceptions import (
     SchemaValidationError,
     UnsupportedSchemaVersionError,
 )
+from .migration_codec import encode_legacy_report, legacy_report_digest
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
@@ -251,6 +253,86 @@ def validate_report(data: object) -> None:
         schema_resource_name(SchemaFamily.REPORT, resource_version),
         artifact_name="report",
         supported_versions=SUPPORTED_REPORT_SCHEMA_VERSIONS,
+    )
+    if resource_version == "2.0.0":
+        _validate_v2_migration_provenance(data)
+
+
+def _migration_provenance_error(detail: str) -> SchemaValidationError:
+    return SchemaValidationError(
+        f"report migration provenance validation failed: {detail}"
+    )
+
+
+def _validate_v2_migration_provenance(data: object) -> None:
+    """Bind v2 migration claims to one exact, validated v1 source."""
+
+    if not isinstance(data, dict):  # Schema validation has already rejected this.
+        return
+    provenance = data.get("provenance")
+    extensions = data.get("extensions")
+    if not isinstance(provenance, dict) or not isinstance(extensions, dict):
+        return
+    source_version = provenance.get("source_schema_version")
+    history = provenance.get("migration_history")
+    migration_extension = extensions.get("org.androidtrustlab.migration")
+
+    if source_version == "raw":
+        if history != [] or migration_extension is not None:
+            raise _migration_provenance_error(
+                "raw reports must not claim migration history or preserved sources"
+            )
+        return
+
+    expected_history = [
+        {
+            "migration_id": "report-v1-to-v2",
+            "source_schema_version": "1.0.0",
+            "target_schema_version": "2.0.0",
+        }
+    ]
+    if source_version != "1.0.0" or history != expected_history:
+        raise _migration_provenance_error("the registered v1-to-v2 chain is required")
+    if not isinstance(migration_extension, dict) or set(migration_extension) != {
+        "encoding",
+        "source_report_json",
+        "source_sha256",
+    }:
+        raise _migration_provenance_error(
+            "the exact preserved-source extension is required"
+        )
+    encoded_source = migration_extension.get("source_report_json")
+    source_digest = migration_extension.get("source_sha256")
+    if (
+        migration_extension.get("encoding") != "canonical-json-text-v1"
+        or not isinstance(encoded_source, str)
+        or not isinstance(source_digest, str)
+    ):
+        raise _migration_provenance_error("the preserved-source encoding is invalid")
+    if re.fullmatch(r"[a-f0-9]{64}", source_digest) is None:
+        raise _migration_provenance_error("the preserved-source digest is invalid")
+    if not secrets.compare_digest(legacy_report_digest(encoded_source), source_digest):
+        raise _migration_provenance_error("the preserved-source digest does not match")
+    try:
+        source = json.loads(
+            encoded_source,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"invalid constant: {value}")
+            ),
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise _migration_provenance_error(
+            "the preserved source is not strict JSON"
+        ) from exc
+    if not isinstance(source, dict) or encode_legacy_report(source) != encoded_source:
+        raise _migration_provenance_error(
+            "the preserved source is not deterministically encoded"
+        )
+    validate_with_schema(
+        source,
+        schema_resource_name(SchemaFamily.REPORT, "1.0.0"),
+        artifact_name="preserved source report",
+        supported_versions=frozenset({"1.0.0"}),
     )
 
 
