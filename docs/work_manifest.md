@@ -22,11 +22,12 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Independent CLI and adversarial tests | Implemented | `tests/test_installed_cli.py`, `tests/test_adversarial_inputs.py`, `tests/golden/` | `python -m pytest -q tests/test_installed_cli.py tests/test_adversarial_inputs.py` |
 | CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
-| Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `results/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
+| Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `datasets/derived/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
 | JSON schemas and migration | Implemented | `collector/schema/trust_report_v1_0_0.schema.json`, `collector/schema/trust_report_v2_0_0.schema.json`, `analyzer/trustlab/migrations.py`, `tests/test_report_migration.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_report_migration.py` |
 | Portable collection manifests | Implemented | `collector/schema/collection_manifest_v1_0_0.schema.json`, `analyzer/trustlab/collection_manifest.py`, `tests/test_collection_manifest.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_collection_manifest.py` |
+| Verifiable dataset manifest | Implemented | `datasets/source.json`, `datasets/manifest.json`, `docs/dataset_manifest_v2.md`, `analyzer/trustlab/dataset_manifest.py` | `trustlab dataset verify datasets/manifest.json` |
 | Sample reports | Implemented | `datasets/samples/`, `datasets/manifest.json` | `python tools/generate_report.py --check` |
-| Generated diffs/tables | Implemented | `results/diffs/`, `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md` | `python tools/generate_report.py --check` |
+| Generated diffs/tables | Implemented | `datasets/derived/diffs/`, `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md` | `python tools/generate_report.py --check` |
 | Magisk collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md`, `module/trustlab-magisk/README.md` | `find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;` |
 | Magisk packaging helper | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` | `python tools/package_magisk_module.py --check-only` |
 | Tests | Implemented | `tests/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q` |
@@ -129,15 +130,15 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 46 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 26 analyzer and tool modules |
-| Unit tests | Gate step 5 | 240 passed on Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 93.97% statements (1201/1278); 83.33% branches (290/348); floors 85%/80% |
-| Tools coverage | Gate step 5 | 87.69% statements (641/731); 74.84% branches (229/306); floors 70%/60% |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 48 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 27 analyzer and tool modules |
+| Unit tests | Gate step 5 | 311 passed on Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 92.79% statements; 82.31% branches; floors 85%/80% |
+| Tools coverage | Gate step 5 | 86.92% statements; 74.11% branches; floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
-| Schema and checked-in artifacts | Gate step 10 | 4 schemas, 7 reports, 5 diffs, and 1 collection manifest validated |
+| Schema and checked-in artifacts | Gate step 10 | 7 schemas, 7 reports, 5 diffs, 1 collection manifest, 2 dataset manifests, and 1 dataset source validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk package safety | Gate step 12 | Pass |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
@@ -156,7 +157,9 @@ sample-retention policy. The supported-version table and schema-resource
 registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1
 is a read-only compatibility input, report v2 is the current validated writer
 format, diff v1 remains current, and strict collection manifest v1 is readable
-and writable. Experiment specs remain planned rather than falsely advertised as
+and writable. Dataset manifest v1 remains readable, strict dataset manifest v2
+is the sole verified writer format, and dataset source v1 drives deterministic
+generation. Experiment specs remain planned rather than falsely advertised as
 supported.
 
 ## Known limitations
@@ -168,6 +171,7 @@ supported.
 - No APK reverse engineering, AndroidManifest analysis, or permission parser is implemented.
 - No production attestation, hardware-backed trust, TEE, OEM boot-chain, Widevine, DRM, or device-specific security conclusions are claimed.
 - Current samples are synthetic / AVD-limited and intended for analyzer and collector workflow validation.
+- Dataset verification and repository generation require POSIX directory-descriptor safety primitives in this release.
 - The unprivileged app probe is design-only.
 - The physical-device experiment file is a template, not completed evidence.
 

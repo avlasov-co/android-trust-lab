@@ -28,7 +28,7 @@
     "execution_context": "magisk_module"
   },
   "warnings": [
-    "Synthetic AVD-limited fixture; individual command exit codes were not retained by the legacy capture."
+    "Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture."
   ],
   "redaction_policy": {
     "policy_id": "atl_portable_v1",

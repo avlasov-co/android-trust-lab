@@ -26,12 +26,18 @@ verified byte snapshot, and retains the canonical manifest digest plus all probe
 outcomes in report provenance. Legacy direct raw-file normalization remains
 supported.
 
+Dataset manifest `2.0.0` is the sole writable dataset contract; frozen v1 remains
+readable only. `trustlab dataset verify` validates the complete portable graph,
+all byte bindings, collection relationships, and deterministic report/diff
+freshness from any current directory.
+
 ## Commands
 
 ```bash
 trustlab normalize --input ../tests/fixtures/sample_raw_report.txt --output /tmp/report.json
 trustlab normalize --manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json --output /tmp/manifest-report.json
 trustlab validate-collection-manifest ../datasets/samples/magisk_collector/collector_manifest_sample.json
+trustlab dataset verify ../datasets/manifest.json
 trustlab migrate-report --input ../tests/fixtures/report_v1_historical.json --output /tmp/migrated-v2.json
 trustlab validate-report /tmp/report.json
 trustlab diff --base ../datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --output /tmp/diff.json

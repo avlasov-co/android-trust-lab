@@ -8,6 +8,9 @@ and publishes a separate output without replacing the historical source.
 `validate-collection-manifest` validates the strict portable manifest contract.
 Normalize with `--manifest` verifies every observed artifact binding before it
 parses the declared `raw_report`.
+`dataset verify` is read-only: it validates dataset source and manifest
+contracts, safe relative paths, exact size/hash bindings, the closed reference
+graph, collection relationships, and deterministic report/diff freshness.
 
 Validation uses Draft 2020-12 with explicit format checking. All detected
 schema errors are reported in deterministic JSON-pointer order; diagnostics
@@ -36,7 +39,7 @@ traceback or stdout, and return:
 | 2 | Command usage error reported by argparse |
 | 3 | Missing input file |
 | 4 | Invalid or non-UTF-8 JSON |
-| 5 | Unsupported report or diff schema version |
+| 5 | Unsupported report, diff, collection, or dataset schema version |
 | 6 | Schema validation failure |
 | 7 | Collection or input-read failure |
 | 8 | Normalization failure |
@@ -57,6 +60,8 @@ refuses an output that aliases its raw input, diff refuses an output that aliase
 either input report, and migration refuses an output that aliases its source.
 Manifest normalization refuses to replace either the manifest or any bound
 source artifact.
+Successful dataset verification prints exactly `dataset verified` and never
+modifies the bundle.
 
 Place `--debug` before the subcommand to retain exception chaining and show a
 traceback for an expected project error. Schema-validation causes retain native

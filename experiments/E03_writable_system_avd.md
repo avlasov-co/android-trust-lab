@@ -47,7 +47,7 @@ A synthetic / AVD-limited sample artifact is included in:
 
 The generated diff is included in:
 
-- `results/diffs/stock_vs_writable_system.json`
+- `datasets/derived/diffs/stock_vs_writable_system.json`
 
 The sample demonstrates analyzer handling of overlay-backed and writable sensitive mount signals.
 

@@ -1,0 +1,404 @@
+{
+  "dataset_id": "atlds-android-trust-lab-samples",
+  "schema_version": "1.0.0",
+  "dataset_version": "0.1.0",
+  "license": {
+    "spdx_id": "Apache-2.0",
+    "name": "Apache License 2.0",
+    "scope": "Dataset definitions, synthetic source evidence, and derived outputs"
+  },
+  "origin_classifications": [
+    "synthetic"
+  ],
+  "authorization": {
+    "classification": "project_authored_synthetic",
+    "statement": "All current source evidence is project-authored synthetic fixture data; no human-subject or third-party device capture is included.",
+    "physical_data_disclosed": false
+  },
+  "redaction": {
+    "status": "applied",
+    "policy_id": "atl_portable_v1",
+    "statement": "Portable fixtures exclude direct identifiers, device serials, credentials, and host-absolute paths."
+  },
+  "creation_tooling": {
+    "name": "trustlab-dataset-generator",
+    "version": "0.3.0.dev0",
+    "command": "python tools/generate_report.py"
+  },
+  "artifact_schema_versions": {
+    "declarative_source": "1.0.0",
+    "raw_artifact": "1.0.0",
+    "collection_manifest": "1.0.0",
+    "normalized_report": "2.0.0",
+    "derived_diff": "1.0.0"
+  },
+  "aggregate_limitations": [
+    "All current samples are synthetic and model AVD-visible state.",
+    "No physical-device, hardware-backed boot, TEE, attestation, DRM, or OEM boot-chain conclusion is supported.",
+    "SHA-256 bindings establish bundle consistency, not external authenticity or attestation."
+  ],
+  "declarative_source_artifact_id": "dataset-source",
+  "artifacts": [
+    {
+      "artifact_id": "dataset-source",
+      "role": "declarative_source",
+      "relative_path": "source.json",
+      "media_type": "application/json",
+      "schema_family": "dataset_source",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "android-trust-lab-maintainers",
+        "version": "1.0.0"
+      },
+      "redaction_state": "not_required"
+    },
+    {
+      "artifact_id": "raw-stock-avd-adb",
+      "role": "raw_artifact",
+      "relative_path": "samples/stock_avd/raw_sample.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "report-stock-avd-adb",
+      "role": "normalized_report",
+      "relative_path": "samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "raw-rooted-avd-adb",
+      "role": "raw_artifact",
+      "relative_path": "samples/rooted_avd/raw_adb_sample.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "report-rooted-avd-adb",
+      "role": "normalized_report",
+      "relative_path": "samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "raw-rooted-avd-root",
+      "role": "raw_artifact",
+      "relative_path": "samples/rooted_avd/raw_root_sample.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "report-rooted-avd-root",
+      "role": "normalized_report",
+      "relative_path": "samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "raw-writable-system-avd-adb",
+      "role": "raw_artifact",
+      "relative_path": "samples/writable_system_avd/raw_sample.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "report-writable-system-avd-adb",
+      "role": "normalized_report",
+      "relative_path": "samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "raw-magisk-collector-root",
+      "role": "raw_artifact",
+      "relative_path": "samples/magisk_collector/raw_sample.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "collection-manifest-magisk-root",
+      "role": "collection_manifest",
+      "relative_path": "samples/magisk_collector/collector_manifest_sample.json",
+      "media_type": "application/json",
+      "schema_family": "collection_manifest",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "trustlab-fixture-authors",
+        "version": "1.0.0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "report-magisk-collector-root",
+      "role": "normalized_report",
+      "relative_path": "samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "diff-stock-adb-vs-rooted-adb",
+      "role": "derived_diff",
+      "relative_path": "derived/diffs/stock_adb_vs_rooted_adb.json",
+      "media_type": "application/json",
+      "schema_family": "diff",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "diff-rooted-adb-vs-rooted-root",
+      "role": "derived_diff",
+      "relative_path": "derived/diffs/rooted_adb_vs_rooted_root.json",
+      "media_type": "application/json",
+      "schema_family": "diff",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "diff-stock-vs-writable-system",
+      "role": "derived_diff",
+      "relative_path": "derived/diffs/stock_vs_writable_system.json",
+      "media_type": "application/json",
+      "schema_family": "diff",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    },
+    {
+      "artifact_id": "diff-rooted-adb-vs-magisk-root",
+      "role": "derived_diff",
+      "relative_path": "derived/diffs/rooted_adb_vs_magisk_root_collector.json",
+      "media_type": "application/json",
+      "schema_family": "diff",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "0.3.0.dev0"
+      },
+      "redaction_state": "redacted"
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "stock-avd-adb-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E01_stock_avd",
+      "target_type": "avd",
+      "observer_type": "adb_shell",
+      "collection_method": "adb_shell_snapshot",
+      "collection_timestamp": "2026-04-25T15:06:21Z",
+      "raw_artifact_id": "raw-stock-avd-adb",
+      "collection_manifest": {
+        "status": "not_collected",
+        "artifact_id": null,
+        "reason": "This legacy synthetic fixture predates collection-manifest v1."
+      },
+      "normalized_report_artifact_id": "report-stock-avd-adb",
+      "known_limitations": [
+        "Synthetic fixture text; no collection event occurred.",
+        "AVD-modeled target.",
+        "No hardware-backed boot conclusion."
+      ]
+    },
+    {
+      "sample_id": "rooted-avd-adb-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E02_rooted_avd",
+      "target_type": "avd",
+      "observer_type": "adb_shell",
+      "collection_method": "synthetic_rooted_adb_snapshot",
+      "collection_timestamp": "2026-04-25T15:07:21Z",
+      "raw_artifact_id": "raw-rooted-avd-adb",
+      "collection_manifest": {
+        "status": "not_collected",
+        "artifact_id": null,
+        "reason": "This legacy synthetic fixture predates collection-manifest v1."
+      },
+      "normalized_report_artifact_id": "report-rooted-avd-adb",
+      "known_limitations": [
+        "Synthetic rooted ADB-visible fixture text; no collection event occurred.",
+        "AVD-modeled target.",
+        "No hardware-backed boot conclusion."
+      ]
+    },
+    {
+      "sample_id": "rooted-avd-root-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E02_rooted_avd",
+      "target_type": "avd",
+      "observer_type": "root_collector",
+      "collection_method": "synthetic_root_collector_snapshot",
+      "collection_timestamp": "2026-04-25T15:07:51Z",
+      "raw_artifact_id": "raw-rooted-avd-root",
+      "collection_manifest": {
+        "status": "not_collected",
+        "artifact_id": null,
+        "reason": "This legacy synthetic fixture predates collection-manifest v1."
+      },
+      "normalized_report_artifact_id": "report-rooted-avd-root",
+      "known_limitations": [
+        "Synthetic rooted root-observer fixture text; no collection event occurred.",
+        "AVD-modeled target.",
+        "No hardware-backed boot conclusion."
+      ]
+    },
+    {
+      "sample_id": "writable-system-avd-adb-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E03_writable_system_avd",
+      "target_type": "avd",
+      "observer_type": "adb_shell",
+      "collection_method": "synthetic_writable_system_snapshot",
+      "collection_timestamp": "2026-04-25T15:08:21Z",
+      "raw_artifact_id": "raw-writable-system-avd-adb",
+      "collection_manifest": {
+        "status": "not_collected",
+        "artifact_id": null,
+        "reason": "This legacy synthetic fixture predates collection-manifest v1."
+      },
+      "normalized_report_artifact_id": "report-writable-system-avd-adb",
+      "known_limitations": [
+        "Synthetic writable-system fixture text; no collection event occurred.",
+        "AVD-modeled target and overlay evidence only.",
+        "No hardware-backed boot conclusion."
+      ]
+    },
+    {
+      "sample_id": "magisk-collector-root-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E05_magisk_collector",
+      "target_type": "avd",
+      "observer_type": "root_collector",
+      "collection_method": "magisk_module_manual",
+      "collection_timestamp": "2026-04-25T15:50:00Z",
+      "raw_artifact_id": "raw-magisk-collector-root",
+      "collection_manifest": {
+        "status": "observed",
+        "artifact_id": "collection-manifest-magisk-root",
+        "reason": null
+      },
+      "normalized_report_artifact_id": "report-magisk-collector-root",
+      "known_limitations": [
+        "Synthetic Magisk-shaped fixture text; no collection event occurred.",
+        "AVD-modeled target.",
+        "No hardware-backed boot conclusion."
+      ]
+    }
+  ],
+  "derived_diffs": [
+    {
+      "derivation_id": "stock-adb-vs-rooted-adb",
+      "title": "E01 stock AVD ADB observer vs E02 rooted AVD ADB observer",
+      "base_sample_id": "stock-avd-adb-sample",
+      "compare_sample_id": "rooted-avd-adb-sample",
+      "artifact_id": "diff-stock-adb-vs-rooted-adb"
+    },
+    {
+      "derivation_id": "rooted-adb-vs-rooted-root",
+      "title": "E02 rooted AVD ADB observer vs E02 rooted AVD root observer",
+      "base_sample_id": "rooted-avd-adb-sample",
+      "compare_sample_id": "rooted-avd-root-sample",
+      "artifact_id": "diff-rooted-adb-vs-rooted-root"
+    },
+    {
+      "derivation_id": "stock-vs-writable-system",
+      "title": "E01 stock AVD vs E03 writable-system AVD",
+      "base_sample_id": "stock-avd-adb-sample",
+      "compare_sample_id": "writable-system-avd-adb-sample",
+      "artifact_id": "diff-stock-vs-writable-system"
+    },
+    {
+      "derivation_id": "rooted-adb-vs-magisk-root-collector",
+      "title": "E02 rooted ADB observer vs E05 Magisk root collector fixture",
+      "base_sample_id": "rooted-avd-adb-sample",
+      "compare_sample_id": "magisk-collector-root-sample",
+      "artifact_id": "diff-rooted-adb-vs-magisk-root"
+    }
+  ]
+}

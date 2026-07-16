@@ -26,7 +26,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 |---|---|---|---|---|
 | mount_integrity | high | `{"overlay_detected": {"status": "observed_absent", "value": false}, "writable_sensitive_mounts": {"status": "observed_absent", "value": []}}` | `{"overlay_detected": {"status": "observed", "value": true}, "writable_sensitive_mounts": {"status": "observed", "value": ["/system"]}}` | Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion. |
 
-## E02 rooted ADB observer vs E05 Magisk root collector
+## E02 rooted ADB observer vs E05 Magisk root collector fixture
 
 2 dimensions changed, 9 dimensions unchanged.
 

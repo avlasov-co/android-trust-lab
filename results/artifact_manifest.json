@@ -3,9 +3,9 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/manifest.json",
-      "sha256": "8bf24b8eb4fd5fd234aaa15fef8c970b791a6dfcd48c73f5da19cf3122836543",
+      "sha256": "5a000a270739f2195e9818218bd7c2178651b4863ba65fbc659da64983dc29c6",
       "status": "checked",
-      "type": "sample_manifest"
+      "type": "verifiable_dataset_manifest"
     },
     {
       "generated_by": "python tools/generate_report.py",
@@ -13,6 +13,13 @@
       "sha256": "94071f0fe2b12f1a80f0a353c641cfa167b82fd65831727c56754b60f6e93fae",
       "status": "checked",
       "type": "generated_test_report"
+    },
+    {
+      "generated_by": "python tools/generate_report.py",
+      "path": "tests/fixtures/sample_diff.json",
+      "sha256": "87034810c7d837ca695b71b018ebf670dbf3ce3be33c329699174c67fe11a1b0",
+      "status": "checked",
+      "type": "generated_test_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
@@ -51,28 +58,28 @@
     },
     {
       "generated_by": "python tools/generate_report.py",
-      "path": "results/diffs/stock_adb_vs_rooted_adb.json",
+      "path": "datasets/derived/diffs/stock_adb_vs_rooted_adb.json",
       "sha256": "87034810c7d837ca695b71b018ebf670dbf3ce3be33c329699174c67fe11a1b0",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
-      "path": "results/diffs/rooted_adb_vs_rooted_root.json",
+      "path": "datasets/derived/diffs/rooted_adb_vs_rooted_root.json",
       "sha256": "d1ce2411fb719d536ec167953a613225c3b87672b9bae4ee1d134f3b7e3ae685",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
-      "path": "results/diffs/stock_vs_writable_system.json",
+      "path": "datasets/derived/diffs/stock_vs_writable_system.json",
       "sha256": "ad0f9fc1785a481c8b91fed0f6fe6246b76ece1f27a9cac1bdf7b4a54e709cf3",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
-      "path": "results/diffs/rooted_adb_vs_magisk_root_collector.json",
+      "path": "datasets/derived/diffs/rooted_adb_vs_magisk_root_collector.json",
       "sha256": "654f4a739ec5091f89784b9c17037f121bce23dab9e07a0fba3af74971fad4dd",
       "status": "checked",
       "type": "generated_diff"
@@ -87,7 +94,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "d90f2ca3d05bde3f9b9236de2093df8a10894050187037fc2bdebbd9a8eb9fc2",
+      "sha256": "30d7a735e66d63af52fdbf96692b19946fcbbf85c3a35b61ccb7eb514f5783ed",
       "status": "checked",
       "type": "generated_report"
     },
@@ -101,6 +108,7 @@
   ],
   "notes": [
     "Artifact hashes cover checked-in generated outputs only.",
+    "Dataset source evidence is bound separately by datasets/manifest.json.",
     "No standalone Magisk zip is stored as a checked-in repository artifact.",
     "Current sample evidence is synthetic / AVD-limited and does not claim physical-device validation.",
     "Use the complete repository gate for validation results; this generated manifest does not attest to test execution."

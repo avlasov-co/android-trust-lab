@@ -19,6 +19,15 @@ SCHEMA_IDS = {
     "collection_manifest_v1_0_0.schema.json": (
         f"{REPOSITORY_URL}/schema/collection-manifest/1.0.0"
     ),
+    "dataset_manifest_v1_0_0.schema.json": (
+        f"{REPOSITORY_URL}/schema/dataset-manifest/1.0.0"
+    ),
+    "dataset_manifest_v2_0_0.schema.json": (
+        f"{REPOSITORY_URL}/schema/dataset-manifest/2.0.0"
+    ),
+    "dataset_source_v1_0_0.schema.json": (
+        f"{REPOSITORY_URL}/schema/dataset-source/1.0.0"
+    ),
     "trust_diff.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_diff.schema.json",
     "trust_report_v1_0_0.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_report.schema.json",
     "trust_report_v2_0_0.schema.json": f"{REPOSITORY_URL}/schema/report/2.0.0",
@@ -64,7 +73,12 @@ def tracked_text_paths(root: Path = ROOT) -> list[Path]:
         if not raw_path:
             continue
         path = root / raw_path.decode("utf-8")
-        content = path.read_bytes()
+        try:
+            content = path.read_bytes()
+        except FileNotFoundError:
+            # An unstaged working-tree deletion remains in `git ls-files
+            # --cached`; it has no text left to scan.
+            continue
         if b"\0" not in content:
             paths.append(path)
     return paths

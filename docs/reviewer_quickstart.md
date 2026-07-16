@@ -11,8 +11,9 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Trust report normalization | Implemented | `analyzer/trustlab/normalizer.py`, `tests/test_normalizer.py` |
 | Trust diff generation | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py` |
 | JSON schemas | Implemented | versioned report v1/v2 schemas and `collector/schema/trust_diff.schema.json` |
-| Synthetic / AVD-limited samples | Implemented | `datasets/samples/`, `datasets/manifest.json` |
-| Generated result tables and diffs | Implemented | `results/`, `tools/generate_report.py` |
+| Synthetic / AVD-limited samples | Implemented | `datasets/source.json`, `datasets/samples/`, `datasets/manifest.json` |
+| Dataset integrity and freshness verification | Implemented | `trustlab dataset verify datasets/manifest.json`, `docs/dataset_manifest_v2.md` |
+| Generated result tables and diffs | Implemented | `results/`, `datasets/derived/diffs/`, `tools/generate_report.py` |
 | Read-only Magisk root collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md` |
 | Magisk module packaging safety check | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
 | Android app / Gradle project | Not present | No `build.gradle`, `settings.gradle`, `AndroidManifest.xml`, Kotlin, or Java app source is included |
@@ -34,6 +35,7 @@ That script runs the checked-in release checks:
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m compileall -q analyzer tools tests
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer python -m pytest -q
 python tools/generate_report.py --check
+trustlab dataset verify datasets/manifest.json
 python tools/package_magisk_module.py --check-only
 find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;
 ```
@@ -47,7 +49,7 @@ python -m pip install -e "analyzer[dev]"
 Expected high-level result:
 
 ```text
-18+ tests passed
+300+ tests passed
 generated artifacts are up to date
 Magisk module safety checks passed
 Magisk shell syntax checks pass

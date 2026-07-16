@@ -198,6 +198,16 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
         == "root_collector"
     )
 
+    dataset_verify = run_installed(
+        "dataset",
+        "verify",
+        str(ROOT / "datasets/manifest.json"),
+        cwd=tmp_path,
+    )
+    assert dataset_verify.returncode == 0, dataset_verify.stderr
+    assert dataset_verify.stdout == "dataset verified\n"
+    assert dataset_verify.stderr == ""
+
 
 def test_installed_entry_point_failure_paths_are_stable(tmp_path):
     invalid = tmp_path / "invalid.json"

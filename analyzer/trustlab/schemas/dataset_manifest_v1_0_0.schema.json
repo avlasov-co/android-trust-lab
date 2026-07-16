@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/dataset-manifest/1.0.0",
+  "title": "Android Trust Lab Dataset Manifest v1 (frozen)",
+  "description": "Read-only schema for the historical loose dataset manifest. Writers must emit v2.",
+  "type": "object",
+  "required": [
+    "samples",
+    "schema_version"
+  ],
+  "properties": {
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/sample"
+      }
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sample": {
+      "type": "object",
+      "required": [
+        "collection_date",
+        "collection_method",
+        "experiment_id",
+        "known_limitations",
+        "observer_type",
+        "raw_artifact_path",
+        "report_path",
+        "sample_id",
+        "target_type"
+      ],
+      "properties": {
+        "collection_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "collection_method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"
+        },
+        "known_limitations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "observer_type": {
+          "enum": [
+            "host",
+            "adb_shell",
+            "unprivileged_app",
+            "root_collector"
+          ]
+        },
+        "raw_artifact_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "report_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "sample_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{2,127}$"
+        },
+        "target_type": {
+          "enum": [
+            "avd",
+            "physical",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

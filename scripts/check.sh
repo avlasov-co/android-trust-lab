@@ -35,8 +35,12 @@ require_path tests
 require_path collector/schema/trust_report_v1_0_0.schema.json
 require_path collector/schema/trust_report_v2_0_0.schema.json
 require_path collector/schema/collection_manifest_v1_0_0.schema.json
+require_path collector/schema/dataset_manifest_v1_0_0.schema.json
+require_path collector/schema/dataset_manifest_v2_0_0.schema.json
+require_path collector/schema/dataset_source_v1_0_0.schema.json
 require_path collector/schema/trust_diff.schema.json
 require_path datasets/manifest.json
+require_path datasets/source.json
 require_path results/artifact_manifest.json
 require_path module/trustlab-magisk
 
@@ -102,7 +106,8 @@ echo "[15/15] Baseline-aware secret detection"
 git ls-files --cached --others --exclude-standard -z \
   | xargs -0 "$PYTHON_BIN" -m detect_secrets.pre_commit_hook \
     --baseline .secrets.baseline \
-    --exclude-files '^(\.secrets\.baseline|results/artifact_manifest\.json)$' \
+    --exclude-files '^\.secrets\.baseline$' \
+    --exclude-lines '^\s+"sha256": "[a-f0-9]{64}",?\s*$' \
     --no-verify \
     --
 

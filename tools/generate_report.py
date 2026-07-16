@@ -11,219 +11,94 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
+from copy import deepcopy
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab import __version__
-from trustlab.compatibility import SchemaFamily, current_write_version
+from trustlab.dataset_manifest import (
+    MAX_DATASET_ARTIFACT_BYTES,
+    MAX_DATASET_JSON_BYTES,
+    MAX_DATASET_TOTAL_BYTES,
+    parse_dataset_json,
+    read_regular_file_beneath,
+    stable_pretty_json_bytes,
+    validate_dataset_collection_relationships,
+)
 from trustlab.diff import make_diff
-from trustlab.normalizer import normalize_raw_file
-from trustlab.validators import validate_diff, validate_report
-
-
-class SampleSpec(TypedDict):
-    sample_id: str
-    experiment_id: str
-    target_type: str
-    observer_type: str
-    collection_method: str
-    timestamp: str
-    raw: str
-    report: str
-    limitations: list[str]
-
-
-class DiffSpec(TypedDict):
-    name: str
-    title: str
-    base: str
-    compare: str
-    output: str
-
-
-SAMPLES: list[SampleSpec] = [
-    {
-        "sample_id": "stock-avd-adb-sample",
-        "experiment_id": "E01_stock_avd",
-        "target_type": "avd",
-        "observer_type": "adb_shell",
-        "collection_method": "adb_shell_snapshot",
-        "timestamp": "2026-04-25T15:06:21Z",
-        "raw": "datasets/samples/stock_avd/raw_sample.txt",
-        "report": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-        "limitations": [
-            "synthetic sample",
-            "emulator target",
-            "no hardware-backed boot conclusion",
-        ],
-    },
-    {
-        "sample_id": "rooted-avd-adb-sample",
-        "experiment_id": "E02_rooted_avd",
-        "target_type": "avd",
-        "observer_type": "adb_shell",
-        "collection_method": "synthetic_rooted_adb_snapshot",
-        "timestamp": "2026-04-25T15:07:21Z",
-        "raw": "datasets/samples/rooted_avd/raw_adb_sample.txt",
-        "report": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "limitations": [
-            "synthetic rooted ADB-visible sample",
-            "emulator target",
-            "no hardware-backed boot conclusion",
-        ],
-    },
-    {
-        "sample_id": "rooted-avd-root-sample",
-        "experiment_id": "E02_rooted_avd",
-        "target_type": "avd",
-        "observer_type": "root_collector",
-        "collection_method": "synthetic_root_collector_snapshot",
-        "timestamp": "2026-04-25T15:07:51Z",
-        "raw": "datasets/samples/rooted_avd/raw_root_sample.txt",
-        "report": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-        "limitations": [
-            "synthetic rooted root-observer sample",
-            "emulator target",
-            "no hardware-backed boot conclusion",
-        ],
-    },
-    {
-        "sample_id": "writable-system-avd-adb-sample",
-        "experiment_id": "E03_writable_system_avd",
-        "target_type": "avd",
-        "observer_type": "adb_shell",
-        "collection_method": "synthetic_writable_system_snapshot",
-        "timestamp": "2026-04-25T15:08:21Z",
-        "raw": "datasets/samples/writable_system_avd/raw_sample.txt",
-        "report": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-        "limitations": [
-            "synthetic writable-system sample",
-            "emulator target",
-            "overlay evidence only",
-            "no hardware-backed boot conclusion",
-        ],
-    },
-    {
-        "sample_id": "magisk-collector-root-sample",
-        "experiment_id": "E05_magisk_collector",
-        "target_type": "avd",
-        "observer_type": "root_collector",
-        "collection_method": "magisk_module_manual",
-        "timestamp": "2026-04-25T15:50:00Z",
-        "raw": "datasets/samples/magisk_collector/raw_sample.txt",
-        "report": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-        "limitations": [
-            "synthetic Magisk collector sample",
-            "emulator target",
-            "no hardware-backed boot conclusion",
-        ],
-    },
-]
-
-DIFFS: list[DiffSpec] = [
-    {
-        "name": "stock_adb_vs_rooted_adb",
-        "title": "E01 stock AVD ADB observer vs E02 rooted AVD ADB observer",
-        "base": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-        "compare": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "output": "results/diffs/stock_adb_vs_rooted_adb.json",
-    },
-    {
-        "name": "rooted_adb_vs_rooted_root",
-        "title": "E02 rooted AVD ADB observer vs E02 rooted AVD root observer",
-        "base": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "compare": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-        "output": "results/diffs/rooted_adb_vs_rooted_root.json",
-    },
-    {
-        "name": "stock_vs_writable_system",
-        "title": "E01 stock AVD vs E03 writable-system AVD",
-        "base": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-        "compare": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-        "output": "results/diffs/stock_vs_writable_system.json",
-    },
-    {
-        "name": "rooted_adb_vs_magisk_root_collector",
-        "title": "E02 rooted ADB observer vs E05 Magisk root collector",
-        "base": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "compare": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-        "output": "results/diffs/rooted_adb_vs_magisk_root_collector.json",
-    },
-]
-
-ARTIFACT_SPECS = [
-    ("datasets/manifest.json", "sample_manifest"),
-    ("tests/fixtures/sample_normalized_report.json", "generated_test_report"),
-    (
-        "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-        "normalized_sample_report",
-    ),
-    (
-        "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "normalized_sample_report",
-    ),
-    (
-        "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-        "normalized_sample_report",
-    ),
-    (
-        "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-        "normalized_sample_report",
-    ),
-    (
-        "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-        "normalized_sample_report",
-    ),
-    ("results/diffs/stock_adb_vs_rooted_adb.json", "generated_diff"),
-    ("results/diffs/rooted_adb_vs_rooted_root.json", "generated_diff"),
-    ("results/diffs/stock_vs_writable_system.json", "generated_diff"),
-    ("results/diffs/rooted_adb_vs_magisk_root_collector.json", "generated_diff"),
-    ("results/summary_table.md", "generated_table"),
-    ("results/trust_state_diffs.md", "generated_report"),
-    ("results/figures/trust_dimensions_matrix.md", "generated_matrix"),
-]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError(f"expected a JSON object in {path}")
-    return value
+from trustlab.exceptions import MissingFileError
+from trustlab.normalizer import normalize_raw_bytes
+from trustlab.validators import (
+    validate_collection_manifest,
+    validate_dataset_manifest,
+    validate_dataset_source,
+    validate_diff,
+    validate_report,
+)
 
 
 def stable_json(data: Any) -> str:
-    return json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
+    return stable_pretty_json_bytes(data).decode("utf-8")
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+def load_source() -> tuple[dict[str, Any], bytes]:
+    dataset_dir = ROOT / "datasets"
+    source_path = dataset_dir / "source.json"
+    payload = read_regular_file_beneath(
+        dataset_dir,
+        "source.json",
+        limit=MAX_DATASET_JSON_BYTES,
+        label=source_path.name,
+    )
+    source = parse_dataset_json(payload, label=source_path.name)
+    validate_dataset_source(source)
+    return source, payload
 
 
-def artifact_manifest() -> dict[str, Any]:
+def manifest_from_source(
+    source: dict[str, Any], artifact_payloads: dict[str, bytes]
+) -> dict[str, Any]:
+    manifest = deepcopy(source)
+    manifest["schema_version"] = "2.0.0"
+    manifest["artifacts"] = [
+        {
+            **artifact,
+            "byte_size": len(artifact_payloads[artifact["artifact_id"]]),
+            "sha256": hashlib.sha256(
+                artifact_payloads[artifact["artifact_id"]]
+            ).hexdigest(),
+        }
+        for artifact in source["artifacts"]
+    ]
+    validate_dataset_manifest(manifest)
+    return manifest
+
+
+def broad_artifact_manifest(
+    outputs: dict[Path, bytes], artifact_specs: list[tuple[Path, str]]
+) -> dict[str, Any]:
     return {
         "project": "android-trust-lab",
         "repository": "https://github.com/avlasov-co/android-trust-lab",
         "version": __version__,
         "artifacts": [
             {
-                "path": relative_path,
+                "path": path.relative_to(ROOT).as_posix(),
                 "type": artifact_type,
                 "generated_by": "python tools/generate_report.py",
-                "sha256": sha256_file(ROOT / relative_path),
+                "sha256": hashlib.sha256(outputs[path]).hexdigest(),
                 "status": "checked",
             }
-            for relative_path, artifact_type in ARTIFACT_SPECS
+            for path, artifact_type in artifact_specs
         ],
         "notes": [
             "Artifact hashes cover checked-in generated outputs only.",
+            "Dataset source evidence is bound separately by datasets/manifest.json.",
             "No standalone Magisk zip is stored as a checked-in repository artifact.",
             "Current sample evidence is synthetic / AVD-limited and does not claim physical-device validation.",
             "Use the complete repository gate for validation results; this generated manifest does not attest to test execution.",
@@ -231,21 +106,115 @@ def artifact_manifest() -> dict[str, Any]:
     }
 
 
-def write_if_changed(
-    path: Path, content: str, *, check: bool, changed: list[str]
-) -> None:
-    old = path.read_text(encoding="utf-8") if path.exists() else None
-    if old != content:
-        changed.append(str(path.relative_to(ROOT)))
-        if not check:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
+def _open_output_parent(path: Path) -> tuple[int, str]:
+    try:
+        relative = path.relative_to(ROOT)
+    except ValueError as exc:
+        raise ValueError("generated output must remain beneath the repository") from exc
+    if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError("generated output path must be normalized and relative")
+    if (
+        os.open not in os.supports_dir_fd
+        or os.mkdir not in os.supports_dir_fd
+        or os.rename not in os.supports_dir_fd
+        or not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_DIRECTORY")
+    ):
+        raise OSError("safe generated-output publication is unsupported")
+
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    directory_flags |= getattr(os, "O_CLOEXEC", 0)
+    current = os.open(ROOT, directory_flags)
+    try:
+        for part in relative.parts[:-1]:
+            try:
+                following = os.open(part, directory_flags, dir_fd=current)
+            except FileNotFoundError:
+                os.mkdir(part, mode=0o755, dir_fd=current)
+                following = os.open(part, directory_flags, dir_fd=current)
+            os.close(current)
+            current = following
+        return current, relative.name
+    except Exception:
+        os.close(current)
+        raise
 
 
-def write_json_if_changed(
-    path: Path, data: Any, *, check: bool, changed: list[str]
-) -> None:
-    write_if_changed(path, stable_json(data), check=check, changed=changed)
+def atomic_write(path: Path, payload: bytes) -> None:
+    parent_descriptor, output_name = _open_output_parent(path)
+    temporary_name = f".{output_name}.{os.urandom(8).hex()}.tmp"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    temporary_descriptor: int | None = None
+    temporary_exists = False
+    try:
+        temporary_descriptor = os.open(
+            temporary_name,
+            flags,
+            0o600,
+            dir_fd=parent_descriptor,
+        )
+        temporary_exists = True
+        view = memoryview(payload)
+        while view:
+            written = os.write(temporary_descriptor, view)
+            if written <= 0:
+                raise OSError("generated-output write made no progress")
+            view = view[written:]
+        os.fsync(temporary_descriptor)
+        os.close(temporary_descriptor)
+        temporary_descriptor = None
+        os.rename(
+            temporary_name,
+            output_name,
+            src_dir_fd=parent_descriptor,
+            dst_dir_fd=parent_descriptor,
+        )
+        temporary_exists = False
+        os.fsync(parent_descriptor)
+    finally:
+        if temporary_descriptor is not None:
+            os.close(temporary_descriptor)
+        if temporary_exists:
+            try:
+                os.unlink(temporary_name, dir_fd=parent_descriptor)
+            except FileNotFoundError:
+                pass
+        os.close(parent_descriptor)
+
+
+def _existing_output(path: Path) -> bytes | None:
+    relative = path.relative_to(ROOT).as_posix()
+    try:
+        return read_regular_file_beneath(
+            ROOT,
+            relative,
+            limit=MAX_DATASET_ARTIFACT_BYTES,
+            label="generated output",
+        )
+    except MissingFileError:
+        return None
+
+
+def publish_outputs(
+    outputs: dict[Path, bytes], *, check: bool, manifest_path: Path
+) -> list[str]:
+    existing = {path: _existing_output(path) for path in outputs}
+    changed = [
+        path.relative_to(ROOT).as_posix()
+        for path, payload in outputs.items()
+        if existing[path] != payload
+    ]
+    if check:
+        return changed
+    ordered = [path for path in outputs if path != manifest_path]
+    if manifest_path in outputs:
+        ordered.append(manifest_path)
+    for path in ordered:
+        payload = outputs[path]
+        if existing[path] != payload:
+            atomic_write(path, payload)
+    return changed
 
 
 def presence(value: bool) -> str:
@@ -268,38 +237,24 @@ def fmt(value: Any) -> str:
     return str(value)
 
 
-def sample_report(sample: SampleSpec) -> dict[str, Any]:
-    report = normalize_raw_file(
-        ROOT / sample["raw"],
+def sample_report(
+    sample: dict[str, Any],
+    artifacts: dict[str, dict[str, Any]],
+    raw_payload: bytes,
+) -> dict[str, Any]:
+    raw = artifacts[sample["raw_artifact_id"]]
+    report = normalize_raw_bytes(
+        raw_payload,
+        label=Path(raw["relative_path"]).name,
         experiment_id=sample["experiment_id"],
         target_type=sample["target_type"],
         observer_type=sample["observer_type"],
         collection_method=sample["collection_method"],
-        collection_timestamp=sample["timestamp"],
-        raw_artifact_ref=sample["raw"],
+        collection_timestamp=sample["collection_timestamp"],
+        raw_artifact_ref=f"datasets/{raw['relative_path']}",
     )
     validate_report(report)
     return report
-
-
-def manifest(samples: list[SampleSpec]) -> dict[str, Any]:
-    return {
-        "schema_version": current_write_version(SchemaFamily.DATASET_MANIFEST),
-        "samples": [
-            {
-                "sample_id": sample["sample_id"],
-                "experiment_id": sample["experiment_id"],
-                "target_type": sample["target_type"],
-                "observer_type": sample["observer_type"],
-                "collection_method": sample["collection_method"],
-                "report_path": sample["report"],
-                "raw_artifact_path": sample["raw"],
-                "known_limitations": sample["limitations"],
-                "collection_date": sample["timestamp"],
-            }
-            for sample in samples
-        ],
-    }
 
 
 def summary_table(reports: list[dict[str, Any]]) -> str:
@@ -335,7 +290,9 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def diff_markdown(diff_entries: list[tuple[DiffSpec, dict[str, Any]]]) -> str:
+def diff_markdown(
+    diff_entries: list[tuple[dict[str, Any], dict[str, Any]]],
+) -> str:
     lines = [
         "# Trust State Diffs",
         "",
@@ -430,6 +387,166 @@ def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def build_outputs() -> dict[Path, bytes]:
+    """Compute every generated byte string without mutating the repository."""
+
+    source, source_payload = load_source()
+    dataset_dir = ROOT / "datasets"
+    manifest_path = dataset_dir / "manifest.json"
+    if source["creation_tooling"]["version"] != __version__:
+        raise ValueError("dataset creation-tool version does not match the package")
+    artifacts = {artifact["artifact_id"]: artifact for artifact in source["artifacts"]}
+    artifact_payloads: dict[str, bytes] = {}
+    source_documents: dict[str, dict[str, Any]] = {}
+    outputs: dict[Path, bytes] = {}
+    retained_artifact_bytes = 0
+
+    def retain_artifact(artifact_id: str, payload: bytes) -> None:
+        nonlocal retained_artifact_bytes
+        if len(payload) > MAX_DATASET_ARTIFACT_BYTES:
+            raise ValueError("dataset artifact exceeds generation limit")
+        retained_artifact_bytes += len(payload)
+        if retained_artifact_bytes > MAX_DATASET_TOTAL_BYTES:
+            raise ValueError("dataset artifacts exceed cumulative generation limit")
+        artifact_payloads[artifact_id] = payload
+
+    for artifact in source["artifacts"]:
+        artifact_id = artifact["artifact_id"]
+        role = artifact["role"]
+        if role == "declarative_source":
+            retain_artifact(artifact_id, source_payload)
+        elif role in {"raw_artifact", "collection_manifest"}:
+            payload = read_regular_file_beneath(
+                dataset_dir,
+                artifact["relative_path"],
+                limit=MAX_DATASET_ARTIFACT_BYTES,
+                label="dataset source artifact",
+            )
+            retain_artifact(artifact_id, payload)
+            if role == "collection_manifest":
+                document = parse_dataset_json(
+                    payload, label="collection manifest source"
+                )
+                validate_collection_manifest(document)
+                source_documents[artifact_id] = document
+
+    reports: list[dict[str, Any]] = []
+    reports_by_sample: dict[str, dict[str, Any]] = {}
+    reports_by_exp: dict[str, dict[str, Any]] = {}
+    for sample in source["samples"]:
+        report = sample_report(
+            sample,
+            artifacts,
+            artifact_payloads[sample["raw_artifact_id"]],
+        )
+        report_payload = stable_pretty_json_bytes(report)
+        report_id = sample["normalized_report_artifact_id"]
+        retain_artifact(report_id, report_payload)
+        outputs[dataset_dir / artifacts[report_id]["relative_path"]] = report_payload
+        reports.append(report)
+        reports_by_sample[sample["sample_id"]] = report
+        reports_by_exp.setdefault(sample["experiment_id"], report)
+        if sample["observer_type"] == "adb_shell":
+            reports_by_exp[sample["experiment_id"]] = report
+
+    diff_entries: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for derivation in source["derived_diffs"]:
+        diff = make_diff(
+            reports_by_sample[derivation["base_sample_id"]],
+            reports_by_sample[derivation["compare_sample_id"]],
+        )
+        validate_diff(diff)
+        diff_payload = stable_pretty_json_bytes(diff)
+        artifact_id = derivation["artifact_id"]
+        retain_artifact(artifact_id, diff_payload)
+        outputs[dataset_dir / artifacts[artifact_id]["relative_path"]] = diff_payload
+        diff_entries.append((derivation, diff))
+
+    if set(artifact_payloads) != set(artifacts):
+        raise ValueError(
+            "dataset source contains an unsupported or unresolved artifact"
+        )
+    dataset_manifest = manifest_from_source(source, artifact_payloads)
+    manifest_artifacts = {
+        artifact["artifact_id"]: artifact for artifact in dataset_manifest["artifacts"]
+    }
+    validate_dataset_collection_relationships(
+        dataset_manifest,
+        manifest_artifacts,
+        source_documents,
+    )
+    manifest_payload = stable_pretty_json_bytes(dataset_manifest)
+    if len(manifest_payload) > MAX_DATASET_JSON_BYTES:
+        raise ValueError("dataset manifest exceeds generation limit")
+    outputs[manifest_path] = manifest_payload
+
+    fixture_raw = read_regular_file_beneath(
+        ROOT,
+        "tests/fixtures/sample_raw_report.txt",
+        limit=MAX_DATASET_ARTIFACT_BYTES,
+        label="sample raw fixture",
+    )
+    fixture_report = normalize_raw_bytes(
+        fixture_raw,
+        label="sample_raw_report.txt",
+        experiment_id="E01_stock_avd",
+        target_type="avd",
+        observer_type="adb_shell",
+        collection_method="raw_artifact",
+        collection_timestamp="2026-04-25T15:06:21Z",
+        raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
+    )
+    validate_report(fixture_report)
+    outputs[ROOT / "tests/fixtures/sample_normalized_report.json"] = (
+        stable_pretty_json_bytes(fixture_report)
+    )
+    if diff_entries:
+        outputs[ROOT / "tests/fixtures/sample_diff.json"] = stable_pretty_json_bytes(
+            diff_entries[0][1]
+        )
+
+    outputs[ROOT / "results/summary_table.md"] = summary_table(reports).encode()
+    outputs[ROOT / "results/trust_state_diffs.md"] = diff_markdown(
+        diff_entries
+    ).encode()
+    outputs[ROOT / "results/figures/trust_dimensions_matrix.md"] = matrix_markdown(
+        reports_by_exp
+    ).encode()
+
+    artifact_specs: list[tuple[Path, str]] = [
+        (manifest_path, "verifiable_dataset_manifest"),
+        (
+            ROOT / "tests/fixtures/sample_normalized_report.json",
+            "generated_test_report",
+        ),
+        (ROOT / "tests/fixtures/sample_diff.json", "generated_test_diff"),
+    ]
+    artifact_specs.extend(
+        (
+            dataset_dir / artifact["relative_path"],
+            "normalized_sample_report"
+            if artifact["role"] == "normalized_report"
+            else "generated_diff",
+        )
+        for artifact in source["artifacts"]
+        if artifact["role"] in {"normalized_report", "derived_diff"}
+    )
+    artifact_specs.extend(
+        [
+            (ROOT / "results/summary_table.md", "generated_table"),
+            (ROOT / "results/trust_state_diffs.md", "generated_report"),
+            (
+                ROOT / "results/figures/trust_dimensions_matrix.md",
+                "generated_matrix",
+            ),
+        ]
+    )
+    outputs[ROOT / "results/artifact_manifest.json"] = stable_pretty_json_bytes(
+        broad_artifact_manifest(outputs, artifact_specs)
+    )
+    return outputs
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate sample reports and results.")
     parser.add_argument(
@@ -439,93 +556,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    changed: list[str] = []
-    reports: list[dict[str, Any]] = []
-    reports_by_exp: dict[str, dict[str, Any]] = {}
-
-    for sample in SAMPLES:
-        report = sample_report(sample)
-        reports.append(report)
-        reports_by_exp.setdefault(sample["experiment_id"], report)
-        if sample["observer_type"] == "adb_shell":
-            reports_by_exp[sample["experiment_id"]] = report
-        write_json_if_changed(
-            ROOT / sample["report"], report, check=args.check, changed=changed
-        )
-        if sample["sample_id"] == "stock-avd-adb-sample":
-            fixture_report = normalize_raw_file(
-                ROOT / "tests/fixtures/sample_raw_report.txt",
-                experiment_id="E01_stock_avd",
-                target_type="avd",
-                observer_type="adb_shell",
-                collection_method="raw_artifact",
-                collection_timestamp="2026-04-25T15:06:21Z",
-                raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
-            )
-            validate_report(fixture_report)
-            write_json_if_changed(
-                ROOT / "tests/fixtures/sample_normalized_report.json",
-                fixture_report,
-                check=args.check,
-                changed=changed,
-            )
-
-    write_json_if_changed(
-        ROOT / "datasets/manifest.json",
-        manifest(SAMPLES),
+    outputs = build_outputs()
+    changed = publish_outputs(
+        outputs,
         check=args.check,
-        changed=changed,
+        manifest_path=ROOT / "datasets/manifest.json",
     )
-
-    diff_entries: list[tuple[DiffSpec, dict[str, Any]]] = []
-    for meta in DIFFS:
-        base = load_json(ROOT / meta["base"])
-        compare = load_json(ROOT / meta["compare"])
-        diff = make_diff(base, compare)
-        validate_diff(diff)
-        diff_entries.append((meta, diff))
-        write_json_if_changed(
-            ROOT / meta["output"], diff, check=args.check, changed=changed
-        )
-        if meta["name"] == "stock_adb_vs_rooted_adb":
-            write_json_if_changed(
-                ROOT / "tests/fixtures/sample_diff.json",
-                diff,
-                check=args.check,
-                changed=changed,
-            )
-
-    write_if_changed(
-        ROOT / "results/summary_table.md",
-        summary_table(reports),
-        check=args.check,
-        changed=changed,
-    )
-    write_if_changed(
-        ROOT / "results/trust_state_diffs.md",
-        diff_markdown(diff_entries),
-        check=args.check,
-        changed=changed,
-    )
-    write_if_changed(
-        ROOT / "results/figures/trust_dimensions_matrix.md",
-        matrix_markdown(reports_by_exp),
-        check=args.check,
-        changed=changed,
-    )
-    write_json_if_changed(
-        ROOT / "results/artifact_manifest.json",
-        artifact_manifest(),
-        check=args.check,
-        changed=changed,
-    )
-
     if args.check and changed:
         print("Generated artifacts are stale:", file=sys.stderr)
         for path in changed:
             print(f"  {path}", file=sys.stderr)
         return 1
-
     for path in changed:
         print(f"updated {path}")
     if not changed:

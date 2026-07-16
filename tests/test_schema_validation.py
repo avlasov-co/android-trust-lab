@@ -14,6 +14,8 @@ from trustlab.validators import (
     check_project_schemas,
     load_schema,
     validate_collection_manifest,
+    validate_dataset_manifest,
+    validate_dataset_source,
     validate_diff,
     validate_report,
 )
@@ -29,6 +31,9 @@ def test_project_schemas_are_valid_draft_2020_12():
 def test_packaged_project_schema_registry_is_meta_schema_valid():
     assert check_project_schemas() == (
         "collection_manifest_v1_0_0.schema.json",
+        "dataset_manifest_v1_0_0.schema.json",
+        "dataset_manifest_v2_0_0.schema.json",
+        "dataset_source_v1_0_0.schema.json",
         "trust_diff.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
@@ -245,10 +250,16 @@ def test_sample_collection_manifest_schema():
 
 def test_all_manifest_reports_validate():
     manifest = load_json(ROOT / "datasets" / "manifest.json")
+    validate_dataset_manifest(manifest)
+    validate_dataset_source(load_json(ROOT / "datasets" / "source.json"))
+    artifacts = {
+        artifact["artifact_id"]: artifact for artifact in manifest["artifacts"]
+    }
     for sample in manifest["samples"]:
-        validate_report(load_json(ROOT / sample["report_path"]))
+        artifact = artifacts[sample["normalized_report_artifact_id"]]
+        validate_report(load_json(ROOT / "datasets" / artifact["relative_path"]))
 
 
 def test_result_diffs_validate():
-    for path in (ROOT / "results" / "diffs").glob("*.json"):
+    for path in (ROOT / "datasets" / "derived" / "diffs").glob("*.json"):
         validate_diff(load_json(path))

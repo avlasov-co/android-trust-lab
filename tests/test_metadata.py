@@ -28,6 +28,20 @@ def test_retired_repository_slug_is_rejected(tmp_path):
         check_metadata.main([stale])
 
 
+def test_tracked_text_scan_ignores_worktree_deletions(tmp_path, monkeypatch):
+    present = tmp_path / "present.txt"
+    present.write_text("present\n", encoding="utf-8")
+
+    class GitResult:
+        stdout = b"deleted.txt\0present.txt\0"
+
+    monkeypatch.setattr(
+        check_metadata.subprocess, "run", lambda *args, **kwargs: GitResult()
+    )
+
+    assert check_metadata.tracked_text_paths(tmp_path) == [present]
+
+
 def test_malformed_citation_is_rejected_by_cff_schema():
     citation = check_metadata.load_mapping(ROOT / "CITATION.cff")
     citation.pop("message")

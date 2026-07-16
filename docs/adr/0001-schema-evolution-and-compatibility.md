@@ -8,8 +8,8 @@
 
 Android Trust Lab has independently produced report, diff, dataset-manifest,
 collection-manifest, and experiment records. The original report and diff
-contracts are versioned `1.0.0`; the dataset manifest also declares `1.0.0` but
-does not yet have a JSON Schema. The former collection-manifest sample used the
+contracts are versioned `1.0.0`; the historical dataset manifest also declared
+`1.0.0` without integrity bindings. The former collection-manifest sample used the
 pre-policy label `collection-manifest-0.1`, and experiments are unversioned
 Markdown. Treating package releases, collector releases, or these data contracts
 as one version would make compatibility and provenance ambiguous.
@@ -27,7 +27,7 @@ of them, and matching numeric values do not imply compatibility.
 | Collector version | Magisk collector implementation release plus monotonic Android `versionCode` | `0.3.0-dev0`, code `300` |
 | Report-schema version | Normalized trust-report contract | `2.0.0` writable; `1.0.0` and `2.0.0` readable |
 | Diff-schema version | Trust-diff output contract | `1.0.0` readable and writable |
-| Dataset-manifest version | Dataset index contract | legacy `1.0.0` readable and writable; schema planned |
+| Dataset-manifest version | Dataset index and integrity contract | `2.0.0` writable; frozen `1.0.0` and strict `2.0.0` readable |
 | Collection-manifest version | Portable collection/provenance contract | `1.0.0` readable and writable |
 | Experiment-spec version | Machine-readable experiment contract | no supported version; `1.0.0` planned |
 
@@ -44,7 +44,7 @@ New JSON Schemas use Draft 2020-12 and a logical, versioned `$id`:
 https://github.com/avlasov-co/android-trust-lab/schema/{family}/{major.minor.patch}
 ```
 
-`family` is one of `report`, `diff`, `dataset-manifest`,
+`family` is one of `report`, `diff`, `dataset-manifest`, `dataset-source`,
 `collection-manifest`, or `experiment-spec`. Identifiers name contracts; the
 validator must not fetch them over the network. Existing v1 report and diff
 `$id` values are frozen legacy aliases and must never be repurposed for another
@@ -82,10 +82,12 @@ version without a registered validator fails as a configuration error. Writers
 emit only `current_write_version`; readers may accept every declared readable
 version and migrate it explicitly.
 
-The dataset manifest is temporarily readable/writable legacy `1.0.0` but lacks a
-registered JSON Schema until the dataset-manifest step. Collection manifest
-`1.0.0` is strict and registered. Experiment specs remain unsupported until
-their strict schema and validator are registered.
+Dataset manifest v1 is a frozen read-only compatibility contract. V2 is the sole
+writable contract and adds complete artifact bindings, provenance metadata, and
+a closed reference graph. The separate dataset-source v1 schema governs
+author-maintained generator input and is not a `SchemaFamily` writer output.
+Collection manifest `1.0.0` is strict and registered. Experiment specs remain
+unsupported until their strict schema and validator are registered.
 
 ### Canonical evidence states
 
@@ -204,6 +206,10 @@ continues through the full window.
   artifact linked to the source digest, schema version, and migration record.
 - Generated outputs are updated only through the canonical generator, with
   freshness and deterministic-output tests.
+- Dataset v2 verification regenerates reports from exact bound raw bytes and
+  diffs from those in-memory reports. Updating a generated artifact and its
+  digest together therefore cannot conceal staleness. SHA-256 proves internal
+  bundle consistency, not external authenticity or device attestation.
 
 ## Consequences
 

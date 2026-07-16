@@ -433,6 +433,31 @@ def _normalize_raw_payload(
     )
 
 
+def normalize_raw_bytes(
+    payload: bytes,
+    *,
+    label: str,
+    experiment_id: str,
+    target_type: str,
+    observer_type: str,
+    collection_method: str,
+    collection_timestamp: str | None,
+    raw_artifact_ref: str | None,
+) -> dict[str, Any]:
+    """Normalize one already-verified immutable byte snapshot."""
+
+    return _normalize_raw_payload(
+        payload,
+        label=label,
+        experiment_id=experiment_id,
+        target_type=target_type,
+        observer_type=observer_type,
+        collection_method=collection_method,
+        collection_timestamp=collection_timestamp,
+        raw_artifact_ref=raw_artifact_ref,
+    )
+
+
 def _normalize_parsed_report(
     parsed: dict[str, Any],
     *,

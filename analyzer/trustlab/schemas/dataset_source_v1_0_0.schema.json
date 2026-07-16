@@ -1,0 +1,452 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/dataset-source/1.0.0",
+  "title": "Android Trust Lab Dataset Declarative Source v1",
+  "description": "Validated author input for deterministic dataset generation.",
+  "type": "object",
+  "required": [
+    "dataset_id",
+    "schema_version",
+    "dataset_version",
+    "license",
+    "origin_classifications",
+    "authorization",
+    "redaction",
+    "creation_tooling",
+    "artifact_schema_versions",
+    "aggregate_limitations",
+    "declarative_source_artifact_id",
+    "artifacts",
+    "samples",
+    "derived_diffs"
+  ],
+  "properties": {
+    "dataset_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "dataset_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "license": {
+      "$ref": "#/$defs/license"
+    },
+    "origin_classifications": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/origin"
+      }
+    },
+    "authorization": {
+      "$ref": "#/$defs/authorization"
+    },
+    "redaction": {
+      "$ref": "#/$defs/redaction"
+    },
+    "creation_tooling": {
+      "$ref": "#/$defs/tool"
+    },
+    "artifact_schema_versions": {
+      "$ref": "#/$defs/artifactSchemaVersions"
+    },
+    "aggregate_limitations": {
+      "$ref": "#/$defs/limitations"
+    },
+    "declarative_source_artifact_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50000,
+      "items": {
+        "$ref": "#/$defs/artifactDefinition"
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/sample"
+      }
+    },
+    "derived_diffs": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/derivedDiff"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,127}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z][0-9A-Za-z.+-]{0,127}$"
+    },
+    "origin": {
+      "enum": [
+        "synthetic",
+        "avd_captured",
+        "physical_captured"
+      ]
+    },
+    "license": {
+      "type": "object",
+      "required": [
+        "spdx_id",
+        "name",
+        "scope"
+      ],
+      "properties": {
+        "spdx_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.+-]{1,64}$"
+        },
+        "name": {
+          "$ref": "#/$defs/statement"
+        },
+        "scope": {
+          "$ref": "#/$defs/statement"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorization": {
+      "type": "object",
+      "required": [
+        "classification",
+        "statement",
+        "physical_data_disclosed"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "project_authored_synthetic",
+            "authorized_avd_collection",
+            "authorized_physical_collection",
+            "consented_physical_collection",
+            "mixed_authorized"
+          ]
+        },
+        "statement": {
+          "$ref": "#/$defs/statement"
+        },
+        "physical_data_disclosed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "redaction": {
+      "type": "object",
+      "required": [
+        "status",
+        "policy_id",
+        "statement"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_required",
+            "applied",
+            "verified"
+          ]
+        },
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "statement": {
+          "$ref": "#/$defs/statement"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tool": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "command"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactSchemaVersions": {
+      "type": "object",
+      "required": [
+        "declarative_source",
+        "raw_artifact",
+        "collection_manifest",
+        "normalized_report",
+        "derived_diff"
+      ],
+      "properties": {
+        "declarative_source": {
+          "$ref": "#/$defs/semver"
+        },
+        "raw_artifact": {
+          "$ref": "#/$defs/semver"
+        },
+        "collection_manifest": {
+          "$ref": "#/$defs/semver"
+        },
+        "normalized_report": {
+          "$ref": "#/$defs/semver"
+        },
+        "derived_diff": {
+          "$ref": "#/$defs/semver"
+        }
+      },
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "required": [
+        "kind",
+        "name",
+        "version"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "author",
+            "collector",
+            "generator"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifactDefinition": {
+      "type": "object",
+      "required": [
+        "artifact_id",
+        "role",
+        "relative_path",
+        "media_type",
+        "schema_family",
+        "schema_version",
+        "producer",
+        "redaction_state"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "role": {
+          "enum": [
+            "declarative_source",
+            "raw_artifact",
+            "collection_manifest",
+            "normalized_report",
+            "derived_diff"
+          ]
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "text/plain"
+          ]
+        },
+        "schema_family": {
+          "enum": [
+            "dataset_source",
+            "trustlab_raw_text",
+            "collection_manifest",
+            "report",
+            "diff"
+          ]
+        },
+        "schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "producer": {
+          "$ref": "#/$defs/producer"
+        },
+        "redaction_state": {
+          "enum": [
+            "not_required",
+            "redacted",
+            "verified"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "collectionRelationship": {
+      "type": "object",
+      "required": [
+        "status",
+        "artifact_id",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "not_collected"
+          ]
+        },
+        "artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "sample": {
+      "type": "object",
+      "required": [
+        "sample_id",
+        "origin_classification",
+        "experiment_id",
+        "target_type",
+        "observer_type",
+        "collection_method",
+        "collection_timestamp",
+        "raw_artifact_id",
+        "collection_manifest",
+        "normalized_report_artifact_id",
+        "known_limitations"
+      ],
+      "properties": {
+        "sample_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "origin_classification": {
+          "$ref": "#/$defs/origin"
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"
+        },
+        "target_type": {
+          "enum": [
+            "avd",
+            "physical"
+          ]
+        },
+        "observer_type": {
+          "enum": [
+            "host",
+            "adb_shell",
+            "unprivileged_app",
+            "root_collector"
+          ]
+        },
+        "collection_method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        },
+        "collection_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "raw_artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "collection_manifest": {
+          "$ref": "#/$defs/collectionRelationship"
+        },
+        "normalized_report_artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "known_limitations": {
+          "$ref": "#/$defs/limitations"
+        }
+      },
+      "additionalProperties": false
+    },
+    "derivedDiff": {
+      "type": "object",
+      "required": [
+        "derivation_id",
+        "title",
+        "base_sample_id",
+        "compare_sample_id",
+        "artifact_id"
+      ],
+      "properties": {
+        "derivation_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "title": {
+          "$ref": "#/$defs/statement"
+        },
+        "base_sample_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "compare_sample_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/statement"
+      }
+    }
+  }
+}

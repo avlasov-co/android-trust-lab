@@ -150,17 +150,23 @@ def _create_clean_environment(environment_dir, *, cwd):
     return python, purelib
 
 
-def _installed_smoke(python, *, purelib, report, v1_report, diff, manifest, cwd):
+def _installed_smoke(
+    python, *, purelib, report, v1_report, diff, manifest, dataset_manifest, cwd
+):
     smoke = (
         "from pathlib import Path;"
         "import trustlab;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
-        "from trustlab.validators import validate_collection_manifest,validate_report,validate_diff;"
+        "from trustlab.validators import validate_collection_manifest,validate_dataset_manifest,validate_dataset_source,validate_report,validate_diff;"
+        "from trustlab.dataset_manifest import verify_dataset_manifest;"
         "validate_report(load_json(__import__('sys').argv[1]));"
         "validate_diff(load_json(__import__('sys').argv[2]));"
         "validate_report(migrate_report_v1_to_v2(load_json(__import__('sys').argv[3])));"
         "validate_collection_manifest(load_json(__import__('sys').argv[4]));"
+        "validate_dataset_manifest(load_json(__import__('sys').argv[5]));"
+        "validate_dataset_source(load_json(Path(__import__('sys').argv[5]).with_name('source.json')));"
+        "verify_dataset_manifest(__import__('sys').argv[5]);"
         "print(Path(trustlab.__file__).resolve())"
     )
     result = _run(
@@ -172,6 +178,7 @@ def _installed_smoke(python, *, purelib, report, v1_report, diff, manifest, cwd)
             str(diff),
             str(v1_report),
             str(manifest),
+            str(dataset_manifest),
         ],
         cwd=cwd,
     )
@@ -179,6 +186,10 @@ def _installed_smoke(python, *, purelib, report, v1_report, diff, manifest, cwd)
     entry_point = python.parent / ("trustlab.exe" if os.name == "nt" else "trustlab")
     help_result = _run([str(entry_point), "--help"], cwd=cwd)
     assert "Android Trust Lab analyzer" in help_result.stdout
+    dataset_result = _run(
+        [str(entry_point), "dataset", "verify", str(dataset_manifest)], cwd=cwd
+    )
+    assert dataset_result.stdout == "dataset verified\n"
 
 
 def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
@@ -209,6 +220,9 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     sdist = next(dist.glob("*.tar.gz"))
     expected = {
         "trustlab/schemas/collection_manifest_v1_0_0.schema.json",
+        "trustlab/schemas/dataset_manifest_v1_0_0.schema.json",
+        "trustlab/schemas/dataset_manifest_v2_0_0.schema.json",
+        "trustlab/schemas/dataset_source_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v1_0_0.schema.json",
         "trustlab/schemas/trust_report_v2_0_0.schema.json",
         "trustlab/schemas/trust_diff.schema.json",
@@ -224,6 +238,8 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
             assert (
                 f"Classifier: Programming Language :: Python :: {version}\n" in metadata
             )
+        assert "Classifier: Operating System :: POSIX\n" in metadata
+        assert "Classifier: Operating System :: OS Independent\n" not in metadata
         assert "Requires-Dist: tomli" not in metadata
     with tarfile.open(sdist, "r:gz") as archive:
         names = {"/".join(name.split("/")[1:]) for name in archive.getnames()}
@@ -245,6 +261,9 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
             ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
         ).read_bytes()
     )
+    dataset_bundle = tmp_path / "dataset-bundle"
+    shutil.copytree(ROOT / "datasets", dataset_bundle)
+    dataset_manifest = dataset_bundle / "manifest.json"
     wheelhouse = _offline_wheelhouse(tmp_path / "wheelhouse")
     wheel_python, wheel_purelib = _create_clean_environment(
         tmp_path / "wheel-env", cwd=tmp_path
@@ -269,6 +288,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         v1_report=v1_report,
         diff=diff,
         manifest=manifest,
+        dataset_manifest=dataset_manifest,
         cwd=tmp_path,
     )
 
@@ -310,6 +330,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         v1_report=v1_report,
         diff=diff,
         manifest=manifest,
+        dataset_manifest=dataset_manifest,
         cwd=tmp_path,
     )
 
@@ -319,11 +340,15 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         "import trustlab;"
         "from trustlab.migrations import migrate_report_v1_to_v2;"
         "from trustlab.report_writer import load_json;"
-        "from trustlab.validators import validate_collection_manifest,validate_report,validate_diff;"
+        "from trustlab.validators import validate_collection_manifest,validate_dataset_manifest,validate_dataset_source,validate_report,validate_diff;"
+        "from trustlab.dataset_manifest import verify_dataset_manifest;"
         "validate_report(load_json(sys.argv[2]));"
         "validate_diff(load_json(sys.argv[3]));"
         "validate_report(migrate_report_v1_to_v2(load_json(sys.argv[4])));"
         "validate_collection_manifest(load_json(sys.argv[5]));"
+        "validate_dataset_manifest(load_json(sys.argv[6]));"
+        "validate_dataset_source(load_json(__import__('pathlib').Path(sys.argv[6]).with_name('source.json')));"
+        "verify_dataset_manifest(sys.argv[6]);"
         "print(trustlab.__file__)"
     )
     zip_result = _run(
@@ -337,6 +362,7 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
             str(diff),
             str(v1_report),
             str(manifest),
+            str(dataset_manifest),
         ],
         cwd=tmp_path,
     )

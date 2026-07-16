@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
+from .dataset_manifest import verify_dataset_manifest
 from .diff import make_diff
 from .exceptions import (
     CollectionError,
@@ -143,6 +144,12 @@ def cmd_validate_collection_manifest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dataset_verify(args: argparse.Namespace) -> int:
+    verify_dataset_manifest(args.manifest)
+    _print_status("dataset verified")
+    return 0
+
+
 def cmd_summarize(args: argparse.Namespace) -> int:
     data = load_json(args.path)
     if "diff_id" in data:
@@ -231,6 +238,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     vcm.add_argument("manifest")
     vcm.set_defaults(func=cmd_validate_collection_manifest)
+
+    dataset = sub.add_parser("dataset", help="Operate on a verifiable dataset bundle")
+    dataset_sub = dataset.add_subparsers(required=True)
+    dataset_verify = dataset_sub.add_parser(
+        "verify", help="Verify dataset integrity, relationships, and freshness"
+    )
+    dataset_verify.add_argument("manifest")
+    dataset_verify.set_defaults(func=cmd_dataset_verify)
 
     sm = sub.add_parser("summarize", help="Print markdown summary")
     sm.add_argument("path")

@@ -1,0 +1,105 @@
+{
+  "dataset_id": "manual-traversal-fixture",
+  "schema_version": "1.0.0",
+  "dataset_version": "1.0.0",
+  "license": {
+    "spdx_id": "Apache-2.0",
+    "name": "Apache License 2.0",
+    "scope": "Manual validation fixture"
+  },
+  "origin_classifications": [
+    "synthetic"
+  ],
+  "authorization": {
+    "classification": "project_authored_synthetic",
+    "statement": "Project-authored validation fixture.",
+    "physical_data_disclosed": false
+  },
+  "redaction": {
+    "status": "not_required",
+    "policy_id": "manual_fixture_v1",
+    "statement": "No identifiers are present."
+  },
+  "creation_tooling": {
+    "name": "trustlab-dataset-generator",
+    "version": "1.0.0",
+    "command": "python tools/generate_report.py"
+  },
+  "artifact_schema_versions": {
+    "declarative_source": "1.0.0",
+    "raw_artifact": "1.0.0",
+    "collection_manifest": "1.0.0",
+    "normalized_report": "2.0.0",
+    "derived_diff": "1.0.0"
+  },
+  "aggregate_limitations": [
+    "Schema-only fixture."
+  ],
+  "declarative_source_artifact_id": "source-artifact",
+  "artifacts": [
+    {
+      "artifact_id": "source-artifact",
+      "role": "declarative_source",
+      "relative_path": "source.json",
+      "media_type": "application/json",
+      "schema_family": "dataset_source",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "manual-author",
+        "version": "1.0.0"
+      },
+      "redaction_state": "not_required"
+    },
+    {
+      "artifact_id": "raw-artifact",
+      "role": "raw_artifact",
+      "relative_path": "../raw.txt",
+      "media_type": "text/plain",
+      "schema_family": "trustlab_raw_text",
+      "schema_version": "1.0.0",
+      "producer": {
+        "kind": "author",
+        "name": "manual-author",
+        "version": "1.0.0"
+      },
+      "redaction_state": "not_required"
+    },
+    {
+      "artifact_id": "report-artifact",
+      "role": "normalized_report",
+      "relative_path": "sample/report.json",
+      "media_type": "application/json",
+      "schema_family": "report",
+      "schema_version": "2.0.0",
+      "producer": {
+        "kind": "generator",
+        "name": "trustlab",
+        "version": "1.0.0"
+      },
+      "redaction_state": "not_required"
+    }
+  ],
+  "samples": [
+    {
+      "sample_id": "manual-sample",
+      "origin_classification": "synthetic",
+      "experiment_id": "E99_manual",
+      "target_type": "avd",
+      "observer_type": "adb_shell",
+      "collection_method": "manual_fixture",
+      "collection_timestamp": "2026-01-01T00:00:00Z",
+      "raw_artifact_id": "raw-artifact",
+      "collection_manifest": {
+        "status": "not_collected",
+        "artifact_id": null,
+        "reason": "Synthetic fixture."
+      },
+      "normalized_report_artifact_id": "report-artifact",
+      "known_limitations": [
+        "Schema-only fixture."
+      ]
+    }
+  ],
+  "derived_diffs": []
+}

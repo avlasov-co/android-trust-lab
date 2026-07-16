@@ -57,8 +57,8 @@ Synthetic / AVD-limited sample artifacts are included in:
 
 The generated result set separates target mutation from observer privilege:
 
-- `results/diffs/stock_adb_vs_rooted_adb.json`
-- `results/diffs/rooted_adb_vs_rooted_root.json`
+- `datasets/derived/diffs/stock_adb_vs_rooted_adb.json`
+- `datasets/derived/diffs/rooted_adb_vs_rooted_root.json`
 
 ## Diff summary
 

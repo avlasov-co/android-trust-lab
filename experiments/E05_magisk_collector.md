@@ -59,7 +59,7 @@ Synthetic root-collector sample artifacts are included in:
 
 The generated observer comparison is included in:
 
-- `results/diffs/rooted_adb_vs_magisk_root_collector.json`
+- `datasets/derived/diffs/rooted_adb_vs_magisk_root_collector.json`
 
 The sample demonstrates how an on-device collection manifest points to a raw artifact that is normalized later by the host analyzer.
 

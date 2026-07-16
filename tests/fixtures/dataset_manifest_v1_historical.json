@@ -1,0 +1,20 @@
+{
+  "samples": [
+    {
+      "collection_date": "2026-04-25T15:06:21Z",
+      "collection_method": "adb_shell_snapshot",
+      "experiment_id": "E01_stock_avd",
+      "known_limitations": [
+        "synthetic sample",
+        "emulator target",
+        "no hardware-backed boot conclusion"
+      ],
+      "observer_type": "adb_shell",
+      "raw_artifact_path": "datasets/samples/stock_avd/raw_sample.txt",
+      "report_path": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
+      "sample_id": "stock-avd-adb-sample",
+      "target_type": "avd"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

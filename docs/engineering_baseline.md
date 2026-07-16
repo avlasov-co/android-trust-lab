@@ -79,7 +79,7 @@ This is an observed baseline, not a Phase 1 coverage threshold.
 ## Generated-artifact workflow
 
 `tools/generate_report.py` is the canonical generator for five normalized
-sample reports, `datasets/manifest.json`, four result diffs, the sample diff
+sample reports, `datasets/manifest.json`, four dataset-bound diffs, the sample diff
 fixture, three Markdown result views, and `results/artifact_manifest.json`. Use
 `--check` in verification and CI; run without `--check` only after intentionally
 changing a generator input. Review every regenerated file before committing it.

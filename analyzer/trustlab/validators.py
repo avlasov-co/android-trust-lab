@@ -29,9 +29,13 @@ from .migration_codec import encode_legacy_report, legacy_report_digest
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
+SUPPORTED_DATASET_MANIFEST_SCHEMA_VERSIONS = supported_schema_versions(
+    SchemaFamily.DATASET_MANIFEST
+)
 SUPPORTED_COLLECTION_MANIFEST_SCHEMA_VERSIONS = supported_schema_versions(
     SchemaFamily.COLLECTION_MANIFEST
 )
+SUPPORTED_DATASET_SOURCE_SCHEMA_VERSIONS = frozenset({"1.0.0"})
 RFC3339_DATE_TIME_RE = re.compile(
     r"^(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})[Tt]"
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
@@ -629,3 +633,371 @@ def validate_collection_manifest(data: object) -> None:
         supported_versions=SUPPORTED_COLLECTION_MANIFEST_SCHEMA_VERSIONS,
     )
     _validate_collection_manifest_semantics(data)
+
+
+def _dataset_semantic_error(detail: str) -> SchemaValidationError:
+    return SchemaValidationError(f"dataset contract validation failed: {detail}")
+
+
+def _validate_dataset_relative_path(path: str) -> None:
+    if any(ord(character) < 32 or ord(character) == 127 for character in path):
+        raise _dataset_semantic_error("artifact path contains control characters")
+    if "\\" in path or ":" in path:
+        raise _dataset_semantic_error("artifact paths must be portable relative paths")
+    pure_path = PurePosixPath(path)
+    if (
+        pure_path.is_absolute()
+        or path != pure_path.as_posix()
+        or any(part in {"", ".", ".."} for part in pure_path.parts)
+    ):
+        raise _dataset_semantic_error(
+            "artifact paths must be normalized relative paths"
+        )
+
+
+def _validate_unique_strings(values: list[str], label: str) -> None:
+    if len(values) != len(set(values)):
+        raise _dataset_semantic_error(f"{label} must be unique")
+
+
+def _validate_dataset_artifact_contract(data: dict[str, Any]) -> dict[str, Any]:
+    artifacts = data["artifacts"]
+    artifact_ids = [artifact["artifact_id"] for artifact in artifacts]
+    artifact_paths = [artifact["relative_path"] for artifact in artifacts]
+    _validate_unique_strings(artifact_ids, "artifact IDs")
+    _validate_unique_strings(artifact_paths, "artifact paths")
+    for path in artifact_paths:
+        _validate_dataset_relative_path(path)
+
+    artifacts_by_id = {artifact["artifact_id"]: artifact for artifact in artifacts}
+    source_id = data["declarative_source_artifact_id"]
+    source = artifacts_by_id.get(source_id)
+    if source is None or source["role"] != "declarative_source":
+        raise _dataset_semantic_error(
+            "declarative source reference must resolve to its artifact"
+        )
+    if source["relative_path"] != "source.json":
+        raise _dataset_semantic_error("declarative source path must be source.json")
+
+    expected_contracts = {
+        "declarative_source": (
+            "dataset_source",
+            "application/json",
+            {"author"},
+        ),
+        "raw_artifact": (
+            "trustlab_raw_text",
+            "text/plain",
+            {"author", "collector"},
+        ),
+        "collection_manifest": (
+            "collection_manifest",
+            "application/json",
+            {"author", "collector"},
+        ),
+        "normalized_report": ("report", "application/json", {"generator"}),
+        "derived_diff": ("diff", "application/json", {"generator"}),
+    }
+    expected_versions = {
+        "declarative_source": "1.0.0",
+        "raw_artifact": "1.0.0",
+        "collection_manifest": current_write_version(SchemaFamily.COLLECTION_MANIFEST),
+        "normalized_report": current_write_version(SchemaFamily.REPORT),
+        "derived_diff": current_write_version(SchemaFamily.DIFF),
+    }
+    schema_profile = data["artifact_schema_versions"]
+    if schema_profile != expected_versions:
+        raise _dataset_semantic_error(
+            "dataset artifact schema profile contains unsupported versions"
+        )
+    if (
+        data["creation_tooling"]["name"] != "trustlab-dataset-generator"
+        or data["creation_tooling"]["command"] != "python tools/generate_report.py"
+    ):
+        raise _dataset_semantic_error(
+            "dataset creation tooling must identify the canonical generator"
+        )
+    for artifact in artifacts:
+        family, media_type, producer_kinds = expected_contracts[artifact["role"]]
+        if (
+            artifact["schema_family"] != family
+            or artifact["media_type"] != media_type
+            or artifact["producer"]["kind"] not in producer_kinds
+            or artifact["schema_version"] != schema_profile[artifact["role"]]
+        ):
+            raise _dataset_semantic_error(
+                "artifact role, format, producer, and schema profile must agree"
+            )
+        if artifact["role"] in {"normalized_report", "derived_diff"} and (
+            artifact["producer"]["name"] != "trustlab"
+            or artifact["producer"]["version"] != data["creation_tooling"]["version"]
+        ):
+            raise _dataset_semantic_error(
+                "generated artifact producers must match creation tooling"
+            )
+
+        role = artifact["role"]
+        path = PurePosixPath(artifact["relative_path"])
+        expected_prefix = "derived/diffs" if role == "derived_diff" else "samples"
+        if role == "declarative_source":
+            continue
+        if (
+            path.parent == PurePosixPath(".")
+            or not path.is_relative_to(expected_prefix)
+            or (role == "raw_artifact" and path.suffix != ".txt")
+            or (role != "raw_artifact" and path.suffix != ".json")
+            or path.name == "README.md"
+        ):
+            raise _dataset_semantic_error(
+                "artifact roles require reserved dataset paths and extensions"
+            )
+    return artifacts_by_id
+
+
+def _validate_sample_collection_reference(
+    sample: dict[str, Any], artifacts_by_id: dict[str, Any]
+) -> str | None:
+    relationship = sample["collection_manifest"]
+    collection_id = relationship["artifact_id"]
+    reason = relationship["reason"]
+    if relationship["status"] == "observed":
+        if (
+            not isinstance(collection_id, str)
+            or reason is not None
+            or collection_id not in artifacts_by_id
+            or artifacts_by_id[collection_id]["role"] != "collection_manifest"
+        ):
+            raise _dataset_semantic_error(
+                "observed collection references must resolve without a reason"
+            )
+        return collection_id
+    if collection_id is not None or not isinstance(reason, str) or not reason:
+        raise _dataset_semantic_error(
+            "not-collected relationships require a reason and no artifact"
+        )
+    return None
+
+
+def _validate_sample_origin(sample: dict[str, Any]) -> None:
+    origin = sample["origin_classification"]
+    target = sample["target_type"]
+    collected = sample["collection_manifest"]["status"] == "observed"
+    if origin == "synthetic":
+        if target == "physical" or "captured" in sample["collection_method"]:
+            raise _dataset_semantic_error(
+                "synthetic samples cannot claim physical or captured evidence"
+            )
+    elif origin == "avd_captured":
+        if target != "avd" or not collected:
+            raise _dataset_semantic_error(
+                "AVD captures require an AVD target and collection manifest"
+            )
+    elif target != "physical" or not collected:
+        raise _dataset_semantic_error(
+            "physical captures require a physical target and collection manifest"
+        )
+
+
+def _validate_dataset_authorization(data: dict[str, Any], origins: set[str]) -> None:
+    authorization = data["authorization"]
+    classification = authorization["classification"]
+    if "physical_captured" in origins:
+        allowed_physical_authorizations = (
+            {"mixed_authorized"}
+            if len(origins) > 1
+            else {
+                "authorized_physical_collection",
+                "consented_physical_collection",
+            }
+        )
+        if (
+            not authorization["physical_data_disclosed"]
+            or classification not in allowed_physical_authorizations
+            or data["redaction"]["status"] not in {"applied", "verified"}
+        ):
+            raise _dataset_semantic_error(
+                "physical data requires disclosure, authorization, and redaction"
+            )
+    elif authorization["physical_data_disclosed"]:
+        raise _dataset_semantic_error(
+            "physical-data disclosure cannot be set without physical samples"
+        )
+    if origins == {"synthetic"} and classification != "project_authored_synthetic":
+        raise _dataset_semantic_error(
+            "synthetic-only datasets require project-authored authorization"
+        )
+    if origins == {"avd_captured"} and classification != "authorized_avd_collection":
+        raise _dataset_semantic_error(
+            "AVD-only captures require AVD collection authorization"
+        )
+    if len(origins) > 1 and classification != "mixed_authorized":
+        raise _dataset_semantic_error(
+            "mixed-origin datasets require mixed authorization"
+        )
+
+
+def _validate_dataset_sample_contract(
+    data: dict[str, Any], artifacts_by_id: dict[str, Any]
+) -> set[str]:
+    samples = data["samples"]
+    _validate_unique_strings([sample["sample_id"] for sample in samples], "sample IDs")
+    _validate_unique_strings(
+        [sample["raw_artifact_id"] for sample in samples],
+        "sample raw artifact references",
+    )
+    _validate_unique_strings(
+        [sample["normalized_report_artifact_id"] for sample in samples],
+        "sample report artifact references",
+    )
+    _validate_unique_strings(
+        [
+            sample["collection_manifest"]["artifact_id"]
+            for sample in samples
+            if sample["collection_manifest"]["status"] == "observed"
+        ],
+        "observed collection artifact references",
+    )
+    origins = {sample["origin_classification"] for sample in samples}
+    if origins != set(data["origin_classifications"]):
+        raise _dataset_semantic_error(
+            "declared origin classifications must exactly match sample origins"
+        )
+
+    referenced = {data["declarative_source_artifact_id"]}
+    for sample in samples:
+        raw_id = sample["raw_artifact_id"]
+        report_id = sample["normalized_report_artifact_id"]
+        if (
+            raw_id not in artifacts_by_id
+            or artifacts_by_id[raw_id]["role"] != "raw_artifact"
+            or report_id not in artifacts_by_id
+            or artifacts_by_id[report_id]["role"] != "normalized_report"
+        ):
+            raise _dataset_semantic_error(
+                "sample raw and report references must resolve to matching artifacts"
+            )
+        referenced.update({raw_id, report_id})
+        collection_id = _validate_sample_collection_reference(sample, artifacts_by_id)
+        if collection_id is not None:
+            referenced.add(collection_id)
+        _validate_sample_origin(sample)
+        raw_producer = artifacts_by_id[raw_id]["producer"]
+        if sample["origin_classification"] == "synthetic":
+            if raw_producer["kind"] != "author":
+                raise _dataset_semantic_error(
+                    "synthetic raw artifacts must be author-produced"
+                )
+            if collection_id is not None and (
+                artifacts_by_id[collection_id]["producer"]["kind"] != "author"
+                or artifacts_by_id[collection_id]["producer"]["name"]
+                != raw_producer["name"]
+                or artifacts_by_id[collection_id]["producer"]["version"]
+                != raw_producer["version"]
+            ):
+                raise _dataset_semantic_error(
+                    "synthetic collection fixtures must match their raw author"
+                )
+        elif (
+            collection_id is None
+            or raw_producer["kind"] != "collector"
+            or artifacts_by_id[collection_id]["producer"]["kind"] != "collector"
+            or raw_producer["name"]
+            != artifacts_by_id[collection_id]["producer"]["name"]
+            or raw_producer["version"]
+            != artifacts_by_id[collection_id]["producer"]["version"]
+        ):
+            raise _dataset_semantic_error(
+                "captured raw artifacts must match their collection producer"
+            )
+        if sample["origin_classification"] == "physical_captured" and any(
+            artifacts_by_id[artifact_id]["redaction_state"] == "not_required"
+            for artifact_id in (raw_id, report_id, collection_id)
+            if artifact_id is not None
+        ):
+            raise _dataset_semantic_error("physical sample artifacts require redaction")
+
+    _validate_dataset_authorization(data, origins)
+    return referenced
+
+
+def _validate_dataset_contract_semantics(data: object) -> None:
+    if not isinstance(data, dict):
+        return
+    artifacts_by_id = _validate_dataset_artifact_contract(data)
+    referenced = _validate_dataset_sample_contract(data, artifacts_by_id)
+
+    derivations = data["derived_diffs"]
+    derivation_ids = [item["derivation_id"] for item in derivations]
+    _validate_unique_strings(derivation_ids, "derivation IDs")
+    _validate_unique_strings(
+        [item["artifact_id"] for item in derivations],
+        "diff artifact references",
+    )
+    samples_by_id = {sample["sample_id"]: sample for sample in data["samples"]}
+    sample_ids = set(samples_by_id)
+    for derivation in derivations:
+        artifact_id = derivation["artifact_id"]
+        if (
+            derivation["base_sample_id"] not in sample_ids
+            or derivation["compare_sample_id"] not in sample_ids
+            or derivation["base_sample_id"] == derivation["compare_sample_id"]
+            or artifact_id not in artifacts_by_id
+            or artifacts_by_id[artifact_id]["role"] != "derived_diff"
+        ):
+            raise _dataset_semantic_error(
+                "diff derivations must resolve distinct samples and a diff artifact"
+            )
+        if (
+            "physical_captured"
+            in {
+                samples_by_id[derivation["base_sample_id"]]["origin_classification"],
+                samples_by_id[derivation["compare_sample_id"]]["origin_classification"],
+            }
+            and artifacts_by_id[artifact_id]["redaction_state"] == "not_required"
+        ):
+            raise _dataset_semantic_error(
+                "diffs derived from physical samples require redaction"
+            )
+        referenced.add(artifact_id)
+    if referenced != set(artifacts_by_id):
+        raise _dataset_semantic_error(
+            "artifact registry must be a closed, fully referenced graph"
+        )
+
+
+def validate_dataset_source(data: object) -> None:
+    """Validate the author-maintained declarative dataset source."""
+
+    validate_with_schema(
+        data,
+        "dataset_source_v1_0_0.schema.json",
+        artifact_name="dataset source",
+        supported_versions=SUPPORTED_DATASET_SOURCE_SCHEMA_VERSIONS,
+    )
+    _validate_dataset_contract_semantics(data)
+
+
+def validate_dataset_manifest(data: object) -> None:
+    """Validate a historical v1 or strict verifiable v2 dataset manifest."""
+
+    version = data.get("schema_version") if isinstance(data, dict) else None
+    if (
+        isinstance(version, str)
+        and version not in SUPPORTED_DATASET_MANIFEST_SCHEMA_VERSIONS
+    ):
+        raise UnsupportedSchemaVersionError(
+            "unsupported dataset manifest schema version"
+        )
+    resource_version = (
+        version
+        if isinstance(version, str)
+        else current_write_version(SchemaFamily.DATASET_MANIFEST)
+    )
+    validate_with_schema(
+        data,
+        schema_resource_name(SchemaFamily.DATASET_MANIFEST, resource_version),
+        artifact_name="dataset manifest",
+        supported_versions=SUPPORTED_DATASET_MANIFEST_SCHEMA_VERSIONS,
+    )
+    if resource_version == "2.0.0":
+        _validate_dataset_contract_semantics(data)

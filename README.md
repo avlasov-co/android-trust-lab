@@ -11,6 +11,7 @@ Start here if you are evaluating the repository quickly:
 - Canonical project metadata: `docs/project_metadata.md`
 - Versioning policy: `docs/versioning.md`
 - Artifact manifest: `results/artifact_manifest.json`
+- Verifiable dataset contract: `docs/dataset_manifest_v2.md`
 - One-command validation: `bash scripts/verify_release.sh`
 
 Android Trust Lab is a reproducible research harness for measuring Android trust-state transitions across controlled system configurations.
@@ -65,8 +66,9 @@ trust_diff.schema.json + markdown summary
 
 | Capability | Status |
 |---|---|
-| Python analyzer CLI for normalize / migrate / manifest and report validation / diff / summarize | implemented |
+| Python analyzer CLI for normalize / migrate / collection and dataset validation / diff / summarize | implemented |
 | Strict portable collection-manifest v1 for every observer class | implemented |
+| Strict verifiable dataset-manifest v2 with deterministic freshness checks | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |
@@ -86,6 +88,7 @@ From the repository root:
 python -m pip install -e "analyzer[dev]"
 pytest -q
 python tools/generate_report.py --check
+trustlab dataset verify datasets/manifest.json
 python tools/package_magisk_module.py --check-only
 for f in module/trustlab-magisk/*.sh module/trustlab-magisk/scripts/*.sh; do sh -n "$f"; done
 ```

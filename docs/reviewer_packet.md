@@ -7,8 +7,9 @@
 3. `docs/reviewer_quickstart.md`
 4. `docs/evidence_matrix.md`
 5. `results/trust_state_diffs.md`
-6. `results/artifact_manifest.json`
-7. `SECURITY.md`
+6. `docs/dataset_manifest_v2.md`
+7. `results/artifact_manifest.json`
+8. `SECURITY.md`
 
 ## Fast validation
 
@@ -22,6 +23,7 @@ bash scripts/verify_release.sh
 - A reproducible Python analyzer workflow.
 - Parser, normalizer, schema validation, diff generation, and CLI tooling.
 - Synthetic / AVD-limited sample reports.
+- A strict, integrity-bound dataset graph with deterministic freshness checks.
 - Generated diffs, tables, and result summaries.
 - A read-only Magisk collector module.
 - Packaging safety checks for the Magisk module.

@@ -10,6 +10,9 @@ from types import ModuleType
 
 import pytest
 
+from trustlab.dataset_manifest import stable_pretty_json_bytes
+from trustlab.exceptions import CollectionError, InvalidJSONError, SchemaValidationError
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -106,7 +109,7 @@ def test_repository_tool_entry_points_pass(capsys):
     output = capsys.readouterr().out
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
-    assert "validated 4 schemas" in output
+    assert "validated 7 schemas" in output
     assert "1 collection manifest" in output
     assert "Magisk module safety checks passed" in output
 
@@ -114,10 +117,26 @@ def test_repository_tool_entry_points_pass(capsys):
 def test_ci_gate_enforces_baseline_aware_secret_detection():
     check_script = (ROOT / "scripts/check.sh").read_text(encoding="utf-8")
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    pre_commit = (ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
     assert "detect_secrets.pre_commit_hook" in check_script
     assert check_script.index("detect_secrets.pre_commit_hook") < check_script.index(
         'echo "repository checks passed"'
     )
+    check_line_filter = next(
+        line for line in check_script.splitlines() if "--exclude-lines" in line
+    )
+    check_file_filter = next(
+        line for line in check_script.splitlines() if "--exclude-files" in line
+    )
+    pre_commit_line_filter = next(
+        line for line in pre_commit.splitlines() if "--exclude-lines" in line
+    )
+    assert '"sha256"' in check_line_filter
+    assert '"sha256"' in pre_commit_line_filter
+    assert "datasets/manifest" not in check_file_filter
+    assert "datasets/manifest" not in pre_commit_line_filter
+    assert "results/artifact_manifest" not in check_file_filter
+    assert "results/artifact_manifest" not in pre_commit_line_filter
     assert "run: bash scripts/check.sh" in workflow
 
 
@@ -149,6 +168,52 @@ def test_secret_detector_rejects_new_unbaselined_credential(tmp_path):
     )
     assert result.returncode == 1
     assert "AWS Access Key" in result.stdout
+
+
+def test_secret_detector_scans_manifest_metadata_but_ignores_digest_lines(tmp_path):
+    baseline = tmp_path / ".secrets.baseline"
+    baseline.write_bytes((ROOT / ".secrets.baseline").read_bytes())
+    manifest = tmp_path / "datasets/manifest.json"
+    manifest.parent.mkdir()
+    manifest.write_bytes((ROOT / "datasets/manifest.json").read_bytes())
+    subprocess.run(["git", "init", "--quiet"], cwd=tmp_path, check=True, timeout=30)
+    subprocess.run(["git", "add", baseline.name], cwd=tmp_path, check=True, timeout=30)
+
+    command = [
+        sys.executable,
+        "-m",
+        "detect_secrets.pre_commit_hook",
+        "--baseline",
+        baseline.name,
+        "--exclude-lines",
+        r'^\s+"sha256": "[a-f0-9]{64}",?\s*$',
+        "--no-verify",
+        "--",
+        "datasets/manifest.json",
+    ]
+    clean = subprocess.run(
+        command,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert clean.returncode == 0
+
+    document = json.loads(manifest.read_text(encoding="utf-8"))
+    document["authorization"]["statement"] = "AK" + "IA" + "QWERTYUIOPASDFGH"
+    manifest.write_bytes(stable_pretty_json_bytes(document))
+    detected = subprocess.run(
+        command,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert detected.returncode == 1
+    assert "AWS Access Key" in detected.stdout
 
 
 @pytest.fixture
@@ -183,3 +248,138 @@ def test_generator_check_detects_and_repairs_stale_outputs(
     assert "updated results/summary_table.md" in capsys.readouterr().out
     assert generate_report.main(["--check"]) == 0
     assert capsys.readouterr().out == "generated artifacts are up to date\n"
+
+
+def test_generator_is_driven_by_validated_source_and_is_deterministic(
+    isolated_generated_tree,
+):
+    first = generate_report.build_outputs()
+    second = generate_report.build_outputs()
+
+    assert first == second
+    assert not hasattr(generate_report, "SAMPLES")
+    assert not hasattr(generate_report, "DIFFS")
+    source = json.loads(
+        (isolated_generated_tree / "datasets/source.json").read_text(encoding="utf-8")
+    )
+    assert len(source["samples"]) == 5
+    assert len(source["derived_diffs"]) == 4
+
+
+def test_generator_validates_all_inputs_before_writing(isolated_generated_tree):
+    outputs = generate_report.build_outputs()
+    before = {path: path.read_bytes() for path in outputs}
+    source_path = isolated_generated_tree / "datasets/source.json"
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    source["samples"][1]["sample_id"] = source["samples"][0]["sample_id"]
+    source_path.write_bytes(stable_pretty_json_bytes(source))
+
+    with pytest.raises(SchemaValidationError, match="sample IDs must be unique"):
+        generate_report.main([])
+
+    assert {path: path.read_bytes() for path in outputs} == before
+
+
+@pytest.mark.parametrize("failure", ["malformed", "relationship", "extra_observed"])
+def test_generator_validates_collection_sources_before_writing(
+    isolated_generated_tree, failure
+):
+    outputs = generate_report.build_outputs()
+    before = {path: path.read_bytes() for path in outputs}
+    collection_path = (
+        isolated_generated_tree
+        / "datasets/samples/magisk_collector/collector_manifest_sample.json"
+    )
+    if failure == "malformed":
+        collection_path.write_bytes(b"{\n")
+        expected_error = InvalidJSONError
+    elif failure == "relationship":
+        document = json.loads(collection_path.read_text(encoding="utf-8"))
+        document["artifacts"][0]["sha256"] = "0" * 64
+        collection_path.write_bytes(stable_pretty_json_bytes(document))
+        expected_error = SchemaValidationError
+    else:
+        document = json.loads(collection_path.read_text(encoding="utf-8"))
+        extra = document["artifacts"][0].copy()
+        extra.update(
+            {
+                "logical_name": "extra_device_log",
+                "relative_path": "extra_device.log",
+                "byte_size": 5,
+                "sha256": "0" * 64,
+                "probe_id": "manual.extra_device_log",
+            }
+        )
+        document["artifacts"].append(extra)
+        collection_path.write_bytes(stable_pretty_json_bytes(document))
+        expected_error = SchemaValidationError
+
+    with pytest.raises(expected_error):
+        generate_report.main([])
+
+    assert {path: path.read_bytes() for path in outputs} == before
+
+
+def test_generator_rejects_symlinked_source_artifact(isolated_generated_tree, tmp_path):
+    raw = isolated_generated_tree / "datasets/samples/stock_avd/raw_sample.txt"
+    outside = tmp_path / "outside-raw.txt"
+    outside.write_bytes(raw.read_bytes())
+    raw.unlink()
+    raw.symlink_to(outside)
+
+    with pytest.raises(CollectionError, match="non-directory or symlink"):
+        generate_report.main(["--check"])
+
+
+@pytest.mark.parametrize("arguments", [[], ["--check"]])
+def test_generator_rejects_symlinked_output_parent_without_touching_target(
+    isolated_generated_tree, tmp_path, arguments
+):
+    results = isolated_generated_tree / "results"
+    outside = tmp_path / "outside-results"
+    results.rename(outside)
+    results.symlink_to(outside, target_is_directory=True)
+    before = {
+        path.relative_to(outside): path.read_bytes()
+        for path in outside.rglob("*")
+        if path.is_file()
+    }
+
+    with pytest.raises(CollectionError, match="non-directory or symlink"):
+        generate_report.main(arguments)
+
+    assert {
+        path.relative_to(outside): path.read_bytes()
+        for path in outside.rglob("*")
+        if path.is_file()
+    } == before
+
+
+def test_generator_enforces_cumulative_artifact_limit(
+    isolated_generated_tree, monkeypatch
+):
+    monkeypatch.setattr(generate_report, "MAX_DATASET_TOTAL_BYTES", 1)
+
+    with pytest.raises(ValueError, match="cumulative generation limit"):
+        generate_report.build_outputs()
+
+
+def test_generator_publishes_dataset_manifest_last(tmp_path, monkeypatch):
+    monkeypatch.setattr(generate_report, "ROOT", tmp_path)
+    manifest = tmp_path / "datasets/manifest.json"
+    other = tmp_path / "datasets/derived/report.json"
+    order = []
+    monkeypatch.setattr(
+        generate_report,
+        "atomic_write",
+        lambda path, _payload: order.append(path),
+    )
+
+    changed = generate_report.publish_outputs(
+        {manifest: b"manifest\n", other: b"report\n"},
+        check=False,
+        manifest_path=manifest,
+    )
+
+    assert changed == ["datasets/manifest.json", "datasets/derived/report.json"]
+    assert order == [other, manifest]

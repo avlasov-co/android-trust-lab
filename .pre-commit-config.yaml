@@ -39,8 +39,10 @@ repos:
         files: ^(analyzer/trustlab/schemas|collector/schema)/
       - id: detect-secrets
         name: detect secrets
-        # The generated artifact manifest contains SHA-256 digests, not credentials.
-        entry: detect-secrets-hook --baseline .secrets.baseline --exclude-files ^results/artifact_manifest\.json$
+        # Ignore only canonical SHA-256 binding lines; scan all manifest metadata.
+        entry: >-
+          detect-secrets-hook --baseline .secrets.baseline
+          --exclude-lines '^\s+"sha256": "[a-f0-9]{64}",?\s*$'
         language: system
         types: [text]
         exclude: ^\.secrets\.baseline$
