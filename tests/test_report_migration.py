@@ -10,6 +10,7 @@ import pytest
 import trustlab.compatibility as compatibility_module
 import trustlab.report_v4 as report_v4_module
 import trustlab.report_v5 as report_v5_module
+import trustlab.report_v6 as report_v6_module
 from trustlab import cli
 from trustlab.exceptions import SchemaValidationError, UnsupportedSchemaVersionError
 from trustlab.identity import finalize_report_identity
@@ -20,6 +21,7 @@ from trustlab.migrations import (
     migrate_report_v2_to_v3,
     migrate_report_v3_to_v4,
     migrate_report_v4_to_v5,
+    migrate_report_v5_to_v6,
 )
 from trustlab.normalizer import normalize_raw_file
 from trustlab.report_writer import load_json, write_json
@@ -239,7 +241,9 @@ def test_v2_canonical_invalid_string_fails_validation_and_migration_cleanly():
     "mutation",
     [
         lambda report: report.update({"undeclared": True}),
-        lambda report: report["root_state"]["su_present"].update({"status": "unknown"}),
+        lambda report: report["root_state"]["su_binary_observed"].update(
+            {"status": "unknown"}
+        ),
         lambda report: report["mounts"].update({"overlay_detected": True}),
         lambda report: report["process_state"].update({"raw_processes": []}),
         lambda report: report["extensions"].update({"not_namespaced": {}}),
@@ -262,7 +266,7 @@ def test_migrate_report_cli_publishes_separate_current_output(tmp_path):
     source = tmp_path / "v1.json"
     source.write_bytes(V1_REPORT.read_bytes())
     before = source.read_bytes()
-    output = tmp_path / "v5.json"
+    output = tmp_path / "v6.json"
 
     assert (
         cli.main(
@@ -278,7 +282,7 @@ def test_migrate_report_cli_publishes_separate_current_output(tmp_path):
     )
     assert source.read_bytes() == before
     migrated = load_json(output)
-    assert migrated["schema_version"] == "5.0.0"
+    assert migrated["schema_version"] == "6.0.0"
     assert [
         record["migration_id"] for record in migrated["provenance"]["migration_history"]
     ] == [
@@ -286,6 +290,7 @@ def test_migrate_report_cli_publishes_separate_current_output(tmp_path):
         "report-v2-to-v3",
         "report-v3-to-v4",
         "report-v4-to-v5",
+        "report-v5-to-v6",
     ]
     validate_report(migrated)
 
@@ -342,6 +347,112 @@ def test_explicit_v4_to_v5_migration_is_deterministic_without_invented_processes
     validate_report(first)
 
 
+def test_explicit_v5_to_v6_migration_does_not_reinterpret_root_or_magisk():
+    v4 = migrate_report_v3_to_v4(migrate_report_v2_to_v3(load_json(V2_REPORT)))
+    v5 = migrate_report_v4_to_v5(v4)
+
+    first = migrate_report_v5_to_v6(v5)
+    second = migrate_report_v5_to_v6(copy.deepcopy(v5))
+
+    assert first == second
+    assert first["schema_version"] == "6.0.0"
+    assert first["root_state"]["su_binary_observed"]["status"] == "not_collected"
+    assert first["magisk_state"]["version_name"]["status"] == "not_collected"
+    assert first["magisk_state"]["version_code"]["status"] == "not_collected"
+    assert first["verified_boot"]["confidence"]["level"] == "unassessed"
+    assert first["provenance"]["migration_history"][-1]["migration_id"] == (
+        "report-v5-to-v6"
+    )
+    validate_report(first)
+
+
+@pytest.mark.parametrize(
+    "marker",
+    ["alice", "ZX1G22BHQP", "0123456789ABCDEF", "AKIAIOSFODNN7EXAMPLE"],
+)
+def test_v5_to_v6_rejects_unknown_extensions_before_source_embedding(marker):
+    v2 = load_json(V2_REPORT)
+    v2["extensions"]["org.example.private.opaque"] = {"value": marker}
+    validate_report(v2)
+    v4 = migrate_report_v3_to_v4(migrate_report_v2_to_v3(v2))
+    v5 = migrate_report_v4_to_v5(v4)
+    validate_report(v5)
+
+    with pytest.raises(SchemaValidationError, match="unportable extension"):
+        migrate_report_v5_to_v6(v5)
+
+
+@pytest.mark.parametrize(
+    "sensitive_model",
+    [
+        "alice@example.com",
+        "/data/local/tmp/alice/PRIVATE_KEY",
+        "ghp_DIFF_PRIVATEVALUE12345678",
+        "alice",
+    ],
+)
+def test_v5_to_v6_migration_requires_sensitive_source_redaction(sensitive_model):
+    v5 = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    v5["schema_version"] = "5.0.0"
+    v5["verified_boot"]["confidence"] = "low"
+    v5["root_state"] = {
+        "su_present": {
+            "status": "not_collected",
+            "value": None,
+            "reason": "not collected",
+        },
+        "uid": {"status": "observed", "value": "2000", "reason": None},
+        "gid": {"status": "observed", "value": "2000", "reason": None},
+        "root_shell_available": {
+            "status": "observed_absent",
+            "value": False,
+            "reason": "root shell was absent",
+        },
+        "root_paths": {
+            "status": "observed_absent",
+            "value": [],
+            "reason": "root paths were absent",
+        },
+    }
+    v5["magisk_state"] = {
+        "magisk_binary_present": {
+            "status": "observed_absent",
+            "value": False,
+            "reason": "Magisk was absent",
+        },
+        "magisk_version": {
+            "status": "not_collected",
+            "value": None,
+            "reason": "not collected",
+        },
+        "magisk_path": {
+            "status": "not_collected",
+            "value": None,
+            "reason": "not collected",
+        },
+        "zygisk_visible_indicators": {
+            "status": "not_collected",
+            "value": None,
+            "reason": "not collected",
+        },
+        "module_context": {
+            "status": "not_collected",
+            "value": None,
+            "reason": "not collected",
+        },
+    }
+    v5["target"]["model"] = {
+        "status": "observed",
+        "value": sensitive_model,
+        "reason": None,
+    }
+    v5 = finalize_report_identity(v5)
+    validate_report(v5)
+
+    with pytest.raises(SchemaValidationError, match="portable"):
+        migrate_report_v5_to_v6(v5)
+
+
 def test_persisted_v4_migration_remains_valid_after_analyzer_version_changes(
     monkeypatch,
 ):
@@ -369,6 +480,24 @@ def test_persisted_v5_migration_remains_valid_after_analyzer_version_changes(
     ]["version"]
 
     monkeypatch.setattr(report_v5_module, "__version__", "99.0.0")
+
+    validate_report(migrated)
+    assert (
+        migrated["provenance"]["migration_history"][-1]["implementation"]["version"]
+        == declared_version
+    )
+
+
+def test_persisted_v6_migration_remains_valid_after_analyzer_version_changes(
+    monkeypatch,
+):
+    v4 = migrate_report_v3_to_v4(migrate_report_v2_to_v3(load_json(V2_REPORT)))
+    migrated = migrate_report_v5_to_v6(migrate_report_v4_to_v5(v4))
+    declared_version = migrated["provenance"]["migration_history"][-1][
+        "implementation"
+    ]["version"]
+
+    monkeypatch.setattr(report_v6_module, "__version__", "99.0.0")
 
     validate_report(migrated)
     assert (

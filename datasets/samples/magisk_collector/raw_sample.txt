@@ -37,14 +37,19 @@ uid=0(root) gid=0(root) groups=0(root)
 Enforcing
 === CMDLINE ===
 androidboot.verifiedbootstate=green androidboot.hardware=ranchu
-=== SU_PATHS ===
-/sbin/su
+=== ROOT_PROBE ===
+observer_effective_uid_is_root=observed
+root_shell_available=observed
+su_binary_observed=observed
+su_invocation_tested=observed_absent
+su_invocation_result=not_tested
+root_management_artifact_observed=observed
 === MAGISK ===
-magisk_path=/sbin/magisk
-magisk_version=28.1
-magisk_data_path=/data/adb/magisk
+magisk_binary_visibility=observed
+magisk_version_name=28.1
+magisk_version_code=28100
 module_context=androidtrustlab
-zygisk_indicator=/data/adb/zygisk
+zygisk_visibility=observed
 === PS ===
 u:r:init:s0 root 1 0 init
 u:r:adbd:s0 shell 222 1 adbd

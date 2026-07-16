@@ -13,7 +13,7 @@ from typing import Any
 from .canonical_json import CanonicalJSONError, framed_content_digest
 from .exceptions import CollectionError, SchemaValidationError
 
-REPORT_SCHEMA_VERSION = "5.0.0"
+REPORT_SCHEMA_VERSION = "6.0.0"
 REDACTION_STATES = frozenset(
     {"not_required", "redacted", "verified", "withheld", "unknown"}
 )

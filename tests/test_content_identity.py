@@ -158,8 +158,8 @@ def test_raw_source_references_require_observed_bytes():
 def test_multi_source_content_identity_is_permutation_stable_but_order_is_canonical():
     ordered = normalized()
     second = copy.deepcopy(ordered["raw_artifacts"][0])
-    second["logical_id"] = "second-raw-report"
-    second["relative_path"] = "observations/second.txt"
+    second["logical_id"] = "raw-artifact-002"
+    second["relative_path"] = "artifacts/raw-artifact-002.txt"
     ordered["raw_artifacts"].append(second)
     ordered = finalize_report_identity(ordered)
     validate_report(ordered)
@@ -178,7 +178,7 @@ def test_moving_identical_bytes_does_not_change_content_or_event_identity():
 
     assert (
         first["raw_artifacts"][0]["relative_path"]
-        != moved["raw_artifacts"][0]["relative_path"]
+        == (moved["raw_artifacts"][0]["relative_path"])
     )
     assert first["content_digest"] == moved["content_digest"]
     assert first["collection_event_id"] == moved["collection_event_id"]
@@ -280,12 +280,12 @@ def test_diff_identity_binds_exact_report_and_content_identities():
     assert event_diff["base_report"] == {
         "report_id": base["report_id"],
         "content_digest": base["content_digest"],
-        "schema_version": "5.0.0",
+        "schema_version": "6.0.0",
     }
     assert event_diff["compare_report"] == {
         "report_id": compare["report_id"],
         "content_digest": compare["content_digest"],
-        "schema_version": "5.0.0",
+        "schema_version": "6.0.0",
     }
     assert event_diff["diff_id"] != same_input_diff["diff_id"]
     validate_diff(event_diff)

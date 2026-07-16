@@ -102,7 +102,21 @@ def test_manifest_artifact_binding_and_normalization_match_legacy_raw_flow():
         raw_artifact_ref="raw_sample.txt",
     )
     assert from_manifest["root_state"] == from_raw["root_state"]
-    assert from_manifest["verified_boot"] == from_raw["verified_boot"]
+    assert {
+        key: value
+        for key, value in from_manifest["verified_boot"].items()
+        if key != "confidence"
+    } == {
+        key: value
+        for key, value in from_raw["verified_boot"].items()
+        if key != "confidence"
+    }
+    assert from_manifest["verified_boot"]["confidence"]["source_quality"] == (
+        "legacy_inferred"
+    )
+    assert from_raw["verified_boot"]["confidence"]["source_quality"] == (
+        "legacy_inferred"
+    )
     assert from_manifest["report_id"] != from_raw["report_id"]
     assert [
         result["status"] for result in from_manifest["provenance"]["command_results"]
@@ -112,9 +126,8 @@ def test_manifest_artifact_binding_and_normalization_match_legacy_raw_flow():
         in from_manifest["limitations"]["collection_errors"]
     )
     collection = from_manifest["extensions"]["org.androidtrustlab.collection"]
-    assert collection["manifest"] == sample_document()
     canonical = json.dumps(
-        collection["manifest"],
+        sample_document(),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
@@ -122,6 +135,18 @@ def test_manifest_artifact_binding_and_normalization_match_legacy_raw_flow():
     assert (
         collection["canonical_manifest_sha256"] == hashlib.sha256(canonical).hexdigest()
     )
+    assert collection["portable_binding"] == {
+        "artifact_results": from_manifest["provenance"]["command_results"],
+        "collection_id": from_manifest["raw_artifacts"][0]["collection_id"],
+        "collection_errors": [
+            "collection manifest completion status: partial",
+            "probe 002: not_collected",
+        ],
+        "completion_status": "partial",
+        "raw_artifact_sha256": from_manifest["raw_artifacts"][0]["sha256"],
+        "raw_artifact_status": "observed",
+        "redaction_state": "redacted",
+    }
     validate_report(from_manifest)
 
 
@@ -147,7 +172,7 @@ def test_report_rejects_invalid_collection_extension_digest_type(invalid_digest)
         "canonical_manifest_sha256"
     ] = invalid_digest
 
-    with pytest.raises(SchemaValidationError, match="digest metadata is invalid"):
+    with pytest.raises(SchemaValidationError, match="portable collection binding"):
         validate_report(report)
 
 
@@ -193,7 +218,7 @@ def test_report_rejects_substitution_with_another_bound_manifest_artifact():
     document["artifacts"].append(
         {
             "logical_name": "other_observed_artifact",
-            "relative_path": "other.json",
+            "relative_path": "other_artifact.json",
             "media_type": "application/json",
             "byte_size": 1,
             "sha256": "0" * 64,
@@ -224,7 +249,7 @@ def test_report_rejects_substitution_with_another_bound_manifest_artifact():
     )
     forged = finalize_report_identity(forged)
 
-    with pytest.raises(SchemaValidationError, match="unique observed raw_report"):
+    with pytest.raises(SchemaValidationError, match="portable collection binding"):
         validate_report(forged)
 
 
@@ -278,7 +303,7 @@ def test_partial_failed_timed_out_and_missing_artifacts_remain_distinct():
     artifact = falsely_empty["artifacts"][0]
     artifact.update(
         {
-            "relative_path": "empty.txt",
+            "relative_path": "empty_raw.txt",
             "byte_size": 0,
             "sha256": hashlib.sha256(b"").hexdigest(),
             "status": "observed",
@@ -385,6 +410,44 @@ def test_normalization_rejects_directly_constructed_free_text_tool_version():
         normalize_collection_payload(payload, unsafe, label="raw_sample.txt")
 
 
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("collector", "name"), "alice"),
+        (("collector", "version"), "1.2.3-alice"),
+        (("observer", "collection_method"), "alice"),
+        (("observer", "collection_method"), "alice_probe"),
+        (("environment", "execution_context"), "alice"),
+        (("tool_versions", "android_shell"), "alice"),
+        (("tool_versions", "trustlab_magisk"), "1.2.3-alice"),
+        (("artifacts", 0, "logical_name"), "alice"),
+        (("artifacts", 0, "logical_name"), "alice_private"),
+        (("artifacts", 0, "probe_id"), "alice"),
+        (("artifacts", 0, "probe_id"), "alice.private"),
+        (
+            ("artifacts", 0, "relative_path"),
+            "captures/R58M1234ABC-alice-10.0.0.7.txt",
+        ),
+        (("artifacts", 0, "relative_path"), "captures/alice_private.txt"),
+        (("artifacts", 0, "relative_path"), "capture-ZX1G22BHQP.txt"),
+        (("artifacts", 0, "relative_path"), "capture-0123456789ABCDEF.txt"),
+        (
+            ("artifacts", 0, "relative_path"),
+            "capture-AKIAIOSFODNN7EXAMPLE.txt",
+        ),
+    ],
+)
+def test_manifest_rejects_identifiers_in_structured_fields(path, value):
+    document = sample_document()
+    current = document
+    for part in path[:-1]:
+        current = current[part]
+    current[path[-1]] = value
+
+    with pytest.raises(SchemaValidationError):
+        validate_collection_manifest(document)
+
+
 def test_manifest_timestamp_order_handles_every_rfc3339_z_spelling():
     for suffix in ("Z", "z"):
         document = sample_document()
@@ -450,7 +513,7 @@ def test_artifact_verification_rejects_changed_bytes_and_symlink_escape(tmp_path
     with pytest.raises(CollectionError, match="size mismatch"):
         verify_collection_artifacts(manifest, manifest_path)
 
-    raw.write_bytes(b"x" * 1751)
+    raw.write_bytes(b"x" * 1953)
     with pytest.raises(CollectionError, match="digest mismatch"):
         verify_collection_artifacts(manifest, manifest_path)
 
@@ -501,7 +564,13 @@ def test_manifest_normalizer_parses_exact_verified_snapshot(tmp_path, monkeypatc
 
     def verify_then_mutate(*args, **kwargs):
         verified = original_verify(*args, **kwargs)
-        raw.write_bytes(raw.read_bytes().replace(b"uid=0", b"uid=1", 1))
+        raw.write_bytes(
+            raw.read_bytes().replace(
+                b"observer_effective_uid_is_root=observed\n",
+                b"observer_effective_uid_is_root=observed_absent\n",
+                1,
+            )
+        )
         return verified
 
     monkeypatch.setattr(
@@ -509,8 +578,8 @@ def test_manifest_normalizer_parses_exact_verified_snapshot(tmp_path, monkeypatc
     )
     report = normalize_collection_manifest(manifest_path)
 
-    assert report["root_state"]["uid"]["value"] == "0"
-    assert b"uid=1" in raw.read_bytes()
+    assert report["root_state"]["observer_effective_uid_is_root"]["value"] is True
+    assert b"observer_effective_uid_is_root=observed_absent" in raw.read_bytes()
 
 
 @pytest.mark.parametrize(
@@ -597,14 +666,14 @@ def test_collection_manifest_cli_validation_and_normalization(tmp_path, capsys):
     assert report["observer"]["observer_type"] == "root_collector"
     assert report["raw_artifacts"] == [
         {
-            "logical_id": "raw_report",
-            "relative_path": "raw_sample.txt",
-            "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
-            "byte_size": 1751,
+            "logical_id": "raw-artifact-001",
+            "relative_path": "artifacts/raw-artifact-001.txt",
+            "sha256": "b974a58ea553607d0fe852005607934d877a864d7727732f89c4de75e3f33ade",
+            "byte_size": 1953,
             "media_type": "text/plain",
             "collector_name": "trustlab-magisk",
             "collector_version": "0.3.0-dev0",
-            "collection_id": "atlcol-b7e7f4381ab857f2",
+            "collection_id": "collection-redacted",
             "status": "observed",
             "redaction_state": "redacted",
         }

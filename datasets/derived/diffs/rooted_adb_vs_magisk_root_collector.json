@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-    "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-    "schema_version": "5.0.0"
+    "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+    "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+    "schema_version": "6.0.0"
   },
   "changed_dimensions": [
     {
@@ -180,12 +180,172 @@
         "status": "observed_absent",
         "value": false
       },
-      "dimension": "magisk_presence",
+      "dimension": "observer_uid_root",
       "evidence_paths": [
-        "magisk_state.magisk_binary_present"
+        "root_state.observer_effective_uid_is_root"
       ],
-      "interpretation": "Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it.",
+      "interpretation": "Trust-state dimension changed between reports.",
       "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "root_shell_availability",
+      "evidence_paths": [
+        "root_state.root_shell_available"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed_absent",
+        "value": false
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "su_invocation_tested",
+      "evidence_paths": [
+        "root_state.su_invocation_tested"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "low"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "root_management_artifact",
+      "evidence_paths": [
+        "root_state.root_management_artifact_observed"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "observed_absent",
+        "value": false
+      },
+      "dimension": "magisk_binary_visibility",
+      "evidence_paths": [
+        "magisk_state.binary_visibility"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "magisk_daemon_visibility",
+      "evidence_paths": [
+        "magisk_state.daemon_visibility"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "magisk_process_visibility",
+      "evidence_paths": [
+        "magisk_state.process_visibility"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": true
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "zygisk_visibility",
+      "evidence_paths": [
+        "magisk_state.zygisk_visibility"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "medium"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": "28.1"
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "magisk_version_name",
+      "evidence_paths": [
+        "magisk_state.version_name"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "info"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": "28100"
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "magisk_version_code",
+      "evidence_paths": [
+        "magisk_state.version_code"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "info"
+    },
+    {
+      "after": {
+        "status": "observed",
+        "value": "androidtrustlab"
+      },
+      "before": {
+        "status": "not_collected",
+        "value": null
+      },
+      "dimension": "magisk_module_context",
+      "evidence_paths": [
+        "magisk_state.module_context"
+      ],
+      "interpretation": "Trust-state dimension changed between reports.",
+      "severity": "info"
     },
     {
       "after": "root",
@@ -199,44 +359,72 @@
     }
   ],
   "compare_report": {
-    "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
-    "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
-    "schema_version": "5.0.0"
+    "content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
+    "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+    "schema_version": "6.0.0"
   },
-  "confidence_changes": [],
-  "content_digest": "24c2ad01a72abebf368eefa3c963e05dd0bfd8714a90e76f8b5d8c2bf8bd31c7",
-  "diff_id": "atldiff-24c2ad01a72abebf368eefa3c963e05d",
+  "confidence_changes": [
+    {
+      "after": {
+        "command_success": "complete",
+        "corroborating_signal_count": 4,
+        "level": "low",
+        "observer_capability": "root",
+        "source_quality": "legacy_inferred",
+        "target_limitations": [
+          "hardware_attestation_not_collected",
+          "legacy_capture_status_inferred",
+          "virtual_target_not_hardware_backed"
+        ]
+      },
+      "before": {
+        "command_success": "complete",
+        "corroborating_signal_count": 4,
+        "level": "low",
+        "observer_capability": "shell",
+        "source_quality": "legacy_inferred",
+        "target_limitations": [
+          "hardware_attestation_not_collected",
+          "legacy_capture_status_inferred",
+          "virtual_target_not_hardware_backed"
+        ]
+      },
+      "path": "verified_boot.confidence"
+    }
+  ],
+  "content_digest": "60124c4bca514321a176f3b979ebfed17b511c669dc33dc028a9bb5199097af1",
+  "diff_id": "atldiff-60124c4bca514321a176f3b979ebfed1",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-        "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-        "schema_version": "5.0.0"
+        "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+        "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-      "original_document_digest": "21381731f17f172e3ccbcbaa10011ce6d8f675b6eff9e0cbfa33b136eb204fc9",
-      "original_report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+      "original_document_digest": "6276f339a4c2d671e62ffab161ff92aaf1579d4b273f25885f61c1cd69e6f859",
+      "original_report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+      "original_schema_version": "6.0.0"
     },
-    "common_report_schema_version": "5.0.0",
+    "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
-        "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
-        "schema_version": "5.0.0"
+        "content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
+        "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
-      "original_document_digest": "0b725073f6f3af67dfe36cb48d90f44d7e3f16e1417c707d2b5afdb7e29bbcad",
-      "original_report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
+      "original_document_digest": "78adb9d56de7dc5779a5c0c39fd123ab06878d5b2b634ceab4f52ddd03fa0571",
+      "original_report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
+      "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.2.0",
-  "summary": "3 dimensions changed, 14 dimensions unchanged.",
+  "schema_version": "2.3.0",
+  "summary": "13 dimensions changed, 16 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -249,7 +437,9 @@
     "system_mount_resolution",
     "dynamic_partition_state",
     "apex_mount_set",
-    "root_presence",
+    "su_binary_visibility",
+    "su_invocation_result",
+    "magisk_command_status",
     "property_consistency",
     "emulator_state"
   ]

@@ -52,7 +52,7 @@ def test_system_as_root_is_resolved_without_fabricating_system_mount(
     report = normalize_mountinfo(tmp_path, "system_as_root_mountinfo.txt")
     mounts = report["mounts"]
 
-    assert report["schema_version"] == "5.0.0"
+    assert report["schema_version"] == "6.0.0"
     assert mounts["system_resolution"] == {
         "state": "system_as_root",
         "system_root": "/",
@@ -77,13 +77,15 @@ def test_dynamic_partitions_and_apex_set_are_deterministic(tmp_path: Path) -> No
         "state": "detected",
         "record_indices": [0, 1, 2],
         "sources": [
-            "/dev/block/dm-0",
-            "/dev/block/mapper/product_a",
-            "/dev/block/mapper/vendor_a",
+            "/dev/block/dm-redacted",
+            "/dev/block/mapper/redacted",
         ],
     }
     assert mounts["apex_set"] == {
-        "packages": ["com.android.art", "com.android.runtime"],
+        "packages": [
+            "redacted-apex-package-001",
+            "redacted-apex-package-002",
+        ],
         "record_indices": [3, 4, 5],
         "mount_count": 3,
         "package_count": 2,
@@ -232,7 +234,8 @@ def test_mount_records_are_bound_into_report_content_identity(tmp_path: Path) ->
 
     assert changed["content_digest"] != report["content_digest"]
     assert changed["report_id"] != report["report_id"]
-    validate_report(changed)
+    with pytest.raises(SchemaValidationError, match="raw evidence must be withheld"):
+        validate_report(changed)
 
 
 @pytest.mark.parametrize(

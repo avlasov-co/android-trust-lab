@@ -218,8 +218,12 @@ def publish_outputs(
     return changed
 
 
-def presence(value: bool) -> str:
-    return "present" if value else "absent"
+def presence(value: Any) -> str:
+    if value is True:
+        return "present"
+    if value is False:
+        return "absent"
+    return str(value)
 
 
 def evidence_value(value: Any) -> Any:
@@ -284,7 +288,7 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
         "",
         "This table is generated from checked-in sample reports. Current samples are synthetic / AVD-limited and do not support physical-device boot-chain claims.",
         "",
-        "| experiment | target | observer | method | root | magisk | selinux | writable sensitive mounts | overlay | verified boot | bootloader locked | confidence | status |",
+        "| experiment | target | observer | method | root shell | Magisk binary | selinux | writable sensitive mounts | overlay | verified boot | bootloader locked | confidence | status |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for report in reports:
@@ -296,16 +300,18 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
                 target=report["target"]["target_type"],
                 observer=report["observer"]["observer_type"],
                 method=report["observer"]["collection_method"],
-                root=presence(evidence_value(report["root_state"]["su_present"])),
+                root=presence(
+                    evidence_value(report["root_state"]["root_shell_available"])
+                ),
                 magisk=presence(
-                    evidence_value(report["magisk_state"]["magisk_binary_present"])
+                    evidence_value(report["magisk_state"]["binary_visibility"])
                 ),
                 selinux=evidence_value(report["selinux"]["policy_mode"]),
                 writable=fmt(evidence_value(mounts["writable_sensitive_mounts"])),
                 overlay=str(evidence_value(mounts["overlay_detected"])).lower(),
                 vb=evidence_value(verified["verified_boot_state"]),
                 locked=evidence_value(verified["flash_locked"]),
-                confidence=verified["confidence"],
+                confidence=verified["confidence"]["level"],
             )
         )
     return "\n".join(lines) + "\n"
@@ -357,10 +363,10 @@ def dimension_value(report: dict[str, Any], dimension: str) -> str:
         writable = evidence_value(integrity["writable_sensitive_mounts"])
         overlay = evidence_value(integrity["overlay_detected"])
         return f"writable={fmt(writable)}; overlay={str(overlay).lower()}"
-    if dimension == "root_presence":
-        return presence(evidence_value(report["root_state"]["su_present"]))
-    if dimension == "magisk_presence":
-        return presence(evidence_value(report["magisk_state"]["magisk_binary_present"]))
+    if dimension == "root_shell_availability":
+        return presence(evidence_value(report["root_state"]["root_shell_available"]))
+    if dimension == "magisk_binary_visibility":
+        return presence(evidence_value(report["magisk_state"]["binary_visibility"]))
     if dimension == "property_consistency":
         return fmt(evidence_value(report["properties"]["security"]))
     if dimension == "observer_privilege":
@@ -384,8 +390,8 @@ def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
         "verity_mode",
         "selinux_mode",
         "mount_integrity",
-        "root_presence",
-        "magisk_presence",
+        "root_shell_availability",
+        "magisk_binary_visibility",
         "property_consistency",
         "observer_privilege",
     ]

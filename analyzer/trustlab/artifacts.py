@@ -49,6 +49,7 @@ from .parser import (
     parse_raw_text,
     validate_parser_text,
 )
+from .privacy import semantic_capture_ref
 from .security_evidence import (
     ParsedContext,
     ParsedProcessSet,
@@ -178,6 +179,7 @@ class EvidenceFragments:
     selinux_context: ParsedContext = field(default_factory=_empty_context)
     cmdline: str = ""
     su_paths: tuple[str, ...] = ()
+    root_probe_text: str = ""
     magisk_text: str = ""
     processes: ParsedProcesses = field(default_factory=_empty_processes)
     process_evidence: ParsedProcessSet = field(default_factory=_empty_process_evidence)
@@ -391,6 +393,7 @@ _CAPTURE_SEMANTICS = {
     "selinux_denials": "selinux_denials",
     "kernel_cmdline": "cmdline",
     "su_paths": "su_paths",
+    "root_probe": "root_probe",
     "magisk": "magisk",
     "processes": "processes",
     "ps_selected": "processes",
@@ -416,6 +419,7 @@ _ALLOWED_CAPTURE_NAMES = {
             "app_context",
             "selinux_denials",
             "su_paths",
+            "root_probe",
             "magisk",
             "processes",
             "ps_selected",
@@ -513,6 +517,11 @@ def _captures(
             raise NormalizationError(
                 f"capture {name!r} source_ref must be portable and relative"
             ) from exc
+        source_ref = (
+            "captures/PS_SELECTED"
+            if name == "processes" and is_selected_process_capture(name, source_ref)
+            else semantic_capture_ref(name)
+        )
         capture = CommandCapture(
             name=name,
             status=_capture_status(raw_capture.get("status"), capture_name=name),
@@ -579,6 +588,59 @@ def _infer_legacy_capture_status(
     )
 
 
+def _magisk_capture_syntax_is_valid(text: str) -> bool:
+    values: dict[str, str] = {}
+    for line in text.splitlines():
+        if line.count("=") != 1:
+            return False
+        key, value = line.strip().split("=", 1)
+        if key in values:
+            return False
+        if key in {"magisk_binary_visibility", "zygisk_visibility"}:
+            if value not in {"observed", "observed_absent"}:
+                return False
+        elif key == "magisk_version_code":
+            if re.fullmatch(r"[0-9]{1,12}", value) is None:
+                return False
+        elif key in {"magisk_version_name", "module_context"}:
+            if re.fullmatch(r"[A-Za-z0-9._:+-]{1,128}", value) is None:
+                return False
+        else:
+            return False
+        values[key] = value
+    return {"magisk_binary_visibility", "zygisk_visibility"} <= set(values)
+
+
+def _root_capture_syntax_is_valid(text: str) -> bool:
+    values: dict[str, str] = {}
+    grammar = {
+        "observer_effective_uid_is_root": {"observed", "observed_absent"},
+        "root_shell_available": {"observed", "observed_absent"},
+        "su_binary_observed": {"observed", "observed_absent"},
+        "su_invocation_tested": {"observed", "observed_absent"},
+        "su_invocation_result": {
+            "succeeded",
+            "non_root",
+            "denied",
+            "failed",
+            "not_tested",
+        },
+        "root_management_artifact_observed": {"observed", "observed_absent"},
+    }
+    for line in text.splitlines():
+        if line.count("=") != 1:
+            return False
+        key, value = line.strip().split("=", 1)
+        if key in values or key not in grammar or value not in grammar[key]:
+            return False
+        values[key] = value
+    if set(values) != set(grammar):
+        return False
+    tested = values["su_invocation_tested"] == "observed"
+    has_result = values["su_invocation_result"] != "not_tested"
+    return tested == has_result
+
+
 def _observed_capture_syntax_is_valid(
     capture: CommandCapture, semantic: str | None
 ) -> bool:
@@ -620,21 +682,9 @@ def _observed_capture_syntax_is_valid(
     if semantic == "selinux_denials":
         return bool(capture.stdout.strip())
     if semantic == "magisk":
-        lines = [
-            line.strip().lower() for line in capture.stdout.splitlines() if line.strip()
-        ]
-        return (
-            bool(lines)
-            and any(line.startswith("magisk_") for line in lines)
-            and all(
-                re.fullmatch(
-                    r"(?:magisk_(?:version|path|data_path)|module_context|zygisk_indicator)=[^\s]+",
-                    line,
-                )
-                is not None
-                for line in lines
-            )
-        )
+        return _magisk_capture_syntax_is_valid(capture.stdout)
+    if semantic == "root_probe":
+        return _root_capture_syntax_is_valid(capture.stdout)
     if semantic == "processes":
         scope: ProcessScope = (
             "selected"
@@ -669,6 +719,7 @@ def _capture_syntax_is_valid(
             semantic
             in {
                 "su_paths",
+                "root_probe",
                 "magisk",
                 "processes",
                 "selinux_context",
@@ -905,6 +956,7 @@ def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFrag
     )
     cmdline_text = _first_observed(captures, "kernel_cmdline")
     su_text = _first_observed(captures, "su_paths")
+    root_probe_text = _first_observed(captures, "root_probe")
     magisk_text = _first_observed(captures, "magisk")
     process_capture = next(
         (
@@ -956,6 +1008,7 @@ def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFrag
         ),
         cmdline=cmdline_text,
         su_paths=tuple(parse_paths(su_text)),
+        root_probe_text=root_probe_text,
         magisk_text=magisk_text,
         processes=parse_processes(process_text),
         process_evidence=process_evidence,
@@ -984,6 +1037,7 @@ class LegacySectionedTextAdapter:
             "selinux_denials": ("SELINUX_DENIALS",),
             "kernel_cmdline": ("CMDLINE",),
             "su_paths": ("SU_PATHS",),
+            "root_probe": ("ROOT_PROBE",),
             "magisk": ("MAGISK",),
             "processes": ("PS", "PROCESSES", "PS_SELECTED"),
         }

@@ -128,7 +128,7 @@ vectors are tested before recursive JSON Schema evaluation.
 ## Migrations and diffs
 
 Report v1 through v4 remain readable. Migration is explicit and validated at
-every step: `1.0.0` → `2.0.0` → `3.0.0` → `4.0.0` → `5.0.0`.
+every step: `1.0.0` → `2.0.0` → `3.0.0` → `4.0.0` → `5.0.0` → `6.0.0`.
 V2-to-v3 migration preserves the complete
 ATL-canonical v2 source and digest in
 `org.androidtrustlab.migration-v3`, creates a structured source reference, and

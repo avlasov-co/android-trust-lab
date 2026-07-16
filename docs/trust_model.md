@@ -22,8 +22,20 @@ Canonical dimensions:
 - `system_mount_resolution`
 - `dynamic_partition_state`
 - `apex_mount_set`
-- `root_presence`
-- `magisk_presence`
+- `observer_uid_root`
+- `root_shell_availability`
+- `su_binary_visibility`
+- `su_invocation_tested`
+- `su_invocation_result`
+- `root_management_artifact`
+- `magisk_binary_visibility`
+- `magisk_daemon_visibility`
+- `magisk_process_visibility`
+- `zygisk_visibility`
+- `magisk_version_name`
+- `magisk_version_code`
+- `magisk_module_context`
+- `magisk_command_status`
 - `property_consistency`
 - `emulator_state`
 - `physical_device_state`
@@ -85,8 +97,12 @@ Some signals are missing, virtualized, vendor-specific, or observer-dependent. M
   filtered, partial, inaccessible, and app-sandbox views remain inconclusive.
 - Portable process evidence excludes PIDs, users, and command arguments; SELinux
   contexts exclude per-app MLS/MCS categories.
-- Raw evidence uses portable, non-sensitive logical names where practical.
-- Emulator evidence must carry lower confidence for hardware-backed trust dimensions.
+- Portable evidence uses semantic references, fixed property grammars, withheld
+  mount text, non-source-derived category labels, and deterministic APEX
+  ordinals before report identity is calculated.
+- Confidence is derived from source quality, command success, observer
+  capability, corroboration, and target limitations. Target type alone never
+  assigns a confidence level.
 - A changed signal is not automatically a security failure. It is an observed transition.
 - Writable, overlay, and bind mount facts are contextual observations; no one
   mount fact is a platform-integrity verdict without target, namespace, and

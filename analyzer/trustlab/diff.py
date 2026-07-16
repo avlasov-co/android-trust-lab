@@ -28,8 +28,23 @@ DIMENSION_PATHS = {
     "system_mount_resolution": ["mounts", "system_resolution"],
     "dynamic_partition_state": ["mounts", "dynamic_partitions"],
     "apex_mount_set": ["mounts", "apex_set"],
-    "root_presence": ["root_state", "su_present"],
-    "magisk_presence": ["magisk_state", "magisk_binary_present"],
+    "observer_uid_root": ["root_state", "observer_effective_uid_is_root"],
+    "root_shell_availability": ["root_state", "root_shell_available"],
+    "su_binary_visibility": ["root_state", "su_binary_observed"],
+    "su_invocation_tested": ["root_state", "su_invocation_tested"],
+    "su_invocation_result": ["root_state", "su_invocation_result"],
+    "root_management_artifact": [
+        "root_state",
+        "root_management_artifact_observed",
+    ],
+    "magisk_binary_visibility": ["magisk_state", "binary_visibility"],
+    "magisk_daemon_visibility": ["magisk_state", "daemon_visibility"],
+    "magisk_process_visibility": ["magisk_state", "process_visibility"],
+    "zygisk_visibility": ["magisk_state", "zygisk_visibility"],
+    "magisk_version_name": ["magisk_state", "version_name"],
+    "magisk_version_code": ["magisk_state", "version_code"],
+    "magisk_module_context": ["magisk_state", "module_context"],
+    "magisk_command_status": ["magisk_state", "command_status"],
     "property_consistency": ["properties", "security"],
     "emulator_state": ["emulator_state", "is_emulator"],
     "observer_privilege": ["observer", "privilege_level"],
@@ -70,11 +85,12 @@ def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, 
     validate_report(report)
     common = migrate_report_to_current(report)
     applied_count = {
-        "1.0.0": 4,
-        "2.0.0": 3,
-        "3.0.0": 2,
-        "4.0.0": 1,
-        "5.0.0": 0,
+        "1.0.0": 5,
+        "2.0.0": 4,
+        "3.0.0": 3,
+        "4.0.0": 2,
+        "5.0.0": 1,
+        "6.0.0": 0,
     }.get(original_version, 0)
     migrations = (
         common["provenance"]["migration_history"][-applied_count:]
@@ -90,7 +106,7 @@ def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, 
         "original_report_id": original_id,
         "original_schema_version": original_version,
         "original_content_digest": report.get("content_digest")
-        if original_version in {"3.0.0", "4.0.0", "5.0.0"}
+        if original_version in {"3.0.0", "4.0.0", "5.0.0", "6.0.0"}
         else None,
         "original_document_digest": legacy_report_digest(encode_legacy_report(report)),
         "common_report": common_identity,

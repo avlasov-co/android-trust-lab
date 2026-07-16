@@ -7,8 +7,8 @@
   "artifact_schema_versions": {
     "collection_manifest": "1.0.0",
     "declarative_source": "1.0.0",
-    "derived_diff": "2.2.0",
-    "normalized_report": "5.0.0",
+    "derived_diff": "2.3.0",
+    "normalized_report": "6.0.0",
     "raw_artifact": "1.0.0"
   },
   "artifacts": [
@@ -26,7 +26,7 @@
       "role": "declarative_source",
       "schema_family": "dataset_source",
       "schema_version": "1.0.0",
-      "sha256": "6b5fd561fadc5b69f9aa6ba12f6b1e25e41278378c9fd8f1d7123326a8e57368"
+      "sha256": "f950bf85d5781f93e6734c540fa748dda332b12478a1c87b896c8d481060cc5a"
     },
     {
       "artifact_id": "raw-stock-avd-adb",
@@ -46,7 +46,7 @@
     },
     {
       "artifact_id": "report-stock-avd-adb",
-      "byte_size": 25997,
+      "byte_size": 26942,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -57,8 +57,8 @@
       "relative_path": "samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
       "role": "normalized_report",
       "schema_family": "report",
-      "schema_version": "5.0.0",
-      "sha256": "1ca351e2462d6f957fe74bc57a174dcdd6a0244d2369d23312d2ecddc89efb0e"
+      "schema_version": "6.0.0",
+      "sha256": "e1da01666c4051dd22e4e0a964f04fec479c74e1d4a6ece6887a72f66eedb6a1"
     },
     {
       "artifact_id": "raw-rooted-avd-adb",
@@ -78,7 +78,7 @@
     },
     {
       "artifact_id": "report-rooted-avd-adb",
-      "byte_size": 25941,
+      "byte_size": 26914,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -89,8 +89,8 @@
       "relative_path": "samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
       "role": "normalized_report",
       "schema_family": "report",
-      "schema_version": "5.0.0",
-      "sha256": "571d295237049a8bc867a912f16541867bd89e226af2748451c225a40dd82e07"
+      "schema_version": "6.0.0",
+      "sha256": "10045fe43fbd2320f39d1544676af34765262550a375b3d16c70738ed3837d5c"
     },
     {
       "artifact_id": "raw-rooted-avd-root",
@@ -110,7 +110,7 @@
     },
     {
       "artifact_id": "report-rooted-avd-root",
-      "byte_size": 25904,
+      "byte_size": 26897,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -121,8 +121,8 @@
       "relative_path": "samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
       "role": "normalized_report",
       "schema_family": "report",
-      "schema_version": "5.0.0",
-      "sha256": "422672698bafb5d20d5ef8a0b3796b12687e53e11f03b009011ba3488397515d"
+      "schema_version": "6.0.0",
+      "sha256": "7de2c274ab59c4490fd40ff7dd703af545efc2af0d4abe65b19d115f754aaff1"
     },
     {
       "artifact_id": "raw-writable-system-avd-adb",
@@ -142,7 +142,7 @@
     },
     {
       "artifact_id": "report-writable-system-avd-adb",
-      "byte_size": 26388,
+      "byte_size": 26867,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -153,12 +153,12 @@
       "relative_path": "samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
       "role": "normalized_report",
       "schema_family": "report",
-      "schema_version": "5.0.0",
-      "sha256": "0d1128633c111f18b5d2304a1d299f734130996d5729d84fd5c9fe56d25d89da"
+      "schema_version": "6.0.0",
+      "sha256": "d6b8b806f8265e016dd6548a98135eb3b677358cb416288489b0fe21a9ccdfc8"
     },
     {
       "artifact_id": "raw-magisk-collector-root",
-      "byte_size": 1751,
+      "byte_size": 1953,
       "media_type": "text/plain",
       "producer": {
         "kind": "author",
@@ -170,7 +170,7 @@
       "role": "raw_artifact",
       "schema_family": "trustlab_raw_text",
       "schema_version": "1.0.0",
-      "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb"
+      "sha256": "b974a58ea553607d0fe852005607934d877a864d7727732f89c4de75e3f33ade"
     },
     {
       "artifact_id": "collection-manifest-magisk-root",
@@ -186,11 +186,11 @@
       "role": "collection_manifest",
       "schema_family": "collection_manifest",
       "schema_version": "1.0.0",
-      "sha256": "f301332607005729259620046ca9f1dee394d7cdfe79bc43b6a91213d6628897"
+      "sha256": "2e7bf1fb2d84591658ece2466ff1b75b31d77f62931e62479fcb23f3403cd698"
     },
     {
       "artifact_id": "report-magisk-collector-root",
-      "byte_size": 26350,
+      "byte_size": 25756,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -201,12 +201,12 @@
       "relative_path": "samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
       "role": "normalized_report",
       "schema_family": "report",
-      "schema_version": "5.0.0",
-      "sha256": "ea963b7e51bc4abebdf3438a72b8594d3beb1366a10e0945809c0bd658d6695d"
+      "schema_version": "6.0.0",
+      "sha256": "fa03442ea1d59cd15038f752f010aeba68f258252f34794be4801504bf8b0659"
     },
     {
       "artifact_id": "diff-stock-adb-vs-rooted-adb",
-      "byte_size": 2907,
+      "byte_size": 3217,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -217,12 +217,12 @@
       "relative_path": "derived/diffs/stock_adb_vs_rooted_adb.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.2.0",
-      "sha256": "d089e424b6f86b549918b6835e2a3e39bb8bfc9443b1211cee3ecaffd9f2a937"
+      "schema_version": "2.3.0",
+      "sha256": "10dde1ef09fe01a1fc3dae4e60a26e8f18654a704265b882e7688a68d9ee9b2c"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-rooted-root",
-      "byte_size": 2803,
+      "byte_size": 4394,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -233,12 +233,12 @@
       "relative_path": "derived/diffs/rooted_adb_vs_rooted_root.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.2.0",
-      "sha256": "3858da62f3519b7495b456645cf1bb2f2ba439681d502e710ac71504cb8b3d04"
+      "schema_version": "2.3.0",
+      "sha256": "03adc63cbedc3ed49fe2f9086c7344278126032b9ab8170a39aaf05ba4a4d4bb"
     },
     {
       "artifact_id": "diff-stock-vs-writable-system",
-      "byte_size": 4194,
+      "byte_size": 4309,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -249,12 +249,12 @@
       "relative_path": "derived/diffs/stock_vs_writable_system.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.2.0",
-      "sha256": "a7d815f427fc50cfa375e3b44961a1d4aca76e7650658020b8bd522639cc0906"
+      "schema_version": "2.3.0",
+      "sha256": "04225e8efbf5148f5477aa5a8d52285827250759c15bdd72dc66b76e1df63d7b"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-magisk-root",
-      "byte_size": 7147,
+      "byte_size": 11992,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -265,8 +265,8 @@
       "relative_path": "derived/diffs/rooted_adb_vs_magisk_root_collector.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.2.0",
-      "sha256": "eddd8f6a700c5310dc979a01a0a2d4165cd2007767da1a9bb487956d7aa6e8ae"
+      "schema_version": "2.3.0",
+      "sha256": "620d32c27aea9022028308a89e7d965edea926c3d28026a062e3003497581d10"
     }
   ],
   "authorization": {

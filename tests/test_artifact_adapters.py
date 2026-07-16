@@ -538,8 +538,7 @@ def test_legacy_diagnostic_does_not_normalize_as_root_evidence(tmp_path):
         collection_timestamp="2026-07-16T10:00:00Z",
     )
     validate_report(report)
-    assert report["root_state"]["su_present"]["status"] == "not_collected"
-    assert report["root_state"]["root_paths"]["status"] == "not_collected"
+    assert report["root_state"]["su_binary_observed"]["status"] == "inaccessible"
     su_result = next(
         item
         for item in report["provenance"]["command_results"]
@@ -593,7 +592,7 @@ def test_portable_manifest_metadata_selects_observer_adapter():
     report = normalize_collection_manifest(COLLECTION_MANIFEST)
     adapter = report["extensions"]["org.androidtrustlab.adapter"]
     assert adapter["input_kind"] == "magisk_collection_manifest"
-    assert "portable collection manifest selected" in adapter["warnings"][0]
+    assert adapter["warnings"] == ["adapter warning 001 withheld"]
 
 
 def test_portable_text_manifest_rejects_json_payload_substitution():
@@ -619,9 +618,13 @@ def test_observer_metadata_does_not_manufacture_root_or_su_evidence():
     validate_report(report)
     assert report["observer"]["observer_type"] == "root_collector"
     assert report["root_state"]["root_shell_available"]["value"] is True
-    assert report["root_state"]["su_present"]["value"] is True
-    assert report["root_state"]["root_paths"]["status"] == "not_collected"
-    assert report["root_state"]["root_paths"]["value"] is None
+    assert report["root_state"]["su_binary_observed"] == {
+        "status": "observed_absent",
+        "value": False,
+        "reason": "the su binary observed condition was not observed",
+        "evidence_refs": ["captures/root_probe.txt"],
+    }
+    assert report["root_state"]["su_invocation_tested"]["value"] is False
     assert report["raw_artifacts"][0]["collector_version"] == "0.3.0"
     assert report["raw_artifacts"][0]["media_type"] == "application/json"
 
@@ -634,8 +637,8 @@ def test_app_manifest_normalizes_using_declared_observer_context():
         "privilege_level": "app_sandbox",
         "collection_method": "synthetic_app_fixture",
     }
-    assert report["root_state"]["su_present"]["status"] == "not_collected"
-    assert report["root_state"]["su_present"]["value"] is None
+    assert report["root_state"]["su_binary_observed"]["status"] == "not_collected"
+    assert report["root_state"]["su_binary_observed"]["value"] is None
     assert report["emulator_state"]["is_emulator"]["status"] == "not_collected"
     assert report["selinux"]["policy_mode"]["status"] == "inaccessible"
     assert report["provenance"]["command_results"][1]["status"] == "inaccessible"
@@ -648,7 +651,9 @@ def test_root_observer_metadata_without_identity_does_not_create_root_evidence(
         (FIXTURES / "magisk_manifest.json").read_text(encoding="utf-8")
     )
     document["captures"] = [
-        capture for capture in document["captures"] if capture["name"] != "identity"
+        capture
+        for capture in document["captures"]
+        if capture["name"] not in {"identity", "root_probe"}
     ]
     source = tmp_path / "root-observer-without-identity.json"
     source.write_text(json.dumps(document), encoding="utf-8")
@@ -657,7 +662,10 @@ def test_root_observer_metadata_without_identity_does_not_create_root_evidence(
     validate_report(report)
     assert report["observer"]["observer_type"] == "root_collector"
     assert report["root_state"]["root_shell_available"]["status"] == "not_collected"
-    assert report["root_state"]["uid"]["status"] == "not_collected"
+    assert (
+        report["root_state"]["observer_effective_uid_is_root"]["status"]
+        == "not_collected"
+    )
 
 
 def test_explicit_cli_artifact_kind_preserves_legacy_compatibility(tmp_path):
@@ -669,7 +677,7 @@ def test_explicit_cli_artifact_kind_preserves_legacy_compatibility(tmp_path):
     validate_report(report)
     adapter = report["extensions"]["org.androidtrustlab.adapter"]
     assert adapter["input_kind"] == "legacy_sectioned_text"
-    assert "inferred command status" in adapter["warnings"][0]
+    assert adapter["warnings"] == ["adapter warning 001 withheld"]
 
     output = tmp_path / "legacy-report.json"
     assert (

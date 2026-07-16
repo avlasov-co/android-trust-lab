@@ -21,9 +21,9 @@
       "value": "_a"
     }
   },
-  "collection_event_id": "atlevent-be63ab47d48e6042e8e0b29ae63ff718",
+  "collection_event_id": "atlevent-88badbff5fbeea1241eca697f9158baa",
   "collection_timestamp": "2026-04-25T15:50:00Z",
-  "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
+  "content_digest": "f768882639e055bd0776651084b9bf6ccd0873fb506c851a6ebfbd8abf0be83e",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -97,6 +97,11 @@
         {
           "name": "su_paths",
           "source_ref": "legacy-sections/SU_PATHS",
+          "status": "not_collected"
+        },
+        {
+          "name": "root_probe",
+          "source_ref": "legacy-sections/ROOT_PROBE",
           "status": "observed"
         },
         {
@@ -115,86 +120,45 @@
       "input_kind": "magisk_collection_manifest",
       "input_schema_version": "1.0.0",
       "warnings": [
-        "portable collection manifest selected the observer-specific adapter; legacy payload has inferred per-command status"
+        "adapter warning 001 withheld"
       ]
     },
     "org.androidtrustlab.collection": {
-      "canonical_manifest_sha256": "9d3568b285462f903e95d8d8dbafa5dfd6ff2103accb9cf29ccc1cedc3a0d8ec",
+      "canonical_manifest_sha256": "e96c7e956ae2549e952aea07afad767eadd80aa58da44bb9b462bd3bbc4ae323",
       "canonicalization": "atl-canonical-json-v1",
-      "manifest": {
-        "artifacts": [
+      "portable_binding": {
+        "artifact_results": [
           {
-            "byte_size": 1751,
+            "command_id": "artifact-001",
             "detail": null,
             "exit_code": 0,
-            "logical_name": "raw_report",
-            "media_type": "text/plain",
-            "probe_id": "magisk.readonly_snapshot",
-            "redaction_state": "redacted",
-            "relative_path": "raw_sample.txt",
-            "sensitivity": "sensitive",
-            "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
             "status": "observed",
             "timed_out": false
           },
           {
-            "byte_size": null,
+            "command_id": "artifact-002",
             "detail": null,
             "exit_code": null,
-            "logical_name": "command_results",
-            "media_type": "application/json",
-            "probe_id": "magisk.command_results",
-            "redaction_state": "withheld",
-            "relative_path": null,
-            "sensitivity": "internal",
-            "sha256": null,
             "status": "not_collected",
             "timed_out": false
           }
         ],
-        "collection_id": "atlcol-b7e7f4381ab857f2",
-        "collector": {
-          "name": "trustlab-magisk",
-          "version": "0.3.0-dev0"
-        },
+        "collection_errors": [
+          "collection manifest completion status: partial",
+          "probe 002: not_collected"
+        ],
+        "collection_id": "collection-redacted",
         "completion_status": "partial",
-        "ended_at": "2026-04-25T15:50:00Z",
-        "environment": {
-          "execution_context": "magisk_module",
-          "platform": "android",
-          "transport": "on_device"
-        },
-        "experiment_id": "E05_magisk_collector",
-        "observer": {
-          "collection_method": "magisk_module_manual",
-          "observer_type": "root_collector",
-          "privilege_level": "root"
-        },
-        "redaction_policy": {
-          "direct_identifiers_removed": true,
-          "policy_id": "atl_portable_v1",
-          "redaction_state": "applied",
-          "secrets_removed": true,
-          "serials_removed": true
-        },
-        "schema_version": "1.0.0",
-        "started_at": "2026-04-25T15:49:58Z",
-        "target": {
-          "pseudonymous_id": "target-a6c2b5ce9178d304",
-          "target_type": "avd"
-        },
-        "tool_versions": {
-          "android_shell": "toybox",
-          "trustlab_magisk": "0.3.0-dev0"
-        },
-        "warnings": []
+        "raw_artifact_sha256": "b974a58ea553607d0fe852005607934d877a864d7727732f89c4de75e3f33ade",
+        "raw_artifact_status": "observed",
+        "redaction_state": "redacted"
       }
     }
   },
   "limitations": {
     "collection_errors": [
       "collection manifest completion status: partial",
-      "probe magisk.command_results: not_collected"
+      "probe 002: not_collected"
     ],
     "emulator_target": true,
     "incomplete_permissions": false,
@@ -202,32 +166,73 @@
     "missing_tee_validation": true
   },
   "magisk_state": {
-    "magisk_binary_present": {
+    "binary_visibility": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
       "reason": null,
       "status": "observed",
       "value": true
     },
-    "magisk_path": {
+    "command_status": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
+      "reason": null,
+      "status": "observed"
+    },
+    "daemon_visibility": {
+      "evidence_refs": [
+        "legacy-sections/PS"
+      ],
       "reason": null,
       "status": "observed",
-      "value": "/sbin/magisk"
+      "value": true
     },
-    "magisk_version": {
-      "reason": null,
-      "status": "observed",
-      "value": "28.1"
-    },
+    "limitations": [
+      "process_visibility_scoped",
+      "zygisk_indicator_not_runtime_proof"
+    ],
     "module_context": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
       "reason": null,
       "status": "observed",
       "value": "androidtrustlab"
     },
-    "zygisk_visible_indicators": {
+    "process_visibility": {
+      "evidence_refs": [
+        "legacy-sections/PS"
+      ],
       "reason": null,
       "status": "observed",
-      "value": [
-        "zygisk_indicator=/data/adb/zygisk"
-      ]
+      "value": true
+    },
+    "source_observer": "root_collector",
+    "version_code": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": "28100"
+    },
+    "version_name": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": "28.1"
+    },
+    "zygisk_visibility": {
+      "evidence_refs": [
+        "legacy-sections/MAGISK"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": true
     }
   },
   "mounts": {
@@ -236,10 +241,9 @@
       "fs_type": "tmpfs",
       "mount_point": "/apex",
       "options": [
-        "ro",
-        "seclabel"
+        "ro"
       ],
-      "raw": "tmpfs on /apex type tmpfs (ro,seclabel)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -261,12 +265,11 @@
       "fs_type": "ext4",
       "mount_point": "/data",
       "options": [
-        "rw",
-        "seclabel",
+        "nodev",
         "nosuid",
-        "nodev"
+        "rw"
       ],
-      "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -280,12 +283,7 @@
         5
       ],
       "sources": [
-        "/dev/block/dm-1",
-        "/dev/block/dm-2",
-        "/dev/block/dm-3",
-        "/dev/block/dm-4",
-        "/dev/block/dm-5",
-        "/dev/block/dm-6"
+        "/dev/block/dm-redacted"
       ],
       "state": "detected"
     },
@@ -316,7 +314,7 @@
           "name": "mountinfo",
           "parse_status": "not_parsed",
           "record_count": 0,
-          "source_ref": "legacy-sections/MOUNTINFO",
+          "source_ref": "captures/mountinfo.txt",
           "warnings": []
         },
         {
@@ -326,7 +324,7 @@
           "name": "proc_mounts",
           "parse_status": "not_parsed",
           "record_count": 0,
-          "source_ref": "legacy-sections/PROC_MOUNTS",
+          "source_ref": "captures/proc_mounts.txt",
           "warnings": []
         },
         {
@@ -336,18 +334,12 @@
           "name": "mounts",
           "parse_status": "complete",
           "record_count": 7,
-          "source_ref": "legacy-sections/MOUNT",
+          "source_ref": "captures/mounts.txt",
           "warnings": []
         }
       ],
       "evidence_paths": [
-        "legacy-sections/MOUNT#L1",
-        "legacy-sections/MOUNT#L2",
-        "legacy-sections/MOUNT#L3",
-        "legacy-sections/MOUNT#L4",
-        "legacy-sections/MOUNT#L5",
-        "legacy-sections/MOUNT#L6",
-        "legacy-sections/MOUNT#L7"
+        "captures/mounts.txt"
       ],
       "parse_status": "complete",
       "scope": "observer_self",
@@ -360,11 +352,10 @@
       "fs_type": "ext4",
       "mount_point": "/odm",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
-      "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -373,11 +364,10 @@
       "fs_type": "ext4",
       "mount_point": "/product",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
-      "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -385,15 +375,14 @@
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L1",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel",
-          "relatime"
+          "relatime",
+          "ro"
         ],
         "mount_point": "/system",
         "optional_fields": [],
@@ -407,25 +396,24 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)",
+        "raw": "<withheld>",
         "record_index": 0,
         "root": null,
-        "source": "/dev/block/dm-1",
+        "source": "/dev/block/dm-redacted",
         "source_line": 1,
         "super_options": []
       },
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L2",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel",
-          "relatime"
+          "relatime",
+          "ro"
         ],
         "mount_point": "/vendor",
         "optional_fields": [],
@@ -439,25 +427,24 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)",
+        "raw": "<withheld>",
         "record_index": 1,
         "root": null,
-        "source": "/dev/block/dm-2",
+        "source": "/dev/block/dm-redacted",
         "source_line": 2,
         "super_options": []
       },
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L3",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel",
-          "relatime"
+          "relatime",
+          "ro"
         ],
         "mount_point": "/product",
         "optional_fields": [],
@@ -471,25 +458,24 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-3 on /product type ext4 (ro,seclabel,relatime)",
+        "raw": "<withheld>",
         "record_index": 2,
         "root": null,
-        "source": "/dev/block/dm-3",
+        "source": "/dev/block/dm-redacted",
         "source_line": 3,
         "super_options": []
       },
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L4",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel",
-          "relatime"
+          "relatime",
+          "ro"
         ],
         "mount_point": "/system_ext",
         "optional_fields": [],
@@ -503,25 +489,24 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)",
+        "raw": "<withheld>",
         "record_index": 3,
         "root": null,
-        "source": "/dev/block/dm-4",
+        "source": "/dev/block/dm-redacted",
         "source_line": 4,
         "super_options": []
       },
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L5",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel",
-          "relatime"
+          "relatime",
+          "ro"
         ],
         "mount_point": "/odm",
         "optional_fields": [],
@@ -535,26 +520,25 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-5 on /odm type ext4 (ro,seclabel,relatime)",
+        "raw": "<withheld>",
         "record_index": 4,
         "root": null,
-        "source": "/dev/block/dm-5",
+        "source": "/dev/block/dm-redacted",
         "source_line": 5,
         "super_options": []
       },
       {
         "access": "writable",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L6",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "ext4",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "rw",
-          "seclabel",
+          "nodev",
           "nosuid",
-          "nodev"
+          "rw"
         ],
         "mount_point": "/data",
         "optional_fields": [],
@@ -568,24 +552,23 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "/dev/block/dm-6 on /data type ext4 (rw,seclabel,nosuid,nodev)",
+        "raw": "<withheld>",
         "record_index": 5,
         "root": null,
-        "source": "/dev/block/dm-6",
+        "source": "/dev/block/dm-redacted",
         "source_line": 6,
         "super_options": []
       },
       {
         "access": "read_only",
         "bind_state": "unknown",
-        "evidence_path": "legacy-sections/MOUNT#L7",
+        "evidence_path": "captures/mounts.txt",
         "format": "mount",
         "fs_type": "tmpfs",
         "major_minor": null,
         "mount_id": null,
         "mount_options": [
-          "ro",
-          "seclabel"
+          "ro"
         ],
         "mount_point": "/apex",
         "optional_fields": [],
@@ -599,7 +582,7 @@
           "shared_id": null,
           "unbindable": false
         },
-        "raw": "tmpfs on /apex type tmpfs (ro,seclabel)",
+        "raw": "<withheld>",
         "record_index": 6,
         "root": null,
         "source": "tmpfs",
@@ -612,11 +595,10 @@
       "fs_type": "ext4",
       "mount_point": "/system_ext",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
-      "raw": "/dev/block/dm-4 on /system_ext type ext4 (ro,seclabel,relatime)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -625,11 +607,10 @@
       "fs_type": "ext4",
       "mount_point": "/system",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
-      "raw": "/dev/block/dm-1 on /system type ext4 (ro,seclabel,relatime)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     },
@@ -646,11 +627,10 @@
       "fs_type": "ext4",
       "mount_point": "/vendor",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
-      "raw": "/dev/block/dm-2 on /vendor type ext4 (ro,seclabel,relatime)",
+      "raw": "<withheld>",
       "reason": null,
       "status": "observed"
     }
@@ -804,7 +784,7 @@
       "reason": null,
       "status": "observed",
       "value": {
-        "ro.build.fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys",
+        "ro.build.fingerprint": "redacted-build-fingerprint",
         "ro.build.version.release": "14",
         "ro.build.version.sdk": "34"
       }
@@ -818,9 +798,9 @@
       "reason": null,
       "status": "observed",
       "value": {
-        "ro.product.device": "generic_x86_64",
-        "ro.product.manufacturer": "Google",
-        "ro.product.model": "sdk_gphone64_x86_64"
+        "ro.product.device": "redacted-device-codename",
+        "ro.product.manufacturer": "redacted-manufacturer",
+        "ro.product.model": "redacted-model"
       }
     },
     "security": {
@@ -837,14 +817,14 @@
   "provenance": {
     "command_results": [
       {
-        "command_id": "magisk.readonly_snapshot",
+        "command_id": "artifact-001",
         "detail": null,
         "exit_code": 0,
         "status": "observed",
         "timed_out": false
       },
       {
-        "command_id": "magisk.command_results",
+        "command_id": "artifact-002",
         "detail": null,
         "exit_code": null,
         "status": "not_collected",
@@ -864,49 +844,70 @@
   },
   "raw_artifacts": [
     {
-      "byte_size": 1751,
-      "collection_id": "atlcol-b7e7f4381ab857f2",
+      "byte_size": 1953,
+      "collection_id": "collection-redacted",
       "collector_name": "trustlab-magisk",
       "collector_version": "0.3.0-dev0",
-      "logical_id": "raw_report",
+      "logical_id": "raw-artifact-001",
       "media_type": "text/plain",
       "redaction_state": "redacted",
-      "relative_path": "raw_sample.txt",
-      "sha256": "02df701dbfbae2cd50bb960a25e28689bf7ada3ad43b6655e14124cf84e2b9cb",
+      "relative_path": "artifacts/raw-artifact-001.txt",
+      "sha256": "b974a58ea553607d0fe852005607934d877a864d7727732f89c4de75e3f33ade",
       "status": "observed"
     }
   ],
-  "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
+  "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
   "root_state": {
-    "gid": {
+    "limitations": [],
+    "observer_effective_uid_is_root": {
+      "evidence_refs": [
+        "legacy-sections/ROOT_PROBE"
+      ],
       "reason": null,
       "status": "observed",
-      "value": "0"
+      "value": true
     },
-    "root_paths": {
+    "root_management_artifact_observed": {
+      "evidence_refs": [
+        "legacy-sections/ROOT_PROBE"
+      ],
       "reason": null,
       "status": "observed",
-      "value": [
-        "/sbin/su"
-      ]
+      "value": true
     },
     "root_shell_available": {
+      "evidence_refs": [
+        "legacy-sections/ROOT_PROBE"
+      ],
       "reason": null,
       "status": "observed",
       "value": true
     },
-    "su_present": {
+    "source_observer": "root_collector",
+    "su_binary_observed": {
+      "evidence_refs": [
+        "legacy-sections/ROOT_PROBE"
+      ],
       "reason": null,
       "status": "observed",
       "value": true
     },
-    "uid": {
-      "reason": null,
-      "status": "observed",
-      "value": "0"
+    "su_invocation_result": {
+      "evidence_refs": [],
+      "reason": "the su invocation result evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "su_invocation_tested": {
+      "evidence_refs": [
+        "legacy-sections/ROOT_PROBE"
+      ],
+      "reason": "the su invocation tested condition was not observed",
+      "status": "observed_absent",
+      "value": false
     }
   },
-  "schema_version": "5.0.0",
+  "schema_version": "6.0.0",
   "selinux": {
     "current_context": {
       "evidence_refs": [],
@@ -943,22 +944,22 @@
     "build_fingerprint": {
       "reason": null,
       "status": "observed",
-      "value": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys"
+      "value": "redacted-build-fingerprint"
     },
     "device_codename": {
       "reason": null,
       "status": "observed",
-      "value": "generic_x86_64"
+      "value": "redacted-device-codename"
     },
     "manufacturer": {
       "reason": null,
       "status": "observed",
-      "value": "Google"
+      "value": "redacted-manufacturer"
     },
     "model": {
       "reason": null,
       "status": "observed",
-      "value": "sdk_gphone64_x86_64"
+      "value": "redacted-model"
     },
     "sdk": {
       "reason": null,
@@ -968,7 +969,22 @@
     "target_type": "avd"
   },
   "verified_boot": {
-    "confidence": "low",
+    "confidence": {
+      "command_success": "complete",
+      "corroborating_signal_count": 4,
+      "evidence_refs": [
+        "legacy-sections/BOOT_STATE",
+        "legacy-sections/GETPROP"
+      ],
+      "level": "low",
+      "observer_capability": "root",
+      "source_quality": "legacy_inferred",
+      "target_limitations": [
+        "hardware_attestation_not_collected",
+        "legacy_capture_status_inferred",
+        "virtual_target_not_hardware_backed"
+      ]
+    },
     "flash_locked": {
       "reason": null,
       "status": "observed",

@@ -1,18 +1,18 @@
 {
   "normalize": {
-    "report_id": "atlrep-3bce42654d3fb4cff0787a4f1e9fba74",
+    "report_id": "atlrep-76d9dacb2d6c40a92e039320d4533c10",
     "collection_event_id": "atlevent-7b188e7fcb6a15f6ef6153f5553179a3",
-    "content_digest": "7c74a0101b258722e9a355d393e7fae6668ae962b7b3d9e37a3b46138d6f5535",
+    "content_digest": "ed29e4608144b53a7dbdf6cbe01b13385e4013a91d167423998e1d3c677318fa",
     "collection_timestamp": "2026-01-02T03:04:05Z",
     "experiment_id": "E10_golden",
     "target": {
       "target_type": "avd",
-      "device_codename": "generic_x86_64",
-      "manufacturer": "Google",
-      "model": "sdk_gphone64_x86_64",
+      "device_codename": "redacted-device-codename",
+      "manufacturer": "redacted-manufacturer",
+      "model": "redacted-model",
       "android_version": "14",
       "sdk": "34",
-      "build_fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys"
+      "build_fingerprint": "redacted-build-fingerprint"
     },
     "observer": {
       "observer_type": "adb_shell",
@@ -24,23 +24,21 @@
       "mount_point": "/system",
       "fs_type": "ext4",
       "options": [
-        "ro",
-        "seclabel",
-        "relatime"
+        "relatime",
+        "ro"
       ],
       "classification": "read-only"
     },
     "root_state": {
-      "su_present": false,
-      "uid": "2000",
-      "gid": "2000",
-      "root_shell_available": false,
-      "root_paths": []
+      "observer_uid_is_root": false,
+      "root_shell_available": null,
+      "su_binary_observed": false,
+      "su_invocation_tested": null
     },
     "raw_artifacts": [
       {
-        "logical_id": "raw-ea2417e7662b689924ccb6cd21d55e39",
-        "relative_path": "tests/golden/raw_observation.txt",
+        "logical_id": "raw-artifact-001",
+        "relative_path": "artifacts/raw-artifact-001.txt",
         "sha256": "ea2417e7662b689924ccb6cd21d55e394cf405d7d5905858ec920a07c87a74c6",
         "byte_size": 1316,
         "media_type": "text/plain",
@@ -53,16 +51,16 @@
     ]
   },
   "diff": {
-    "diff_id": "atldiff-1916abf03f70aa2f417d76066a743d3c",
-    "summary": "1 dimensions changed, 16 dimensions unchanged.",
+    "diff_id": "atldiff-47c94b928474d0a5798e233d019932d7",
+    "summary": "1 dimensions changed, 28 dimensions unchanged.",
     "changed_dimensions": [
       {
-        "dimension": "root_presence",
+        "dimension": "su_binary_visibility",
         "before": false,
         "after": true,
         "severity": "medium",
         "evidence_paths": [
-          "root_state.su_present"
+          "root_state.su_binary_observed"
         ]
       }
     ]

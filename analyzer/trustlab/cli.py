@@ -24,6 +24,7 @@ from .exceptions import (
 from .migrations import migrate_report_to_current
 from .normalizer import normalize_collection_manifest_with_inputs, normalize_raw_file
 from .observers import OBSERVER_REGISTRY
+from .privacy import validate_portable_report
 from .report_writer import diff_to_markdown, load_json, report_to_markdown, write_json
 from .validators import validate_collection_manifest, validate_diff, validate_report
 
@@ -107,6 +108,8 @@ def cmd_normalize(args: argparse.Namespace) -> int:
         input_paths = [args.input]
     if args.validate:
         validate_report(report)
+    else:
+        validate_portable_report(report)
     _require_distinct_output(args.output, *input_paths)
     write_json(report, args.output)
     return 0

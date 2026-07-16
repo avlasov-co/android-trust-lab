@@ -22,11 +22,20 @@
       "source_ref": "captures/id.txt"
     },
     {
+      "name": "root_probe",
+      "status": "observed",
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout": "observer_effective_uid_is_root=observed\nroot_shell_available=observed\nsu_binary_observed=observed_absent\nsu_invocation_tested=observed_absent\nsu_invocation_result=not_tested\nroot_management_artifact_observed=observed",
+      "stderr": "",
+      "source_ref": "captures/root-probe-sensitive-name.txt"
+    },
+    {
       "name": "magisk",
       "status": "observed",
       "exit_code": 0,
       "timed_out": false,
-      "stdout": "magisk_version=synthetic-28.1\nmodule_context=androidtrustlab",
+      "stdout": "magisk_binary_visibility=observed\nmagisk_version_name=synthetic-28.1\nmagisk_version_code=28100\nmodule_context=androidtrustlab\nzygisk_visibility=observed_absent",
       "stderr": "",
       "source_ref": "captures/magisk.txt"
     }

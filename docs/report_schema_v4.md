@@ -1,7 +1,7 @@
 # Report Schema v4
 
 Report schema `4.0.0` is a frozen readable contract. Its canonical packaged
-resource is `trust_report_v4_0_0.schema.json`; report `5.0.0` is the sole current
+resource is `trust_report_v4_0_0.schema.json`; report `6.0.0` is the sole current
 writer. V4 remains the authority for the structured mount model retained by v5.
 
 V4 is a major change because structured mount topology, source attempts, and
@@ -69,7 +69,7 @@ from a writable path without target and observer context.
 The report chain is:
 
 ```text
-1.0.0 -> 2.0.0 -> 3.0.0 -> 4.0.0 -> 5.0.0
+1.0.0 -> 2.0.0 -> 3.0.0 -> 4.0.0 -> 5.0.0 -> 6.0.0
 ```
 
 `report-v3-to-v4` is pure and deterministic. It preserves the exact canonical v3
@@ -82,6 +82,6 @@ The v4 mount model is part of the existing report evidence projection, so any
 record, source status, resolution, or APEX-set change changes `content_digest`.
 Report v3 identity framing remains unchanged for historical validation.
 
-Diff schema `2.1.0` is frozen and readable. Current diff `2.2.0` migrates
+Diff schemas `2.1.0` and `2.2.0` are frozen and readable. Current diff `2.3.0` migrates
 readable report inputs to v5, binds both common v5 identities, and records every
 applied report migration. See [Report Schema v5](report_schema_v5.md).

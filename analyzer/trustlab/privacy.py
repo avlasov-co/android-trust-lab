@@ -1,0 +1,1772 @@
+"""Fail-closed privacy helpers for portable normalized evidence."""
+
+from __future__ import annotations
+
+import ipaddress
+import json
+import re
+from copy import deepcopy
+from typing import Any
+
+from .exceptions import SchemaValidationError
+
+_SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:+/@-]{1,255}$", flags=re.ASCII)
+_SAFE_ANDROID_PATHS = frozenset(
+    {"/", "/system", "/vendor", "/product", "/system_ext", "/odm", "/data", "/apex"}
+)
+_SAFE_MOUNT_OPTIONS = frozenset(
+    {
+        "async",
+        "atime",
+        "bind",
+        "dev",
+        "dirsync",
+        "exec",
+        "lazytime",
+        "noatime",
+        "nodev",
+        "nodiratime",
+        "noexec",
+        "nolazytime",
+        "norelatime",
+        "nosuid",
+        "relatime",
+        "remount",
+        "ro",
+        "rw",
+        "strictatime",
+        "suid",
+        "sync",
+        "unbindable",
+    }
+)
+_SAFE_FILESYSTEM_TYPES = frozenset(
+    {
+        "apex",
+        "bpf",
+        "cgroup",
+        "cgroup2",
+        "configfs",
+        "debugfs",
+        "devpts",
+        "devtmpfs",
+        "erofs",
+        "ext4",
+        "f2fs",
+        "functionfs",
+        "fuse",
+        "none",
+        "overlay",
+        "proc",
+        "pstore",
+        "ramfs",
+        "rootfs",
+        "securityfs",
+        "selinuxfs",
+        "squashfs",
+        "sysfs",
+        "tmpfs",
+        "tracefs",
+        "unknown",
+        "vfat",
+        "virtiofs",
+    }
+)
+_IDENTITY_CATEGORIES = frozenset(
+    {"build-fingerprint", "device-codename", "manufacturer", "model"}
+)
+_PORTABLE_VERSION_RE = re.compile(
+    r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    r"(?:(?:-|\.)(?:alpha|beta|canary|dev|rc)[0-9]+)?$",
+    flags=re.ASCII,
+)
+_MAGISK_VERSION_NAME_RE = re.compile(
+    r"^(?:synthetic-)?v?[0-9]{1,4}(?:\.[0-9]{1,4}){0,3}"
+    r"(?:-(?:alpha|beta|canary|debug|release|rc)[0-9]*)?$",
+    flags=re.ASCII,
+)
+_PORTABLE_EXPERIMENT_IDS = frozenset(
+    {
+        "E01_stock_avd",
+        "E02_rooted_avd",
+        "E03_writable_system_avd",
+        "E05_magisk_collector",
+        "E10_adversarial",
+        "E10_golden",
+        "E10_identity",
+        "E16_adapter_contract",
+        "E17_parser_limits",
+        "E18_modern_mounts",
+        "E18_nested_mount",
+        "E18_overlay_context",
+        "E18_partial_generic_mount",
+        "E18_partial_mounts",
+        "E19_structured_security",
+        "E99_manual",
+        "E99_physical_device_template",
+    }
+)
+_PORTABLE_COLLECTION_METHODS = frozenset(
+    {
+        "adb_shell_snapshot",
+        "adb_snapshot",
+        "app_snapshot",
+        "fixture_snapshot",
+        "golden_fixture",
+        "host_snapshot",
+        "identity_fixture",
+        "legacy_migration",
+        "magisk_module_manual",
+        "manual_capture",
+        "manual_fixture",
+        "raw_artifact",
+        "report_v2_migration",
+        "synthetic_adb_fixture",
+        "synthetic_app_fixture",
+        "synthetic_confidence_probe",
+        "synthetic_host_fixture",
+        "synthetic_magisk_fixture",
+        "synthetic_root_collector_snapshot",
+        "synthetic_rooted_adb_snapshot",
+        "synthetic_security_fixture",
+        "synthetic_writable_system_snapshot",
+        "test_fixture",
+    }
+)
+
+_SENSITIVE_PATTERNS = (
+    re.compile(
+        r"(?i)(?:^|[^A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:$|[^A-Za-z0-9.-])"
+    ),
+    re.compile(r"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])"),
+    re.compile(r"(?i)(?<![0-9a-f])(?:[0-9a-f]{2}:){5}[0-9a-f]{2}(?![0-9a-f])"),
+    re.compile(r"(?i)(?<![0-9a-f])(?:[0-9a-f]{2}-){5}[0-9a-f]{2}(?![0-9a-f])"),
+    re.compile(
+        r"(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?![0-9a-f])"
+    ),
+    re.compile(r"(?i)(?:emulator-[0-9]{4,}|transport[_ -]?id\s*[:=]\s*[0-9]+)"),
+    re.compile(
+        r"(?i)(?:serial(?:no|number)?|device[_-]?id|boot[_-]?id)\s*[:=]\s*[^\s,;]+"
+    ),
+    re.compile(
+        r"(?i)(?:password|passwd|token|secret|api[_-]?key|authorization)\s*[:=]\s*[^\s,;]+"
+    ),
+    re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+"),
+    re.compile(r"(?i)androidboot\.(?:serialno|deviceid|bootdevice)=[^\s]+"),
+    re.compile(r"(?:^|[\s=])/(?:Users|home)/[^/\s]+/"),
+    re.compile(r"(?i)(?:^|[\s=])[A-Z]:\\Users\\[^\\\s]+\\"),
+    re.compile(r"(?i)(?:^|[^A-Za-z0-9])R[0-9A-Z]{10,}(?:$|[^A-Za-z0-9])"),
+    re.compile(r"(?i)(?:gh[pousr]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,})"),
+    re.compile(r"(?i)(?:PRIVATE_?KEY|PRIVATEVALUE|BEGIN [A-Z ]+ PRIVATE KEY)"),
+    re.compile(
+        r"(?i)/(?:data/(?:local|user|media|misc|adb)|sdcard|storage|mnt)/(?:[^\s\"',}\]]+)"
+    ),
+)
+
+
+def contains_sensitive_identifier(value: str) -> bool:
+    """Return whether text contains a recognized portable-output hazard."""
+
+    if any(pattern.search(value) is not None for pattern in _SENSITIVE_PATTERNS):
+        return True
+    for token in re.findall(r"(?i)(?<![0-9a-f:])[0-9a-f:]{2,}(?![0-9a-f:])", value):
+        if ":" not in token:
+            continue
+        try:
+            if ipaddress.ip_address(token).version == 6:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
+def deterministic_pseudonym(value: str, *, category: str, scope: str) -> str:
+    """Create a deterministic non-linkable category pseudonym.
+
+    The source and scope are deliberately not encoded into portable output, so
+    low-entropy candidates cannot be confirmed offline.
+    """
+
+    del value, scope
+    safe_category = re.sub(r"[^a-z0-9]+", "-", category.lower()).strip("-")
+    return f"redacted-{safe_category or 'value'}"
+
+
+def semantic_capture_ref(name: str) -> str:
+    """Map an untrusted capture filename to its fixed semantic reference."""
+
+    safe_name = re.sub(r"[^a-z0-9_]+", "_", name.lower()).strip("_")
+    return f"captures/{safe_name or 'unknown'}.txt"
+
+
+def sanitize_collection_id(value: str, *, scope: str) -> str:
+    """Keep derived opaque IDs and remap caller-controlled collection labels."""
+
+    if re.fullmatch(r"atlcol-[a-f0-9]{32}", value):
+        return value
+    del value, scope
+    return "collection-redacted"
+
+
+def sanitize_metadata_value(value: str, *, category: str, scope: str) -> str:
+    """Retain bounded metadata tokens and pseudonymize unsafe values."""
+
+    if value == "unknown":
+        return value
+    if category in _IDENTITY_CATEGORIES:
+        return deterministic_pseudonym(value, category=category, scope=scope)
+    if category == "module-context" and value != "androidtrustlab":
+        return deterministic_pseudonym(value, category=category, scope=scope)
+    if category == "magisk-version-name" and not (
+        _MAGISK_VERSION_NAME_RE.fullmatch(value)
+        and not contains_sensitive_identifier(value)
+    ):
+        return deterministic_pseudonym(value, category=category, scope=scope)
+    if (
+        not _SAFE_TOKEN_RE.fullmatch(value)
+        or contains_sensitive_identifier(value)
+        or value.startswith(("/", "~"))
+        or ".." in value
+    ):
+        return deterministic_pseudonym(value, category=category, scope=scope)
+    return value
+
+
+_PROPERTY_VALUE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "ro.boot.flash.locked": re.compile(r"^[01]$"),
+    "ro.boot.vbmeta.device_state": re.compile(r"^(?:locked|unlocked)$"),
+    "ro.boot.verifiedbootstate": re.compile(r"^(?:green|yellow|orange|red)$"),
+    "ro.boot.veritymode": re.compile(r"^(?:enforcing|eio|logging|disabled)$"),
+    "ro.build.version.release": re.compile(r"^[0-9]{1,3}(?:\.[0-9]{1,3}){0,3}$"),
+    "ro.build.version.sdk": re.compile(r"^[0-9]{1,3}$"),
+    "ro.crypto.state": re.compile(r"^(?:encrypted|unencrypted|unsupported)$"),
+    "ro.crypto.type": re.compile(r"^(?:block|file|none)$"),
+    "ro.crypto.volume.filenames_mode": re.compile(
+        r"^(?:aes-256-cts|aes-256-heh|adiantum|ice|unknown)$"
+    ),
+    "ro.debuggable": re.compile(r"^[01]$"),
+    "ro.secure": re.compile(r"^[01]$"),
+    "ro.adb.secure": re.compile(r"^[01]$"),
+    "sys.boot_completed": re.compile(r"^[01]$"),
+    "ro.boot.slot_suffix": re.compile(r"^_[ab]$"),
+}
+_PROPERTY_IDENTITY_CATEGORIES = {
+    "ro.build.fingerprint": "build-fingerprint",
+    "ro.product.device": "device-codename",
+    "ro.product.manufacturer": "manufacturer",
+    "ro.product.model": "model",
+}
+
+
+def sanitize_property_value(key: str, value: str, *, scope: str) -> str:
+    """Apply exact security-property grammars and sanitize identity metadata."""
+
+    if value == "unknown":
+        return value
+    identity_category = _PROPERTY_IDENTITY_CATEGORIES.get(key)
+    if identity_category is not None:
+        return deterministic_pseudonym(value, category=identity_category, scope=scope)
+    pattern = _PROPERTY_VALUE_PATTERNS.get(key)
+    if pattern is not None:
+        return (
+            value
+            if pattern.fullmatch(value) and not contains_sensitive_identifier(value)
+            else deterministic_pseudonym(value, category="property", scope=scope)
+        )
+    return sanitize_metadata_value(value, category="property", scope=scope)
+
+
+def sanitize_boot_reason(value: str, *, scope: str) -> str:
+    """Retain controlled boot-reason tokens; pseudonymize everything else."""
+
+    if value == "unknown":
+        return value
+    if value in {
+        "bootloader",
+        "cold",
+        "hard",
+        "kernel_panic",
+        "normal",
+        "reboot",
+        "recovery",
+        "shutdown",
+        "userrequested",
+        "warm",
+        "watchdog",
+    }:
+        return value
+    return deterministic_pseudonym(value, category="boot-reason", scope=scope)
+
+
+def _portable_mount_path(value: object, *, scope: str) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if value in _SAFE_ANDROID_PATHS:
+        return value
+    if re.fullmatch(r"/apex/[A-Za-z0-9._+-]{1,160}(?:@[A-Za-z0-9._+-]+)?", value):
+        return "/apex/redacted-package"
+    return "/redacted/path"
+
+
+def _portable_mount_source(value: object, *, scope: str) -> str:
+    text = value if isinstance(value, str) else "unknown"
+    if text in {"overlay", "tmpfs", "none", "rootfs"}:
+        return text
+    if text.startswith("/dev/block/mapper/"):
+        return "/dev/block/mapper/redacted"
+    if re.fullmatch(r"/dev/block/dm-[0-9]+", text):
+        return "/dev/block/dm-redacted"
+    return deterministic_pseudonym(text, category="mount-source", scope=scope)
+
+
+def _portable_fs_type(value: object) -> str:
+    text = value if isinstance(value, str) else "unknown"
+    return text if text in _SAFE_FILESYSTEM_TYPES else "redacted-fs-type"
+
+
+def _portable_options(values: object) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    names = {
+        item.split("=", 1)[0]
+        for item in values
+        if isinstance(item, str) and item.split("=", 1)[0] in _SAFE_MOUNT_OPTIONS
+    }
+    return sorted(names)
+
+
+def sanitize_mount_model(mounts: dict[str, Any], *, scope: str) -> dict[str, Any]:
+    """Withhold raw mount rows, paths, sources, and option values."""
+
+    result = deepcopy(mounts)
+    apex_labels = sorted(
+        {
+            str(record.get("mount_point"))
+            .removeprefix("/apex/")
+            .split("/", 1)[0]
+            .split("@", 1)[0]
+            for record in result.get("records", [])
+            if isinstance(record, dict)
+            and str(record.get("mount_point", "")).startswith("/apex/")
+        }
+    )
+    apex_pseudonyms = {
+        label: f"redacted-apex-package-{index:03d}"
+        for index, label in enumerate(apex_labels, start=1)
+    }
+    for name in (
+        "system_mount",
+        "vendor_mount",
+        "product_mount",
+        "system_ext_mount",
+        "odm_mount",
+        "data_mount",
+        "apex_mount",
+    ):
+        summary = result.get(name)
+        if not isinstance(summary, dict):
+            continue
+        summary["mount_point"] = (
+            _portable_mount_path(summary.get("mount_point"), scope=scope)
+            or "/redacted/path"
+        )
+        summary["options"] = _portable_options(summary.get("options"))
+        summary["fs_type"] = _portable_fs_type(summary.get("fs_type"))
+        summary["raw"] = "<withheld>"
+    for record in result.get("records", []):
+        record["root"] = _portable_mount_path(record.get("root"), scope=scope)
+        mount_point = record.get("mount_point")
+        if isinstance(mount_point, str) and mount_point.startswith("/apex/"):
+            label = mount_point.removeprefix("/apex/").split("/", 1)[0].split("@", 1)[0]
+            record["mount_point"] = f"/apex/{apex_pseudonyms[label]}"
+        else:
+            record["mount_point"] = (
+                _portable_mount_path(mount_point, scope=scope) or "/redacted/path"
+            )
+        record["mount_options"] = _portable_options(record.get("mount_options"))
+        record["optional_fields"] = []
+        record["source"] = _portable_mount_source(record.get("source"), scope=scope)
+        record["fs_type"] = _portable_fs_type(record.get("fs_type"))
+        record["super_options"] = _portable_options(record.get("super_options"))
+        record["raw"] = "<withheld>"
+        selected = result.get("observation", {}).get("selected_source")
+        record["evidence_path"] = semantic_capture_ref(
+            selected if isinstance(selected, str) else "mounts"
+        )
+    observation = result.get("observation", {})
+    selected = observation.get("selected_source")
+    evidence_ref = semantic_capture_ref(
+        selected if isinstance(selected, str) else "mounts"
+    )
+    observation["evidence_paths"] = [evidence_ref] if result.get("records") else []
+    for attempt in observation.get("attempts", []):
+        attempt["source_ref"] = semantic_capture_ref(str(attempt.get("name", "mounts")))
+    dynamic = result.get("dynamic_partitions", {})
+    indices = set(dynamic.get("record_indices", []))
+    dynamic["sources"] = sorted(
+        {
+            record["source"]
+            for record in result.get("records", [])
+            if record.get("record_index") in indices
+        }
+    )
+    apex = result.get("apex_set", {})
+    apex["packages"] = sorted(apex_pseudonyms.values())
+    apex["package_count"] = len(apex["packages"])
+    return result
+
+
+def sanitize_raw_artifact_references(
+    artifacts: list[dict[str, Any]], *, scope: str
+) -> list[dict[str, Any]]:
+    """Replace caller-controlled provenance labels with semantic identifiers."""
+
+    result = deepcopy(artifacts)
+    for index, artifact in enumerate(result, start=1):
+        logical_id = f"raw-artifact-{index:03d}"
+        artifact["logical_id"] = logical_id
+        suffix = ".json" if artifact.get("media_type") == "application/json" else ".txt"
+        artifact["relative_path"] = f"artifacts/{logical_id}{suffix}"
+        collector = str(artifact.get("collector_name", "unknown"))
+        artifact["collector_name"] = (
+            collector
+            if collector in {"unknown", "trustlab", "trustlab-magisk", "adb"}
+            else "redacted-collector"
+        )
+        version = str(artifact.get("collector_version", "unknown"))
+        if not (
+            version in {"legacy", "unknown"} or _PORTABLE_VERSION_RE.fullmatch(version)
+        ):
+            artifact["collector_version"] = "unknown"
+    return result
+
+
+def sanitize_experiment_id(value: str, *, scope: str) -> str:
+    if value == "unknown" or value in _PORTABLE_EXPERIMENT_IDS:
+        return value
+    return deterministic_pseudonym(value, category="experiment", scope=scope)
+
+
+def sanitize_collection_method(value: str, *, scope: str) -> str:
+    if value in _PORTABLE_COLLECTION_METHODS:
+        return value
+    return deterministic_pseudonym(value, category="collection-method", scope=scope)
+
+
+def _iter_strings(value: object, path: str = "$") -> list[tuple[str, str]]:
+    found: list[tuple[str, str]] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            found.append((f"{path}.<key>", str(key)))
+            found.extend(_iter_strings(item, f"{path}.{key}"))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            found.extend(_iter_strings(item, f"{path}[{index}]"))
+    elif isinstance(value, str):
+        found.append((path, value))
+    return found
+
+
+def _reject_sensitive_strings(value: object, *, artifact: str) -> None:
+    for path, text in _iter_strings(value):
+        if contains_sensitive_identifier(text):
+            raise SchemaValidationError(
+                f"{artifact} portable privacy validation failed at {path}"
+            )
+
+
+def _evidence_value(value: object) -> object:
+    if isinstance(value, dict) and "value" in value:
+        return value["value"]
+    return value
+
+
+_SYNTHETIC_IDENTITIES = {
+    "device_codename": {"generic_x86_64"},
+    "manufacturer": {"Google"},
+    "model": {"sdk_gphone64_x86_64"},
+    "build_fingerprint": {"google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys"},
+}
+
+
+def _validate_identity_fields(report: dict[str, Any]) -> None:
+    target = report.get("target")
+    if not isinstance(target, dict):
+        return
+    for field, category in (
+        ("device_codename", "device-codename"),
+        ("manufacturer", "manufacturer"),
+        ("model", "model"),
+        ("build_fingerprint", "build-fingerprint"),
+    ):
+        value = _evidence_value(target.get(field))
+        if value is None:
+            continue
+        allowed = {"unknown", f"redacted-{category}", *_SYNTHETIC_IDENTITIES[field]}
+        if value not in allowed:
+            raise SchemaValidationError(
+                f"report portable identity field {field} is not redacted"
+            )
+
+
+def _property_maps(report: dict[str, Any]) -> list[dict[str, Any]]:
+    properties = report.get("properties")
+    if not isinstance(properties, dict):
+        return []
+    maps: list[dict[str, Any]] = []
+    for group in ("boot", "build", "product", "crypto", "security"):
+        current = _evidence_value(properties.get(group))
+        if isinstance(current, dict):
+            maps.append(current)
+    raw = report.get("verified_boot")
+    if isinstance(raw, dict):
+        current = _evidence_value(raw.get("raw_properties"))
+        if isinstance(current, dict):
+            maps.append(current)
+    return maps
+
+
+def _validate_property_fields(report: dict[str, Any]) -> None:
+    for values in _property_maps(report):
+        for key, value in values.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                continue
+            identity_category = _PROPERTY_IDENTITY_CATEGORIES.get(key)
+            if identity_category is not None:
+                field = {
+                    "build-fingerprint": "build_fingerprint",
+                    "device-codename": "device_codename",
+                    "manufacturer": "manufacturer",
+                    "model": "model",
+                }[identity_category]
+                if value not in {
+                    f"redacted-{identity_category}",
+                    *_SYNTHETIC_IDENTITIES[field],
+                }:
+                    raise SchemaValidationError(
+                        f"report portable property {key} is not redacted"
+                    )
+                continue
+            pattern = _PROPERTY_VALUE_PATTERNS.get(key)
+            if pattern is None:
+                raise SchemaValidationError(
+                    f"report portable property {key} is not allowlisted"
+                )
+            if pattern is not None and not (
+                pattern.fullmatch(value) or value in {"redacted-property", "unknown"}
+            ):
+                raise SchemaValidationError(
+                    f"report portable property {key} has an unsafe value"
+                )
+
+
+def _validate_direct_v6_mounts(report: dict[str, Any]) -> None:
+    mounts = report.get("mounts")
+    if not isinstance(mounts, dict):
+        return
+    summaries = [
+        mounts.get(name)
+        for name in (
+            "system_mount",
+            "vendor_mount",
+            "product_mount",
+            "system_ext_mount",
+            "odm_mount",
+            "data_mount",
+            "apex_mount",
+        )
+    ]
+    records = mounts.get("records", [])
+    for item in [*summaries, *(records if isinstance(records, list) else [])]:
+        if not isinstance(item, dict):
+            continue
+        is_record = "record_index" in item
+        unavailable = item.get("status") not in {"observed", "observed_absent"}
+        if (is_record and item.get("raw") != "<withheld>") or (
+            not is_record
+            and (
+                (unavailable and item.get("raw") is not None)
+                or (not unavailable and item.get("raw") != "<withheld>")
+            )
+        ):
+            raise SchemaValidationError(
+                "direct report portable mount raw evidence must be withheld"
+            )
+        if item.get("fs_type") is not None and item.get(
+            "fs_type"
+        ) not in _SAFE_FILESYSTEM_TYPES | {"redacted-fs-type"}:
+            raise SchemaValidationError(
+                "direct report portable mount filesystem type is unsafe"
+            )
+        for key in ("mount_point", "root"):
+            path = item.get(key)
+            if path is None:
+                continue
+            if (
+                path not in _SAFE_ANDROID_PATHS | {"/redacted/path"}
+                and re.fullmatch(r"/apex/redacted-apex-package-[0-9]{3}", str(path))
+                is None
+            ):
+                raise SchemaValidationError(
+                    "direct report portable mount path is unsafe"
+                )
+        if is_record and item.get("source") not in {
+            "/dev/block/dm-redacted",
+            "/dev/block/mapper/redacted",
+            "none",
+            "overlay",
+            "redacted-mount-source",
+            "rootfs",
+            "tmpfs",
+        }:
+            raise SchemaValidationError("direct report portable mount source is unsafe")
+    apex = mounts.get("apex_set", {})
+    if isinstance(apex, dict) and any(
+        re.fullmatch(r"redacted-apex-package-[0-9]{3}", str(package)) is None
+        for package in apex.get("packages", [])
+    ):
+        raise SchemaValidationError("direct report portable APEX labels are unsafe")
+
+
+_PORTABLE_CAPTURE_NAMES = frozenset(
+    {
+        "adb_version",
+        "app_context",
+        "boot_state",
+        "collector_context",
+        "emulator_version",
+        "getprop_selected",
+        "getenforce",
+        "identity",
+        "id",
+        "host_os",
+        "kernel_cmdline",
+        "magisk",
+        "mountinfo",
+        "mounts",
+        "processes",
+        "proc_mounts",
+        "properties",
+        "ps_selected",
+        "python_version",
+        "root_probe",
+        "selinux_context",
+        "selinux_denials",
+        "selinux_mode",
+        "su_paths",
+    }
+)
+_PORTABLE_CAPTURE_STATUSES = frozenset(
+    {
+        "command_error",
+        "empty",
+        "error",
+        "inaccessible",
+        "not_collected",
+        "observed",
+        "timeout",
+        "unsupported",
+    }
+)
+_PORTABLE_INPUT_KINDS = frozenset(
+    {
+        "adb_collection_manifest",
+        "app_probe",
+        "app_probe_json",
+        "host_collection_manifest",
+        "legacy_sectioned_text",
+        "magisk_collection_manifest",
+    }
+)
+
+
+def _portable_collector_version(value: object) -> bool:
+    return isinstance(value, str) and (
+        value in {"legacy", "unknown"}
+        or _PORTABLE_VERSION_RE.fullmatch(value) is not None
+    )
+
+
+def _validate_adapter_extension(adapter: object) -> None:
+    if not isinstance(adapter, dict):
+        raise SchemaValidationError("report adapter extension is not portable")
+    if not _portable_collector_version(adapter.get("collector_version")):
+        raise SchemaValidationError("report adapter collector version is not portable")
+    if adapter.get("input_kind") not in _PORTABLE_INPUT_KINDS:
+        raise SchemaValidationError("report adapter input kind is not portable")
+    input_version = adapter.get("input_schema_version")
+    if input_version not in {
+        "1.0.0",
+        "legacy-sectioned-text-1",
+        "unknown",
+    }:
+        raise SchemaValidationError(
+            "report adapter input schema version is not portable"
+        )
+    warning_patterns = (
+        re.compile(r"adapter warning [0-9]{3} withheld"),
+        re.compile(r"source artifact warning [0-9]+ withheld"),
+        re.compile(
+            r"legacy sectioned text has inferred command status and no collector manifest"
+        ),
+        re.compile(
+            r"portable collection manifest selected the observer-specific adapter; legacy payload has inferred per-command status"
+        ),
+    )
+    if any(
+        not any(pattern.fullmatch(str(warning)) for pattern in warning_patterns)
+        for warning in adapter.get("warnings", [])
+    ):
+        raise SchemaValidationError("direct report adapter warnings are not portable")
+    if any(
+        re.fullmatch(r"adapter error [0-9]{3} withheld", str(error)) is None
+        for error in adapter.get("errors", [])
+    ):
+        raise SchemaValidationError("direct report adapter errors are not portable")
+    captures = adapter.get("captures", [])
+    if not isinstance(captures, list):
+        raise SchemaValidationError("report adapter captures are not portable")
+    for capture in captures:
+        if not isinstance(capture, dict) or set(capture) != {
+            "name",
+            "source_ref",
+            "status",
+        }:
+            raise SchemaValidationError("report adapter capture is not semantic")
+        name = capture.get("name")
+        source_ref = capture.get("source_ref")
+        if (
+            name not in _PORTABLE_CAPTURE_NAMES
+            or capture.get("status") not in _PORTABLE_CAPTURE_STATUSES
+            or not isinstance(source_ref, str)
+            or source_ref
+            not in {
+                f"captures/{name}.txt",
+                f"legacy-sections/{str(name).upper()}",
+            }
+        ):
+            # Legacy section labels have two deliberate aliases.
+            aliases = {
+                "identity": "legacy-sections/ID",
+                "kernel_cmdline": "legacy-sections/CMDLINE",
+                "mounts": "legacy-sections/MOUNT",
+                "properties": "legacy-sections/GETPROP",
+                "processes": {
+                    "legacy-sections/PS",
+                    "legacy-sections/PS_SELECTED",
+                },
+                "selinux_mode": "legacy-sections/GETENFORCE",
+            }
+            allowed_aliases = aliases.get(str(name))
+            if source_ref not in (
+                allowed_aliases
+                if isinstance(allowed_aliases, set)
+                else {allowed_aliases}
+            ):
+                raise SchemaValidationError("report adapter capture is not semantic")
+
+
+def _validate_collection_extension(extension: object) -> None:
+    if not isinstance(extension, dict) or set(extension) != {
+        "canonical_manifest_sha256",
+        "canonicalization",
+        "portable_binding",
+    }:
+        raise SchemaValidationError("report portable collection binding is unsafe")
+    if (
+        re.fullmatch(r"[a-f0-9]{64}", str(extension.get("canonical_manifest_sha256")))
+        is None
+        or extension.get("canonicalization") != "atl-canonical-json-v1"
+    ):
+        raise SchemaValidationError("report portable collection binding is unsafe")
+    binding = extension.get("portable_binding")
+    if not isinstance(binding, dict) or set(binding) != {
+        "artifact_results",
+        "collection_errors",
+        "collection_id",
+        "completion_status",
+        "raw_artifact_sha256",
+        "raw_artifact_status",
+        "redaction_state",
+    }:
+        raise SchemaValidationError("report portable collection binding is unsafe")
+    if (
+        binding.get("collection_id") not in {"collection-redacted"}
+        and re.fullmatch(r"atlcol-[a-f0-9]{32}", str(binding.get("collection_id")))
+        is None
+    ):
+        raise SchemaValidationError("report portable collection binding is unsafe")
+    if (
+        binding.get("completion_status") not in {"complete", "failed", "partial"}
+        or binding.get("raw_artifact_status") not in _PORTABLE_CAPTURE_STATUSES
+        or binding.get("redaction_state")
+        not in {"not_required", "redacted", "withheld"}
+        or re.fullmatch(r"[a-f0-9]{64}", str(binding.get("raw_artifact_sha256")))
+        is None
+    ):
+        raise SchemaValidationError("report portable collection binding is unsafe")
+    for index, result in enumerate(binding.get("artifact_results", []), start=1):
+        if (
+            not isinstance(result, dict)
+            or result.get("command_id") != f"artifact-{index:03d}"
+            or result.get("detail") is not None
+            or result.get("status") not in _PORTABLE_CAPTURE_STATUSES
+        ):
+            raise SchemaValidationError("report portable collection binding is unsafe")
+    error_patterns = (
+        re.compile(
+            r"collection manifest completion status: (?:complete|failed|partial)"
+        ),
+        re.compile(
+            r"probe [0-9]{3}: (?:command_error|inaccessible|not_collected|observed_absent|unsupported)"
+        ),
+    )
+    if any(
+        not any(pattern.fullmatch(str(error)) for pattern in error_patterns)
+        for error in binding.get("collection_errors", [])
+    ):
+        raise SchemaValidationError("report portable collection binding is unsafe")
+
+
+def _validate_migration_extension(extension: object) -> None:
+    if not isinstance(extension, dict) or set(extension) != {
+        "encoding",
+        "source_report_json",
+        "source_sha256",
+    }:
+        raise SchemaValidationError("historical report migration extension is unsafe")
+    if (
+        extension.get("encoding")
+        not in {"atl-canonical-json-v1", "canonical-json-text-v1"}
+        or re.fullmatch(r"[a-f0-9]{64}", str(extension.get("source_sha256"))) is None
+    ):
+        raise SchemaValidationError("historical report migration extension is unsafe")
+    encoded = extension.get("source_report_json")
+    if not isinstance(encoded, str):
+        raise SchemaValidationError("historical report migration extension is unsafe")
+    try:
+        nested = json.loads(encoded)
+    except (TypeError, ValueError) as exc:
+        raise SchemaValidationError(
+            "historical report contains an invalid preserved source"
+        ) from exc
+    validate_portable_historical_report(nested)
+
+
+def _validate_report_extensions(report: dict[str, Any]) -> None:
+    extensions = report.get("extensions")
+    if not isinstance(extensions, dict):
+        return
+    allowed = {
+        "org.androidtrustlab.adapter",
+        "org.androidtrustlab.collection",
+        "org.androidtrustlab.migration",
+        "org.androidtrustlab.migration-v3",
+        "org.androidtrustlab.migration-v4",
+        "org.androidtrustlab.migration-v5",
+        "org.androidtrustlab.migration-v6",
+    }
+    if not set(extensions) <= allowed:
+        raise SchemaValidationError("report uses an unportable extension")
+    if "org.androidtrustlab.adapter" in extensions:
+        _validate_adapter_extension(extensions["org.androidtrustlab.adapter"])
+    if "org.androidtrustlab.collection" in extensions:
+        _validate_collection_extension(extensions["org.androidtrustlab.collection"])
+    for key, extension in extensions.items():
+        if key.startswith("org.androidtrustlab.migration"):
+            _validate_migration_extension(extension)
+
+
+def _validate_report_metadata(report: dict[str, Any]) -> None:
+    experiment_id = report.get("experiment_id")
+    if isinstance(experiment_id, str) and not (
+        experiment_id in {"unknown", "redacted-experiment"}
+        or experiment_id in _PORTABLE_EXPERIMENT_IDS
+    ):
+        raise SchemaValidationError("report portable experiment identifier is unsafe")
+    target = report.get("target")
+    if isinstance(target, dict):
+        android_version = _evidence_value(target.get("android_version"))
+        sdk = _evidence_value(target.get("sdk"))
+        if isinstance(android_version, str) and not (
+            android_version == "unknown"
+            or re.fullmatch(r"[0-9]{1,3}(?:\.[0-9]{1,3}){0,3}", android_version)
+            or android_version == "redacted-property"
+        ):
+            raise SchemaValidationError("report portable Android version is unsafe")
+        if isinstance(sdk, str) and not (
+            sdk == "unknown" or re.fullmatch(r"[0-9]{1,3}", sdk)
+        ):
+            raise SchemaValidationError("report portable SDK value is unsafe")
+    observer = report.get("observer")
+    if isinstance(observer, dict):
+        method = observer.get("collection_method")
+        if isinstance(method, str) and not (
+            method == "redacted-collection-method"
+            or method in _PORTABLE_COLLECTION_METHODS
+        ):
+            raise SchemaValidationError(
+                "report portable collection method is not semantic"
+            )
+    boot = report.get("boot")
+    if isinstance(boot, dict):
+        reason = _evidence_value(boot.get("boot_reason"))
+        if isinstance(reason, str) and reason not in {
+            "unknown",
+            "redacted-boot-reason",
+            "bootloader",
+            "cold",
+            "hard",
+            "kernel_panic",
+            "normal",
+            "reboot",
+            "recovery",
+            "shutdown",
+            "userrequested",
+            "warm",
+            "watchdog",
+        }:
+            raise SchemaValidationError("report portable boot reason is unsafe")
+        slot = _evidence_value(boot.get("slot_suffix"))
+        if isinstance(slot, str) and slot not in {
+            "_a",
+            "_b",
+            "redacted-property",
+            "unknown",
+        }:
+            raise SchemaValidationError("report portable slot suffix is unsafe")
+
+
+def _validate_direct_raw_artifacts(report: dict[str, Any]) -> None:
+    raw_artifacts = report.get("raw_artifacts", [])
+    for artifact in raw_artifacts if isinstance(raw_artifacts, list) else []:
+        if not isinstance(artifact, dict):
+            continue
+        logical_id = artifact.get("logical_id")
+        relative_path = artifact.get("relative_path")
+        if (
+            not isinstance(logical_id, str)
+            or re.fullmatch(r"raw-artifact-[0-9]{3}", logical_id) is None
+            or relative_path
+            not in {
+                f"artifacts/{logical_id}.json",
+                f"artifacts/{logical_id}.txt",
+            }
+        ):
+            raise SchemaValidationError("report raw artifact reference is not semantic")
+        if artifact.get("collector_name") not in {
+            "adb",
+            "redacted-collector",
+            "trustlab",
+            "trustlab-magisk",
+            "unknown",
+        }:
+            raise SchemaValidationError("report collector name is not portable")
+        if not _portable_collector_version(artifact.get("collector_version")):
+            raise SchemaValidationError("report collector version is not portable")
+
+
+def _observation_value(observation: object) -> object:
+    return observation.get("value") if isinstance(observation, dict) else None
+
+
+def _validate_root_magisk_metadata(report: dict[str, Any]) -> None:
+    magisk = report.get("magisk_state")
+    if not isinstance(magisk, dict):
+        return
+    version_name = _observation_value(magisk.get("version_name"))
+    if version_name is not None and (
+        not isinstance(version_name, str)
+        or (
+            version_name not in {"redacted-magisk-version-name", "unknown"}
+            and _MAGISK_VERSION_NAME_RE.fullmatch(version_name) is None
+        )
+    ):
+        raise SchemaValidationError("report Magisk version name is not portable")
+    version_code = _observation_value(magisk.get("version_code"))
+    if version_code is not None and (
+        not isinstance(version_code, str)
+        or re.fullmatch(r"[0-9]{1,12}", version_code) is None
+    ):
+        raise SchemaValidationError("report Magisk version code is not portable")
+    module_context = _observation_value(magisk.get("module_context"))
+    if module_context not in {
+        None,
+        "androidtrustlab",
+        "redacted-module-context",
+        "unknown",
+    }:
+        raise SchemaValidationError("report Magisk module context is not portable")
+
+
+def _validate_report_diagnostics(report: dict[str, Any]) -> None:
+    limitations = report.get("limitations", {})
+    if isinstance(limitations, dict):
+        allowed_error_patterns = (
+            re.compile(r"capture issue [0-9]{3} withheld"),
+            re.compile(
+                r"collection manifest completion status: (?:complete|failed|partial)"
+            ),
+            re.compile(r"collection warning [0-9]{3} withheld"),
+            re.compile(r"missing (?:getprop|mount) section"),
+            re.compile(
+                r"probe [0-9]{3}: (?:command_error|inaccessible|not_collected|observed_absent|unsupported)"
+            ),
+        )
+        if any(
+            not any(pattern.fullmatch(str(error)) for pattern in allowed_error_patterns)
+            for error in limitations.get("collection_errors", [])
+        ):
+            raise SchemaValidationError(
+                "report collection diagnostics are not portable"
+            )
+
+
+def _validate_report_provenance(report: dict[str, Any]) -> None:
+    provenance = report.get("provenance")
+    if not isinstance(provenance, dict):
+        return
+    for field in ("normalizer", "generator"):
+        product = provenance.get(field)
+        if not isinstance(product, dict):
+            raise SchemaValidationError("report product provenance is not portable")
+        expected_names = (
+            {"trustlab", "trustlab-migration"} if field == "generator" else {"trustlab"}
+        )
+        if product.get("name") not in expected_names or not _portable_collector_version(
+            product.get("version")
+        ):
+            raise SchemaValidationError("report product provenance is not portable")
+    for migration in provenance.get("migration_history", []):
+        implementation = (
+            migration.get("implementation") if isinstance(migration, dict) else None
+        )
+        if (
+            not isinstance(implementation, dict)
+            or implementation.get("name") != "trustlab-migration"
+            or not _portable_collector_version(implementation.get("version"))
+        ):
+            raise SchemaValidationError("report migration provenance is not portable")
+    command_results = provenance.get("command_results", [])
+    if not isinstance(command_results, list):
+        raise SchemaValidationError("report command provenance is not portable")
+    for result in command_results:
+        command_id = result.get("command_id") if isinstance(result, dict) else None
+        if (
+            not isinstance(result, dict)
+            or result.get("detail")
+            not in {
+                None,
+                "capture command failed",
+                "capture command timed out",
+                "capture failed",
+                "capture is unsupported",
+                "capture was inaccessible",
+            }
+            or result.get("status")
+            not in {
+                "command_error",
+                "inaccessible",
+                "not_collected",
+                "observed",
+                "observed_absent",
+                "unsupported",
+            }
+            or not isinstance(command_id, str)
+            or (
+                command_id not in _PORTABLE_CAPTURE_NAMES
+                and re.fullmatch(r"artifact-[0-9]{3}", command_id) is None
+            )
+        ):
+            raise SchemaValidationError("report command provenance is not portable")
+
+
+def validate_portable_report(report: object) -> None:
+    """Reject sensitive or identity-bearing content in portable reports."""
+
+    if not isinstance(report, dict):
+        return
+    direct_v6 = (
+        report.get("schema_version") == "6.0.0"
+        and isinstance(report.get("provenance"), dict)
+        and report["provenance"].get("source_schema_version") == "raw"
+    )
+    _reject_sensitive_strings(report, artifact="report")
+    _validate_identity_fields(report)
+    _validate_property_fields(report)
+    _validate_report_metadata(report)
+    _validate_report_diagnostics(report)
+    _validate_root_magisk_metadata(report)
+    if report.get("schema_version") == "6.0.0":
+        _validate_report_provenance(report)
+        _validate_report_extensions(report)
+    if direct_v6:
+        _validate_direct_raw_artifacts(report)
+        _validate_direct_v6_mounts(report)
+
+
+def validate_portable_historical_report(report: object) -> None:
+    """Screen an exact historical source before embedding it in portable v6."""
+
+    if not isinstance(report, dict):
+        return
+    _reject_sensitive_strings(report, artifact="historical report")
+    _validate_identity_fields(report)
+    _validate_property_fields(report)
+    _validate_report_metadata(report)
+    _validate_report_diagnostics(report)
+    _validate_root_magisk_metadata(report)
+    _validate_report_extensions(report)
+
+
+_DIFF_DIMENSION_PATHS = {
+    "bootloader_lock_state": "verified_boot.flash_locked",
+    "verified_boot_state": "verified_boot.verified_boot_state",
+    "vbmeta_state": "verified_boot.vbmeta_device_state",
+    "verity_mode": "verified_boot.verity_mode",
+    "selinux_mode": "selinux.policy_mode",
+    "selinux_current_context": "selinux.current_context",
+    "selinux_denial_collection": "selinux.denial_collection",
+    "selected_process_visibility": "process_state.selected_processes",
+    "mount_integrity": "mounts.integrity_summary",
+    "system_mount_resolution": "mounts.system_resolution",
+    "dynamic_partition_state": "mounts.dynamic_partitions",
+    "apex_mount_set": "mounts.apex_set",
+    "observer_uid_root": "root_state.observer_effective_uid_is_root",
+    "root_shell_availability": "root_state.root_shell_available",
+    "su_binary_visibility": "root_state.su_binary_observed",
+    "su_invocation_tested": "root_state.su_invocation_tested",
+    "su_invocation_result": "root_state.su_invocation_result",
+    "root_management_artifact": "root_state.root_management_artifact_observed",
+    "magisk_binary_visibility": "magisk_state.binary_visibility",
+    "magisk_daemon_visibility": "magisk_state.daemon_visibility",
+    "magisk_process_visibility": "magisk_state.process_visibility",
+    "zygisk_visibility": "magisk_state.zygisk_visibility",
+    "magisk_version_name": "magisk_state.version_name",
+    "magisk_version_code": "magisk_state.version_code",
+    "magisk_module_context": "magisk_state.module_context",
+    "magisk_command_status": "magisk_state.command_status",
+    "property_consistency": "properties.security",
+    "emulator_state": "emulator_state.is_emulator",
+    "observer_privilege": "observer.privilege_level",
+}
+_DIFF_SEVERITIES = {
+    "bootloader_lock_state": "high",
+    "verified_boot_state": "high",
+    "vbmeta_state": "high",
+    "verity_mode": "high",
+    "selinux_mode": "high",
+    "selinux_current_context": "medium",
+    "selinux_denial_collection": "low",
+    "selected_process_visibility": "medium",
+    "mount_integrity": "high",
+    "system_mount_resolution": "medium",
+    "dynamic_partition_state": "low",
+    "apex_mount_set": "medium",
+    "observer_uid_root": "medium",
+    "root_shell_availability": "medium",
+    "su_binary_visibility": "medium",
+    "su_invocation_tested": "low",
+    "su_invocation_result": "medium",
+    "root_management_artifact": "medium",
+    "magisk_binary_visibility": "medium",
+    "magisk_daemon_visibility": "medium",
+    "magisk_process_visibility": "medium",
+    "zygisk_visibility": "medium",
+    "magisk_version_name": "info",
+    "magisk_version_code": "info",
+    "magisk_module_context": "info",
+    "magisk_command_status": "low",
+    "property_consistency": "medium",
+    "emulator_state": "info",
+    "observer_privilege": "info",
+}
+_DIFF_INTERPRETATIONS = {
+    "bootloader_lock_state": "Bootloader lock evidence changed. On virtual targets this is property evidence only, not hardware-backed proof.",
+    "mount_integrity": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
+    "system_mount_resolution": "The resolved Android system root changed. Review the referenced mount records and source quality.",
+    "dynamic_partition_state": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
+    "apex_mount_set": "The observed APEX package mount set changed. Review capture completeness and package mount records.",
+    "selinux_mode": "SELinux mode changed. This affects runtime MAC boundary interpretation.",
+    "selinux_current_context": "Observer SELinux context visibility changed. This is scoped evidence, not complete policy inspection.",
+    "selinux_denial_collection": "SELinux denial collection status changed; compare collection scope before interpreting absence.",
+    "selected_process_visibility": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
+    "verified_boot_state": "Verified boot property evidence changed. Emulator evidence remains limited for hardware-backed conclusions.",
+    "vbmeta_state": "vbmeta device-state evidence changed. Interpret according to target class and observer.",
+    "verity_mode": "dm-verity-related property evidence changed.",
+    "property_consistency": "Security-relevant property group changed. This does not imply bypass by itself.",
+    "observer_privilege": "Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation.",
+}
+_DEFAULT_DIFF_INTERPRETATION = "Trust-state dimension changed between reports."
+_DIFF_STATUSES = frozenset(
+    {
+        "command_error",
+        "inaccessible",
+        "not_collected",
+        "observed",
+        "observed_absent",
+        "unsupported",
+    }
+)
+
+
+def _validate_diff_observation(
+    value: object,
+    *,
+    predicate: Any,
+    absent_values: tuple[object, ...] = (None,),
+) -> None:
+    if not isinstance(value, dict) or set(value) != {"status", "value"}:
+        raise SchemaValidationError(
+            "diff dimension value is not a portable observation"
+        )
+    status = value.get("status")
+    observed = value.get("value")
+    if status not in _DIFF_STATUSES:
+        raise SchemaValidationError("diff dimension status is not portable")
+    if status == "observed":
+        valid = predicate(observed)
+    elif status == "observed_absent":
+        valid = observed in absent_values
+    else:
+        valid = observed is None
+    if not valid:
+        raise SchemaValidationError("diff dimension value contradicts its status")
+
+
+def _is_string_in(values: frozenset[str]) -> Any:
+    return lambda value: isinstance(value, str) and value in values
+
+
+def _validate_diff_mount_integrity(value: object) -> None:
+    if not isinstance(value, dict) or set(value) != {
+        "overlay_detected",
+        "writable_sensitive_mounts",
+    }:
+        raise SchemaValidationError("diff mount-integrity value is not portable")
+    _validate_diff_observation(
+        value["overlay_detected"],
+        predicate=lambda item: isinstance(item, bool),
+        absent_values=(False,),
+    )
+    _validate_diff_observation(
+        value["writable_sensitive_mounts"],
+        predicate=lambda item: (
+            isinstance(item, list) and all(path in _SAFE_ANDROID_PATHS for path in item)
+        ),
+        absent_values=([],),
+    )
+
+
+def _validate_diff_system_resolution(value: object) -> None:
+    reasons = {
+        "one exact /system mount was observed",
+        "multiple exact /system mounts were observed",
+        "no /system mount was observed; one root mount is the system root",
+        "multiple root mounts were observed without an exact /system mount",
+        "partial evidence cannot establish that /system is absent",
+        "neither an exact /system mount nor a root mount was observed",
+    }
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"reason", "record_indices", "state", "system_root"}
+        or value.get("state")
+        not in {"ambiguous", "explicit_system", "system_as_root", "unresolved"}
+        or value.get("system_root") not in {None, "/", "/system"}
+        or value.get("reason") not in reasons
+        or not isinstance(value.get("record_indices"), list)
+        or not all(
+            isinstance(item, int) and 0 <= item <= 4095
+            for item in value["record_indices"]
+        )
+    ):
+        raise SchemaValidationError("diff system-mount value is not portable")
+
+
+def _validate_diff_dynamic_partitions(value: object) -> None:
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"record_indices", "sources", "state"}
+        or value.get("state") not in {"detected", "not_detected", "unknown"}
+        or not isinstance(value.get("record_indices"), list)
+        or not all(
+            isinstance(item, int) and 0 <= item <= 4095
+            for item in value["record_indices"]
+        )
+        or not isinstance(value.get("sources"), list)
+        or not all(
+            source
+            in {
+                "/dev/block/dm-redacted",
+                "/dev/block/mapper/redacted",
+                "none",
+                "overlay",
+                "redacted-mount-source",
+                "rootfs",
+                "tmpfs",
+            }
+            for source in value["sources"]
+        )
+    ):
+        raise SchemaValidationError("diff dynamic-partition value is not portable")
+
+
+def _validate_diff_apex(value: object) -> None:
+    count_keys = {
+        "bind_count",
+        "mount_count",
+        "overlay_count",
+        "package_count",
+        "read_only_count",
+        "unknown_access_count",
+        "writable_count",
+    }
+    if (
+        not isinstance(value, dict)
+        or set(value) != count_keys | {"packages", "record_indices"}
+        or any(
+            not isinstance(value.get(key), int) or not 0 <= value[key] <= 4096
+            for key in count_keys
+        )
+        or not isinstance(value.get("packages"), list)
+        or any(
+            re.fullmatch(r"redacted-apex-package-[0-9]{3}", str(package)) is None
+            for package in value["packages"]
+        )
+        or value["package_count"] != len(value["packages"])
+        or not isinstance(value.get("record_indices"), list)
+        or not all(
+            isinstance(item, int) and 0 <= item <= 4095
+            for item in value["record_indices"]
+        )
+    ):
+        raise SchemaValidationError("diff APEX value is not portable")
+
+
+def _validate_diff_processes(value: object) -> None:
+    names = ("init", "adbd", "zygote", "zygote64", "system_server", "magisk", "magiskd")
+    if not isinstance(value, list) or [
+        item.get("name") for item in value if isinstance(item, dict)
+    ] != list(names):
+        raise SchemaValidationError("diff process value is not portable")
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"context", "name", "visibility"}:
+            raise SchemaValidationError("diff process value is not portable")
+        _validate_diff_observation(
+            item["visibility"],
+            predicate=lambda current: isinstance(current, bool),
+            absent_values=(False,),
+        )
+        _validate_diff_observation(
+            item["context"],
+            predicate=lambda current: (
+                isinstance(current, str)
+                and (
+                    current == "redacted-selinux-context"
+                    or re.fullmatch(
+                        r"u:r:(?:adbd|init|magisk|magiskd|system_server|zygote):s[0-9]+(?:-s[0-9]+)?",
+                        current,
+                    )
+                    is not None
+                )
+            ),
+        )
+
+
+def _validate_diff_property_group(value: object) -> None:
+    def safe_properties(current: object) -> bool:
+        if not isinstance(current, dict):
+            return False
+        for key, property_value in current.items():
+            pattern = _PROPERTY_VALUE_PATTERNS.get(str(key))
+            if (
+                pattern is None
+                or not isinstance(property_value, str)
+                or not (
+                    property_value in {"redacted-property", "unknown"}
+                    or pattern.fullmatch(property_value)
+                )
+            ):
+                return False
+        return True
+
+    _validate_diff_observation(value, predicate=safe_properties, absent_values=({},))
+
+
+def _validate_diff_observation_dimension(dimension: str, value: object) -> bool:
+    boolean_dimensions = {
+        "emulator_state",
+        "magisk_binary_visibility",
+        "magisk_daemon_visibility",
+        "magisk_process_visibility",
+        "observer_uid_root",
+        "root_management_artifact",
+        "root_shell_availability",
+        "su_binary_visibility",
+        "su_invocation_tested",
+        "zygisk_visibility",
+    }
+    if dimension in boolean_dimensions:
+        _validate_diff_observation(
+            value,
+            predicate=lambda item: isinstance(item, bool),
+            absent_values=(False,),
+        )
+        return True
+    allowed_strings = {
+        "bootloader_lock_state": frozenset({"0", "1"}),
+        "verified_boot_state": frozenset({"green", "orange", "red", "yellow"}),
+        "vbmeta_state": frozenset({"locked", "unlocked"}),
+        "verity_mode": frozenset({"disabled", "eio", "enforcing", "logging"}),
+        "selinux_mode": frozenset({"disabled", "enforcing", "permissive"}),
+        "su_invocation_result": frozenset(
+            {"denied", "failed", "non_root", "succeeded"}
+        ),
+        "magisk_module_context": frozenset(
+            {"androidtrustlab", "redacted-module-context", "unknown"}
+        ),
+    }
+    if dimension in allowed_strings:
+        _validate_diff_observation(
+            value, predicate=_is_string_in(allowed_strings[dimension])
+        )
+        return True
+    if dimension == "selinux_current_context":
+        _validate_diff_observation(
+            value,
+            predicate=lambda item: (
+                isinstance(item, str)
+                and (
+                    item == "redacted-selinux-context"
+                    or re.fullmatch(r"u:r:[a-z0-9_]+:s[0-9]+(?:-s[0-9]+)?", item)
+                    is not None
+                )
+            ),
+        )
+        return True
+    if dimension == "magisk_version_name":
+        _validate_diff_observation(
+            value,
+            predicate=lambda item: (
+                isinstance(item, str)
+                and (
+                    item == "redacted-magisk-version-name"
+                    or _MAGISK_VERSION_NAME_RE.fullmatch(item) is not None
+                )
+            ),
+        )
+        return True
+    if dimension == "magisk_version_code":
+        _validate_diff_observation(
+            value,
+            predicate=lambda item: (
+                isinstance(item, str) and re.fullmatch(r"[0-9]{1,12}", item) is not None
+            ),
+        )
+        return True
+    return False
+
+
+def _validate_diff_status(value: object) -> None:
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"status"}
+        or value.get("status") not in _DIFF_STATUSES
+    ):
+        raise SchemaValidationError("diff status dimension is not portable")
+
+
+def _validate_diff_privilege(value: object) -> None:
+    if value not in {"app_sandbox", "host", "root", "shell"}:
+        raise SchemaValidationError("diff observer privilege is not portable")
+
+
+def _validate_diff_dimension_value(dimension: str, value: object) -> None:
+    if _validate_diff_observation_dimension(dimension, value):
+        return
+    handlers = {
+        "apex_mount_set": _validate_diff_apex,
+        "dynamic_partition_state": _validate_diff_dynamic_partitions,
+        "magisk_command_status": _validate_diff_status,
+        "mount_integrity": _validate_diff_mount_integrity,
+        "observer_privilege": _validate_diff_privilege,
+        "property_consistency": _validate_diff_property_group,
+        "selected_process_visibility": _validate_diff_processes,
+        "selinux_denial_collection": _validate_diff_status,
+        "system_mount_resolution": _validate_diff_system_resolution,
+    }
+    handler = handlers.get(dimension)
+    if handler is None:
+        raise SchemaValidationError("diff dimension is not portable")
+    handler(value)
+
+
+def _validate_diff_confidence(value: object) -> None:
+    if not isinstance(value, dict) or set(value) != {
+        "command_success",
+        "corroborating_signal_count",
+        "level",
+        "observer_capability",
+        "source_quality",
+        "target_limitations",
+    }:
+        raise SchemaValidationError("diff confidence value is not portable")
+    allowed_limitations = {
+        "hardware_attestation_not_collected",
+        "historical_factors_unavailable",
+        "legacy_capture_status_inferred",
+        "observer_capability_limited",
+        "virtual_target_not_hardware_backed",
+    }
+    if (
+        value.get("level") not in {"high", "low", "medium", "unassessed"}
+        or value.get("source_quality")
+        not in {
+            "historical_unstructured",
+            "legacy_inferred",
+            "structured_capture",
+            "unavailable",
+        }
+        or value.get("command_success")
+        not in {"complete", "failed", "not_collected", "partial", "unknown"}
+        or value.get("observer_capability")
+        not in {"app_sandbox", "host", "root", "shell", "unspecified"}
+        or not isinstance(value.get("corroborating_signal_count"), int)
+        or not 0 <= value["corroborating_signal_count"] <= 64
+        or not isinstance(value.get("target_limitations"), list)
+        or not set(value["target_limitations"]) <= allowed_limitations
+    ):
+        raise SchemaValidationError("diff confidence value is not portable")
+
+
+def _validate_diff_provenance(diff: dict[str, Any]) -> None:
+    provenance = diff.get("provenance")
+    if not isinstance(provenance, dict):
+        raise SchemaValidationError("diff provenance is not portable")
+    for side in ("base", "compare"):
+        source = provenance.get(side)
+        if not isinstance(source, dict):
+            raise SchemaValidationError("diff provenance is not portable")
+        original_id = source.get("original_report_id")
+        if not isinstance(original_id, str) or not (
+            re.fullmatch(r"atl-[a-f0-9]{16}", original_id)
+            or re.fullmatch(r"atlrep-[a-f0-9]{32}", original_id)
+        ):
+            raise SchemaValidationError("diff original report identity is not portable")
+        for migration in source.get("applied_migrations", []):
+            implementation = (
+                migration.get("implementation") if isinstance(migration, dict) else None
+            )
+            if (
+                not isinstance(implementation, dict)
+                or implementation.get("name") != "trustlab-migration"
+                or not _portable_collector_version(implementation.get("version"))
+            ):
+                raise SchemaValidationError("diff migration provenance is not portable")
+
+
+def validate_portable_diff(diff: object) -> None:
+    """Reject sensitive or non-semantic values before portable diff output."""
+
+    _reject_sensitive_strings(diff, artifact="diff")
+    if not isinstance(diff, dict) or diff.get("schema_version") != "2.3.0":
+        return
+    _validate_diff_provenance(diff)
+    all_dimensions = set(_DIFF_DIMENSION_PATHS)
+    changed = diff.get("changed_dimensions", [])
+    changed_names: list[str] = []
+    for item in changed if isinstance(changed, list) else []:
+        if not isinstance(item, dict):
+            raise SchemaValidationError("diff changed dimension is not portable")
+        dimension = item.get("dimension")
+        if not isinstance(dimension, str) or dimension not in all_dimensions:
+            raise SchemaValidationError("diff dimension is not portable")
+        changed_names.append(dimension)
+        if (
+            item.get("evidence_paths") != [_DIFF_DIMENSION_PATHS[dimension]]
+            or item.get("severity") != _DIFF_SEVERITIES[dimension]
+            or item.get("interpretation")
+            != _DIFF_INTERPRETATIONS.get(dimension, _DEFAULT_DIFF_INTERPRETATION)
+        ):
+            raise SchemaValidationError("diff dimension metadata is not canonical")
+        _validate_diff_dimension_value(dimension, item.get("before"))
+        _validate_diff_dimension_value(dimension, item.get("after"))
+    if len(changed_names) != len(set(changed_names)):
+        raise SchemaValidationError("diff changed dimensions are not unique")
+    unchanged = diff.get("unchanged_dimensions", [])
+    for field in (
+        unchanged,
+        diff.get("new_signals", []),
+        diff.get("missing_signals", []),
+    ):
+        if not isinstance(field, list) or not set(field) <= all_dimensions:
+            raise SchemaValidationError("diff signal list is not portable")
+    if set(changed_names) & set(unchanged):
+        raise SchemaValidationError("diff changed and unchanged dimensions overlap")
+    if diff.get("summary") != (
+        f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions unchanged."
+    ):
+        raise SchemaValidationError("diff summary is not canonical")
+    for item in diff.get("confidence_changes", []):
+        if not isinstance(item, dict) or item.get("path") != "verified_boot.confidence":
+            raise SchemaValidationError("diff confidence path is not portable")
+        _validate_diff_confidence(item.get("before"))
+        _validate_diff_confidence(item.get("after"))
+
+
+def _validate_manifest_identity_fields(manifest: dict[str, Any]) -> None:
+    if manifest.get("experiment_id") not in _PORTABLE_EXPERIMENT_IDS | {"unknown"}:
+        raise SchemaValidationError(
+            "collection manifest experiment identifier is not semantic"
+        )
+    collector = manifest.get("collector", {})
+    observer = manifest.get("observer", {})
+    environment = manifest.get("environment", {})
+    collector_name = collector.get("name") if isinstance(collector, dict) else None
+    if collector_name not in {
+        "trustlab-adb",
+        "trustlab-app",
+        "trustlab-fixture",
+        "trustlab-host",
+        "trustlab-magisk",
+    }:
+        raise SchemaValidationError(
+            "collection manifest collector name is not semantic"
+        )
+    if not _portable_collector_version(
+        collector.get("version") if isinstance(collector, dict) else None
+    ):
+        raise SchemaValidationError(
+            "collection manifest collector version is not portable"
+        )
+    if isinstance(observer, dict):
+        method = observer.get("collection_method")
+        methods_by_collector = {
+            "trustlab-host": {"host_snapshot"},
+            "trustlab-adb": {"adb_shell_snapshot", "adb_snapshot"},
+            "trustlab-app": {"app_snapshot"},
+            "trustlab-magisk": {"magisk_module_manual"},
+            "trustlab-fixture": {
+                "fixture_snapshot",
+                "manual_fixture",
+                "test_fixture",
+            },
+        }
+        if method not in methods_by_collector.get(str(collector_name), set()):
+            raise SchemaValidationError("collection manifest method is not semantic")
+    contexts_by_collector = {
+        "trustlab-host": {"host_collector"},
+        "trustlab-adb": {"adb_collector"},
+        "trustlab-app": {"app_collector"},
+        "trustlab-magisk": {"magisk_collector", "magisk_module"},
+        "trustlab-fixture": {"test_fixture"},
+    }
+    if not isinstance(environment, dict) or environment.get(
+        "execution_context"
+    ) not in contexts_by_collector.get(str(collector_name), set()):
+        raise SchemaValidationError(
+            "collection manifest execution context is not semantic"
+        )
+
+
+def _validate_manifest_tools(manifest: dict[str, Any]) -> None:
+    tool_versions = manifest.get("tool_versions", {})
+    if isinstance(tool_versions, dict):
+        allowed_tools = {
+            "adb",
+            "android_shell",
+            "emulator",
+            "ps",
+            "python",
+            "trustlab_fixture",
+            "trustlab_magisk",
+        }
+        for name, version in tool_versions.items():
+            if (
+                name not in allowed_tools
+                or not isinstance(version, str)
+                or not (
+                    version in {"toolbox", "toybox", "unknown"}
+                    or _PORTABLE_VERSION_RE.fullmatch(version)
+                    or re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,3}(?:-[0-9]+)?", version)
+                )
+            ):
+                raise SchemaValidationError(
+                    "collection manifest tool version is not portable"
+                )
+
+
+def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
+    for artifact in manifest.get("artifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        logical_name = artifact.get("logical_name")
+        probe_id = artifact.get("probe_id")
+        relative_path = artifact.get("relative_path")
+        safe_probe_ids = {
+            f"{prefix}.{suffix}"
+            for prefix in {"adb", "app", "fixture", "host", "magisk"}
+            for suffix in {
+                "command_results",
+                "other_observed_artifact",
+                "raw_report",
+                "readonly_snapshot",
+            }
+        }
+        if logical_name == "raw_report":
+            status = artifact.get("status")
+            valid = (
+                probe_id in safe_probe_ids
+                and str(probe_id).endswith((".raw_report", ".readonly_snapshot"))
+                and artifact.get("media_type") in {"application/json", "text/plain"}
+                and (
+                    (
+                        status in {"observed", "observed_absent"}
+                        and relative_path
+                        in {
+                            "empty_raw.txt",
+                            "moved/raw_sample.txt",
+                            "raw_sample.txt",
+                        }
+                    )
+                    or (
+                        status not in {"observed", "observed_absent"}
+                        and relative_path is None
+                    )
+                )
+            )
+        elif logical_name == "command_results":
+            valid = (
+                relative_path is None
+                and probe_id in safe_probe_ids
+                and str(probe_id).endswith(".command_results")
+                and artifact.get("media_type") == "application/json"
+            )
+        elif logical_name == "other_observed_artifact":
+            valid = (
+                relative_path == "other_artifact.json"
+                and probe_id == "magisk.other_observed_artifact"
+                and artifact.get("media_type") == "application/json"
+            )
+        else:
+            valid = False
+        if not valid or artifact.get("detail") is not None:
+            raise SchemaValidationError(
+                "collection manifest artifact binding is not semantic"
+            )
+    policy = manifest.get("redaction_policy")
+    if not isinstance(policy, dict) or policy.get("policy_id") != "atl_portable_v1":
+        raise SchemaValidationError(
+            "collection manifest redaction policy is not semantic"
+        )
+
+
+def validate_portable_collection_manifest(manifest: object) -> None:
+    """Apply field-aware portability checks to collection manifests."""
+
+    if not isinstance(manifest, dict):
+        return
+    _reject_sensitive_strings(manifest, artifact="collection manifest")
+    _validate_manifest_identity_fields(manifest)
+    _validate_manifest_tools(manifest)
+    _validate_manifest_artifact_bindings(manifest)

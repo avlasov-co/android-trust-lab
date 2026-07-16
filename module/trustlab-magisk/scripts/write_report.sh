@@ -96,9 +96,7 @@ if ! {
   printf '=== ID ===\n'
   id 2>/dev/null || true
   "$MODDIR/scripts/collect_selinux.sh"
-  printf '=== SU_PATHS ===\n'
-  command -v su 2>/dev/null || true
-  ls /system/bin/su /system/xbin/su /sbin/su /su/bin/su 2>/dev/null || true
+  "$MODDIR/scripts/collect_root_state.sh"
   "$MODDIR/scripts/collect_magisk_state.sh"
   "$MODDIR/scripts/collect_process_state.sh"
 } > "$RAW" 2>&1; then

@@ -38,8 +38,8 @@ readable only. `trustlab dataset verify` validates the complete portable graph,
 all byte bindings, collection relationships, and deterministic report/diff
 freshness from any current directory.
 
-Report `5.0.0` is the sole writer; report v1/v2/v3/v4 remain readable through the
-validated `1.0.0` → `2.0.0` → `3.0.0` → `4.0.0` → `5.0.0` chain. Source bytes are hashed before
+Report `6.0.0` is the sole writer; report v1 through v5 remain readable through the
+validated `1.0.0` → `2.0.0` → `3.0.0` → `4.0.0` → `5.0.0` → `6.0.0` chain. Source bytes are hashed before
 normalization, reports distinguish collection-event and evidence-content
 identity, and diff v2.2 binds both exact report/content identities. See
 `docs/content_identity.md` from the repository root.

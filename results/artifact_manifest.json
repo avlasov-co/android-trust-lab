@@ -3,105 +3,105 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/manifest.json",
-      "sha256": "1e9f2ae342168b1e4a11de7b7c59c52a94384e3bc6ebfdd4b3e450e86839a892",
+      "sha256": "b7590c1af713c02a63fbc588262bbec8f1f2248e52a7556b6620941115840ef9",
       "status": "checked",
       "type": "verifiable_dataset_manifest"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "tests/fixtures/sample_normalized_report.json",
-      "sha256": "7ced024f0aa783d7103f5a471c65d0966df3b60245eb2f4bee7f34d5f383217e",
+      "sha256": "ee5f1b60a7334251c1cb3e100ae49996f981dc67bd349c9026f324619f48a298",
       "status": "checked",
       "type": "generated_test_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "tests/fixtures/sample_diff.json",
-      "sha256": "d089e424b6f86b549918b6835e2a3e39bb8bfc9443b1211cee3ecaffd9f2a937",
+      "sha256": "10dde1ef09fe01a1fc3dae4e60a26e8f18654a704265b882e7688a68d9ee9b2c",
       "status": "checked",
       "type": "generated_test_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-      "sha256": "1ca351e2462d6f957fe74bc57a174dcdd6a0244d2369d23312d2ecddc89efb0e",
+      "sha256": "e1da01666c4051dd22e4e0a964f04fec479c74e1d4a6ece6887a72f66eedb6a1",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-      "sha256": "571d295237049a8bc867a912f16541867bd89e226af2748451c225a40dd82e07",
+      "sha256": "10045fe43fbd2320f39d1544676af34765262550a375b3d16c70738ed3837d5c",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-      "sha256": "422672698bafb5d20d5ef8a0b3796b12687e53e11f03b009011ba3488397515d",
+      "sha256": "7de2c274ab59c4490fd40ff7dd703af545efc2af0d4abe65b19d115f754aaff1",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-      "sha256": "0d1128633c111f18b5d2304a1d299f734130996d5729d84fd5c9fe56d25d89da",
+      "sha256": "d6b8b806f8265e016dd6548a98135eb3b677358cb416288489b0fe21a9ccdfc8",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-      "sha256": "ea963b7e51bc4abebdf3438a72b8594d3beb1366a10e0945809c0bd658d6695d",
+      "sha256": "fa03442ea1d59cd15038f752f010aeba68f258252f34794be4801504bf8b0659",
       "status": "checked",
       "type": "normalized_sample_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/stock_adb_vs_rooted_adb.json",
-      "sha256": "d089e424b6f86b549918b6835e2a3e39bb8bfc9443b1211cee3ecaffd9f2a937",
+      "sha256": "10dde1ef09fe01a1fc3dae4e60a26e8f18654a704265b882e7688a68d9ee9b2c",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/rooted_adb_vs_rooted_root.json",
-      "sha256": "3858da62f3519b7495b456645cf1bb2f2ba439681d502e710ac71504cb8b3d04",
+      "sha256": "03adc63cbedc3ed49fe2f9086c7344278126032b9ab8170a39aaf05ba4a4d4bb",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/stock_vs_writable_system.json",
-      "sha256": "a7d815f427fc50cfa375e3b44961a1d4aca76e7650658020b8bd522639cc0906",
+      "sha256": "04225e8efbf5148f5477aa5a8d52285827250759c15bdd72dc66b76e1df63d7b",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/rooted_adb_vs_magisk_root_collector.json",
-      "sha256": "eddd8f6a700c5310dc979a01a0a2d4165cd2007767da1a9bb487956d7aa6e8ae",
+      "sha256": "620d32c27aea9022028308a89e7d965edea926c3d28026a062e3003497581d10",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/summary_table.md",
-      "sha256": "826fbecf9af322f058615ae42b3a8cabb215846d94ef9388cd3f77f588aa8d5a",
+      "sha256": "806db24282ff15e5581dd2fca7cb8e98bc45cf277fd35dbd9bae66a2e42aaf86",
       "status": "checked",
       "type": "generated_table"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "2adea47176b81bc64b38ab427ccf98997056b4df60e6b3c44fda8a0ce3aef7ef",
+      "sha256": "2984eb2d4061504dc2d880f3a16162e69a1c93f6d613146ece5c906024ae7df1",
       "status": "checked",
       "type": "generated_report"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/figures/trust_dimensions_matrix.md",
-      "sha256": "c957c22a2f39fa657329aefd6f134ca6adb5264be5701709e04d072a7daac552",
+      "sha256": "d323bbb34586c8cb8f4863eff169153f2ea0523195e4ab30974082d125e045cb",
       "status": "checked",
       "type": "generated_matrix"
     }

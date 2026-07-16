@@ -42,10 +42,26 @@ from .identity import (
 )
 from .observers import observer_spec
 from .parser import KNOWN_SECTION_NAMES, MAX_RAW_TEXT_BYTES
+from .privacy import (
+    sanitize_boot_reason,
+    sanitize_collection_id,
+    sanitize_collection_method,
+    sanitize_experiment_id,
+    sanitize_metadata_value,
+    sanitize_mount_model,
+    sanitize_property_value,
+    sanitize_raw_artifact_references,
+)
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import report_v3_from_v2_shape
 from .report_v4 import report_v4_from_v3_shape
 from .report_v5 import report_v5_from_v4_shape
+from .report_v6 import report_v6_from_v5_shape
+from .root_magisk import (
+    structured_magisk_state,
+    structured_root_state,
+    verified_boot_confidence,
+)
 from .security_evidence import SELECTED_PROCESS_NAMES
 
 SENSITIVE_MOUNTS = {
@@ -621,7 +637,7 @@ def root_state(parsed: EvidenceFragments) -> dict[str, Any]:
     uid = str(identity.get("uid", "unknown"))
     gid = str(identity.get("gid", "unknown"))
     su_paths = list(parsed.su_paths)
-    su_present = bool(su_paths) or uid == "0"
+    su_present = bool(su_paths)
     return {
         "su_present": su_present,
         "uid": uid,
@@ -692,7 +708,13 @@ def verified_boot_state(
         "vbmeta_device_state": values["ro.boot.vbmeta.device_state"],
         "verity_mode": values["ro.boot.veritymode"],
         "raw_properties": raw,
-        "confidence": "low" if target_type == "avd" else "medium",
+        "confidence": (
+            "medium"
+            if all(value != "unknown" for value in values.values())
+            else "low"
+            if any(value != "unknown" for value in values.values())
+            else "unassessed"
+        ),
     }
 
 
@@ -710,13 +732,25 @@ def build_report(
 ) -> dict[str, Any]:
     fragments = parsed.fragments
     observer = observer_spec(observer_type)
-    props = dict(fragments.properties)
-    boot_state_raw = dict(fragments.boot_state)
+    raw_props = dict(fragments.properties)
+    raw_boot_state = dict(fragments.boot_state)
+    props = {
+        key: sanitize_property_value(key, value, scope=collection_event_id)
+        for key, value in raw_props.items()
+    }
+    boot_state_raw = {
+        key: sanitize_property_value(key, value, scope=collection_event_id)
+        for key, value in raw_boot_state.items()
+        if key != "kernel_cmdline"
+    }
     mounts = list(fragments.mounts)
     timestamp = collection_timestamp
-    cmdline = fragments.cmdline or boot_state_raw.get("kernel_cmdline", "") or ""
-    emulator = detect_emulator(props, target_type)
-    collection_errors = list(parsed.errors)
+    cmdline = fragments.cmdline or raw_boot_state.get("kernel_cmdline", "") or ""
+    emulator = detect_emulator(raw_props, target_type)
+    collection_errors = [
+        f"capture issue {index:03d} withheld"
+        for index, _error in enumerate(parsed.errors, start=1)
+    ]
     if not props:
         collection_errors.append("missing getprop section")
     if not mounts:
@@ -743,11 +777,14 @@ def build_report(
         }.items()
         if observed
     )
-    modern_mounts = normalize_mounts(
-        mounts,
-        attempts=fragments.mount_attempts,
-        selected_source=fragments.mount_selected_source,
-        selection_reason=fragments.mount_selection_reason,
+    modern_mounts = sanitize_mount_model(
+        normalize_mounts(
+            mounts,
+            attempts=fragments.mount_attempts,
+            selected_source=fragments.mount_selected_source,
+            selection_reason=fragments.mount_selection_reason,
+        ),
+        scope=collection_event_id,
     )
     modern_selinux = structured_selinux_state(
         parsed,
@@ -757,6 +794,17 @@ def build_report(
         parsed,
         observer_type=observer.observer_id,
     )
+    modern_root = structured_root_state(
+        parsed,
+        observer_type=observer.observer_id,
+    )
+    modern_magisk = structured_magisk_state(
+        parsed,
+        processes=modern_processes,
+        pseudonym_scope=collection_event_id,
+        observer_type=observer.observer_id,
+    )
+    verified_model = verified_boot_state(props, target_type, boot_state_raw)
 
     legacy_shape = {
         "report_id": "atl-" + "0" * 16,
@@ -765,12 +813,28 @@ def build_report(
         "experiment_id": experiment_id,
         "target": {
             "target_type": target_type,
-            "device_codename": props.get("ro.product.device", "unknown"),
-            "manufacturer": props.get("ro.product.manufacturer", "unknown"),
-            "model": props.get("ro.product.model", "unknown"),
+            "device_codename": sanitize_metadata_value(
+                props.get("ro.product.device", "unknown"),
+                category="device-codename",
+                scope=collection_event_id,
+            ),
+            "manufacturer": sanitize_metadata_value(
+                props.get("ro.product.manufacturer", "unknown"),
+                category="manufacturer",
+                scope=collection_event_id,
+            ),
+            "model": sanitize_metadata_value(
+                props.get("ro.product.model", "unknown"),
+                category="model",
+                scope=collection_event_id,
+            ),
             "android_version": props.get("ro.build.version.release", "unknown"),
             "sdk": props.get("ro.build.version.sdk", "unknown"),
-            "build_fingerprint": props.get("ro.build.fingerprint", "unknown"),
+            "build_fingerprint": sanitize_metadata_value(
+                props.get("ro.build.fingerprint", "unknown"),
+                category="build-fingerprint",
+                scope=collection_event_id,
+            ),
         },
         "observer": {
             "observer_type": observer.observer_id,
@@ -782,12 +846,15 @@ def build_report(
                 "sys.boot_completed",
                 boot_state_raw.get("sys.boot_completed", "unknown"),
             ),
-            "boot_reason": props.get(
-                "ro.boot.bootreason",
-                props.get(
-                    "sys.boot.reason",
-                    boot_state_raw.get("ro.boot.bootreason", "unknown"),
+            "boot_reason": sanitize_boot_reason(
+                raw_props.get(
+                    "ro.boot.bootreason",
+                    raw_props.get(
+                        "sys.boot.reason",
+                        raw_boot_state.get("ro.boot.bootreason", "unknown"),
+                    ),
                 ),
+                scope=collection_event_id,
             ),
             "slot_suffix": props.get(
                 "ro.boot.slot_suffix",
@@ -795,7 +862,7 @@ def build_report(
             ),
             "kernel_cmdline_present": bool(cmdline.strip()),
         },
-        "verified_boot": verified_boot_state(props, target_type, boot_state_raw),
+        "verified_boot": verified_model,
         "selinux": normalize_selinux(fragments.selinux_mode),
         "mounts": modern_mounts,
         "properties": normalize_properties(props),
@@ -825,10 +892,29 @@ def build_report(
         generator_name=generator_name,
     )
     report_v4 = report_v4_from_v3_shape(report_v3, modern_mounts=modern_mounts)
-    report = report_v5_from_v4_shape(
+    report_v5 = report_v5_from_v4_shape(
         report_v4,
         structured_selinux=modern_selinux,
         structured_processes=modern_processes,
+    )
+    report_v5["raw_artifacts"] = sanitize_raw_artifact_references(
+        report_v5["raw_artifacts"],
+        scope=collection_event_id,
+    )
+    report = report_v6_from_v5_shape(
+        report_v5,
+        structured_root=modern_root,
+        structured_magisk=modern_magisk,
+        confidence=verified_boot_confidence(
+            parsed,
+            observer_privilege=observer.privilege_level,
+            target_type=target_type,
+            values={
+                key: str(value)
+                for key, value in verified_model.items()
+                if key != "raw_properties" and key != "confidence"
+            },
+        ),
     )
     report["provenance"]["command_results"] = [
         _capture_command_result(capture) for capture in parsed.captures
@@ -837,8 +923,14 @@ def build_report(
         "input_kind": parsed.input_kind.value,
         "input_schema_version": parsed.metadata.schema_version,
         "collector_version": parsed.metadata.collector_version,
-        "warnings": list(parsed.warnings),
-        "errors": list(parsed.errors),
+        "warnings": [
+            f"adapter warning {index:03d} withheld"
+            for index, _warning in enumerate(parsed.warnings, start=1)
+        ],
+        "errors": [
+            f"adapter error {index:03d} withheld"
+            for index, _error in enumerate(parsed.errors, start=1)
+        ],
         "captures": [
             {
                 "name": capture.name,
@@ -852,11 +944,11 @@ def build_report(
     unrecognized_names = (
         set(fragments.sections) | set(fragments.section_occurrences)
     ) - KNOWN_SECTION_NAMES
-    for name in sorted(unrecognized_names):
+    for ordinal, name in enumerate(sorted(unrecognized_names), start=1):
         content = fragments.sections.get(name, "").encode("utf-8", errors="strict")
         unrecognized_sections.append(
             {
-                "name": name,
+                "name": f"unrecognized-section-{ordinal:03d}",
                 "occurrence_count": fragments.section_occurrences.get(name, 1),
                 "byte_size": len(content),
                 "sha256": hashlib.sha256(content).hexdigest(),
@@ -1034,6 +1126,14 @@ def _normalize_raw_payload(
     resolved_collection_method = (
         collection_method or metadata.collection_method or "raw_artifact"
     )
+    resolved_experiment_id = sanitize_experiment_id(
+        resolved_experiment_id,
+        scope=raw_sha256,
+    )
+    resolved_collection_method = sanitize_collection_method(
+        resolved_collection_method,
+        scope=raw_sha256,
+    )
     observer_spec(resolved_observer_type)
     timestamp = (
         collection_timestamp
@@ -1058,6 +1158,10 @@ def _normalize_raw_payload(
         observer_type=resolved_observer_type,
         collection_method=resolved_collection_method,
         raw_sha256=raw_sha256,
+    )
+    resolved_collection_id = sanitize_collection_id(
+        resolved_collection_id,
+        scope=raw_sha256,
     )
     raw_reference = make_raw_artifact_reference(
         payload,
@@ -1211,15 +1315,13 @@ def _manifest_collection_errors(manifest: CollectionManifest) -> list[str]:
             f"collection manifest completion status: {manifest.completion_status}"
         )
     errors.extend(
-        f"collection warning: {warning}"[:1024] for warning in manifest.warnings
+        f"collection warning {index:03d} withheld"
+        for index, _warning in enumerate(manifest.warnings, start=1)
     )
-    for artifact in manifest.artifacts:
+    for index, artifact in enumerate(manifest.artifacts, start=1):
         if artifact.status in {EvidenceStatus.OBSERVED, EvidenceStatus.OBSERVED_ABSENT}:
             continue
-        detail = f": {artifact.detail}" if artifact.detail else ""
-        errors.append(
-            f"probe {artifact.probe_id}: {artifact.status.value}{detail}"[:1024]
-        )
+        errors.append(f"probe {index:03d}: {artifact.status.value}"[:1024])
     return list(dict.fromkeys(errors))[:256]
 
 
@@ -1273,28 +1375,38 @@ def normalize_collection_payload(
             collection_timestamp=manifest.ended_at,
         ),
     )
-    report["provenance"]["command_results"] = [
+    portable_results = [
         {
-            "command_id": artifact.probe_id,
+            "command_id": f"artifact-{index:03d}",
             "status": artifact.status,
             "exit_code": artifact.exit_code,
             "timed_out": artifact.timed_out,
-            "detail": artifact.detail,
+            "detail": None,
         }
-        for artifact in manifest.artifacts
+        for index, artifact in enumerate(manifest.artifacts, start=1)
     ]
+    report["provenance"]["command_results"] = portable_results
+    manifest_errors = _manifest_collection_errors(manifest)
     report["limitations"]["collection_errors"] = list(
         dict.fromkeys(
             [
                 *report["limitations"]["collection_errors"],
-                *_manifest_collection_errors(manifest),
+                *manifest_errors,
             ]
         )
     )[:256]
     report["extensions"]["org.androidtrustlab.collection"] = {
         "canonicalization": "atl-canonical-json-v1",
         "canonical_manifest_sha256": manifest_digest,
-        "manifest": manifest_data,
+        "portable_binding": {
+            "collection_id": report["raw_artifacts"][0]["collection_id"],
+            "completion_status": manifest.completion_status,
+            "collection_errors": manifest_errors,
+            "raw_artifact_sha256": report["raw_artifacts"][0]["sha256"],
+            "raw_artifact_status": report["raw_artifacts"][0]["status"],
+            "redaction_state": report["raw_artifacts"][0]["redaction_state"],
+            "artifact_results": [dict(result) for result in portable_results],
+        },
     }
     return finalize_report_identity(report)
 

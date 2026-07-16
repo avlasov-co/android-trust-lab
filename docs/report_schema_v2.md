@@ -2,7 +2,7 @@
 
 Report schema `2.0.0` is a frozen readable compatibility contract. Its canonical
 packaged resource is `trust_report_v2_0_0.schema.json`; frozen `1.0.0` remains a
-read-only input at `trust_report_v1_0_0.schema.json`, while report `5.0.0` is the
+read-only input at `trust_report_v1_0_0.schema.json`, while report `6.0.0` is the
 sole current writer. All resources ship in wheels and
 source distributions and are resolved locally by the exact compatibility
 registry—never by a network or `latest` lookup.

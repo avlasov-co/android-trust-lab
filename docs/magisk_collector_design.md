@@ -59,7 +59,7 @@ uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
 records a pseudonymous target, and marks missing per-command results as
 `not_collected`. The host analyzer verifies the binding before parsing and
 converts `raw.txt` into the current content-addressed
-`trust_report_v5_0_0.schema.json` format.
+`trust_report_v6_0_0.schema.json` format.
 
 The mount collector records complete `/proc/self/mountinfo`, `/proc/mounts`, and
 common `mount` output in separate sections. The analyzer prefers mountinfo but

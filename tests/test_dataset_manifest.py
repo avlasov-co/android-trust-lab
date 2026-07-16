@@ -640,7 +640,7 @@ def test_verifier_fails_closed_when_evidence_directory_is_unreadable(tmp_path):
             "derived_diff",
             "summary",
             "tampered summary",
-            "derived dataset diff is stale",
+            "derived dataset diff is stale|diff summary is not canonical",
         ),
     ],
 )
@@ -674,7 +674,7 @@ def test_verifier_regenerates_outputs_instead_of_trusting_rehashed_bytes(
     rebind_artifact(manifest, bundle, artifact["artifact_id"])
     write_json(manifest_path, manifest)
 
-    with pytest.raises(CollectionError, match=message):
+    with pytest.raises((CollectionError, SchemaValidationError), match=message):
         verify_dataset_manifest(manifest_path)
 
 
@@ -730,7 +730,10 @@ def test_verifier_cross_checks_collection_manifest_relationships(tmp_path):
     rebind_artifact(manifest, bundle, collection["artifact_id"])
     write_json(manifest_path, manifest)
 
-    with pytest.raises(SchemaValidationError, match="collection relationship"):
+    with pytest.raises(
+        SchemaValidationError,
+        match="collection relationship|artifact binding is not semantic",
+    ):
         verify_dataset_manifest(manifest_path)
 
 
@@ -749,7 +752,7 @@ def test_verifier_rejects_additional_observed_collection_evidence(
     extra.update(
         {
             "logical_name": "extra_device_log",
-            "relative_path": "extra_device.log",
+            "relative_path": "extra_device_artifact.log",
             "byte_size": len(extra_payload),
             "sha256": hashlib.sha256(extra_payload).hexdigest(),
             "probe_id": "manual.extra_device_log",
@@ -758,11 +761,16 @@ def test_verifier_rejects_additional_observed_collection_evidence(
     document["artifacts"].append(extra)
     write_json(collection_path, document)
     if materialize_extra:
-        collection_path.with_name("extra_device.log").write_bytes(extra_payload)
+        collection_path.with_name("extra_device_artifact.log").write_bytes(
+            extra_payload
+        )
     rebind_artifact(manifest, bundle, collection["artifact_id"])
     write_json(manifest_path, manifest)
 
-    with pytest.raises(SchemaValidationError, match="collection relationship"):
+    with pytest.raises(
+        SchemaValidationError,
+        match="collection relationship|artifact binding is not semantic",
+    ):
         verify_dataset_manifest(manifest_path)
 
 

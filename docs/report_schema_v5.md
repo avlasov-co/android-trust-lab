@@ -1,7 +1,7 @@
 # Report Schema v5
 
-Report schema `5.0.0` is the sole current writer contract. Its canonical packaged
-resource is `trust_report_v5_0_0.schema.json`. Report versions `1.0.0` through
+Report schema `5.0.0` is frozen and readable; v6 is the current writer contract.
+Its canonical packaged resource is `trust_report_v5_0_0.schema.json`. Report versions `1.0.0` through
 `4.0.0` remain frozen readable inputs through exact local schemas and the
 registered migration chain.
 
@@ -62,7 +62,7 @@ This prevents a filtered absence from becoming a claim of nonexistence.
 The report chain is:
 
 ```text
-1.0.0 -> 2.0.0 -> 3.0.0 -> 4.0.0 -> 5.0.0
+1.0.0 -> 2.0.0 -> 3.0.0 -> 4.0.0 -> 5.0.0 -> 6.0.0
 ```
 
 `report-v4-to-v5` is pure and deterministic. It preserves the exact canonical
@@ -79,7 +79,7 @@ evidence status, sanitized context, scope, completeness, limitation, or selected
 observation changes report content identity. Evidence references are retained in
 reports but excluded from semantic diff values.
 
-Diff schema `2.2.0` is the current writer. It migrates readable inputs to report
+Diff schema `2.2.0` is frozen and readable. Current diff `2.3.0` migrates readable inputs to report
 v5 and adds status-aware dimensions for current SELinux context, denial
 collection, and selected-process visibility. Consequently, an inaccessible
 process view differs from a complete observation of absence without leaking

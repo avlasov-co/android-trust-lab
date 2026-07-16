@@ -94,13 +94,14 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
         for key in ("mount_point", "fs_type", "options", "classification")
     } == expected_report["system_mount"]
     assert {
-        "su_present": report["root_state"]["su_present"]["value"],
-        "uid": report["root_state"]["uid"]["value"],
-        "gid": report["root_state"]["gid"]["value"],
+        "observer_uid_is_root": report["root_state"]["observer_effective_uid_is_root"][
+            "value"
+        ],
         "root_shell_available": report["root_state"]["root_shell_available"]["value"],
-        "root_paths": report["root_state"]["root_paths"]["value"],
+        "su_binary_observed": report["root_state"]["su_binary_observed"]["value"],
+        "su_invocation_tested": report["root_state"]["su_invocation_tested"]["value"],
     } == expected_report["root_state"]
-    assert report["root_state"]["su_present"]["status"] == "observed_absent"
+    assert report["root_state"]["su_binary_observed"]["status"] == ("observed_absent")
     assert report["raw_artifacts"] == expected_report["raw_artifacts"]
 
     validate_report = run_installed("validate-report", str(report_path), cwd=tmp_path)
@@ -171,8 +172,8 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     assert migrate.stdout == migrate.stderr == ""
     assert v1_source.read_bytes() == before
     migrated = json.loads(migrated_path.read_text(encoding="utf-8"))
-    assert migrated["schema_version"] == "5.0.0"
-    assert len(migrated["provenance"]["migration_history"]) == 4
+    assert migrated["schema_version"] == "6.0.0"
+    assert len(migrated["provenance"]["migration_history"]) == 5
 
     collection_manifest = (
         ROOT / "datasets/samples/magisk_collector/collector_manifest_sample.json"
@@ -219,7 +220,7 @@ def test_installed_entry_point_failure_paths_are_stable(tmp_path):
     invalid = tmp_path / "invalid.json"
     invalid.write_text('{"schema_version": "1.0.0"}\n', encoding="utf-8")
     unsupported = tmp_path / "unsupported.json"
-    unsupported.write_text('{"schema_version": "6.0.0"}\n', encoding="utf-8")
+    unsupported.write_text('{"schema_version": "7.0.0"}\n', encoding="utf-8")
     missing = tmp_path / "missing.raw"
     valid_report = ROOT / "tests/fixtures/sample_normalized_report.json"
     output = tmp_path / "unused.json"

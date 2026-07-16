@@ -112,7 +112,7 @@ def test_complete_table_retains_contexts_and_can_prove_exact_absence(
 ) -> None:
     report = full_security_report(tmp_path)
 
-    assert report["schema_version"] == "5.0.0"
+    assert report["schema_version"] == "6.0.0"
     assert report["selinux"]["policy_mode"] == {
         "status": "observed",
         "value": "enforcing",
@@ -158,7 +158,7 @@ def test_portable_report_withholds_arbitrary_manifest_warnings(tmp_path: Path) -
     )
 
     adapter = report["extensions"]["org.androidtrustlab.adapter"]
-    assert adapter["warnings"] == ["source artifact warning 1 withheld"]
+    assert adapter["warnings"] == ["adapter warning 001 withheld"]
     assert "PRIVATE_CMDLINE_PID_424242" not in json.dumps(report)
 
 
@@ -551,7 +551,7 @@ def test_direct_observed_selinux_evidence_requires_source_reference(
         validate_report(forged)
 
 
-def test_capture_level_reference_treats_hash_l_as_literal_path(tmp_path: Path) -> None:
+def test_capture_level_reference_removes_caller_controlled_path(tmp_path: Path) -> None:
     report = normalize_manifest(
         tmp_path,
         [
@@ -564,8 +564,9 @@ def test_capture_level_reference_treats_hash_l_as_literal_path(tmp_path: Path) -
         suffix="literal-hash-l-path",
     )
 
-    assert report["process_state"]["evidence_refs"] == ["captures/process#Lraw.txt"]
-    assert selected(report, "init")["evidence_refs"] == ["captures/process#Lraw.txt"]
+    assert report["process_state"]["evidence_refs"] == ["captures/processes.txt"]
+    assert selected(report, "init")["evidence_refs"] == ["captures/processes.txt"]
+    assert "process#Lraw" not in str(report)
     validate_report(report)
 
 
@@ -649,5 +650,10 @@ def test_report_summary_retains_structured_statuses_without_source_details(
     )
     assert "init=observed/u:r:init:s0" in markdown
     assert "adbd=observed_absent/observed_absent" in markdown
+    assert "Observer effective UID is root: `not_collected`" in markdown
+    assert "su binary visible: `not_collected`" in markdown
+    assert "su invocation tested: `not_collected`" in markdown
+    assert "Magisk binary visible: `not_collected`" in markdown
+    assert "Verified-boot confidence:" in markdown
     assert "evidence_refs" not in markdown
     assert "7654321" not in markdown

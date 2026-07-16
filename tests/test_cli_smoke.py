@@ -62,4 +62,4 @@ def test_valid_normalize_validate_diff_summarize_flow(tmp_path, capsys):
     assert "valid diff\n" in output
     assert str(tmp_path) not in output
     assert "# Trust Diff" in output
-    assert "root_presence" in output
+    assert "su_binary_visibility" in output

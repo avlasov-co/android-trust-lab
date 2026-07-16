@@ -109,7 +109,7 @@ def test_repository_tool_entry_points_pass(capsys):
     output = capsys.readouterr().out
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
-    assert "validated 15 schemas, 8 reports, 6 diffs" in output
+    assert "validated 17 schemas, 8 reports, 6 diffs" in output
     assert "1 collection manifest" in output
     assert "Magisk module safety checks passed" in output
 

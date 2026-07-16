@@ -125,13 +125,13 @@ trustlab summarize /tmp/root_diff.json
 
 ```json
 {
-  "dimension": "root_presence",
-  "before": false,
-  "after": true,
+  "dimension": "su_binary_visibility",
+  "before": {"status": "observed_absent", "value": false},
+  "after": {"status": "observed", "value": true},
   "severity": "medium",
   "interpretation": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
   "evidence_paths": [
-    "root_state.su_present"
+    "root_state.su_binary_observed"
   ]
 }
 ```

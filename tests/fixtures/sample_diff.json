@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-    "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-    "schema_version": "5.0.0"
+    "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+    "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+    "schema_version": "6.0.0"
   },
   "changed_dimensions": [
     {
@@ -14,53 +14,53 @@
         "status": "observed_absent",
         "value": false
       },
-      "dimension": "root_presence",
+      "dimension": "su_binary_visibility",
       "evidence_paths": [
-        "root_state.su_present"
+        "root_state.su_binary_observed"
       ],
-      "interpretation": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
+      "interpretation": "Trust-state dimension changed between reports.",
       "severity": "medium"
     }
   ],
   "compare_report": {
-    "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-    "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-    "schema_version": "5.0.0"
+    "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+    "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+    "schema_version": "6.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "ecbf6d302bc3b421e84b1249d4fcd8fe43809519ee602d0008e56c48ffbea59d",
-  "diff_id": "atldiff-ecbf6d302bc3b421e84b1249d4fcd8fe",
+  "content_digest": "7a362a6d5a98799667ea259c8d8e80222dadf4abb6530196d325cabd8d2cc27c",
+  "diff_id": "atldiff-7a362a6d5a98799667ea259c8d8e8022",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-        "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-        "schema_version": "5.0.0"
+        "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+        "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-      "original_document_digest": "3832a9cb6949e7ad521f3bf81778a9b1fb8810ab0a0f4e3149781fa997e24490",
-      "original_report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+      "original_document_digest": "4d91f1f57164e6695baa849fa1988b1a3f2bbfaa973bb1061bb2206d41d38b55",
+      "original_report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+      "original_schema_version": "6.0.0"
     },
-    "common_report_schema_version": "5.0.0",
+    "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-        "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-        "schema_version": "5.0.0"
+        "content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+        "report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
-      "original_document_digest": "21381731f17f172e3ccbcbaa10011ce6d8f675b6eff9e0cbfa33b136eb204fc9",
-      "original_report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "723d5c10f281c89e72cd507101b9c1cc99d844069884a5e4819252cb533aaa8b",
+      "original_document_digest": "6276f339a4c2d671e62ffab161ff92aaf1579d4b273f25885f61c1cd69e6f859",
+      "original_report_id": "atlrep-77eadfc6e2272cb15337c0183d187aa6",
+      "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.2.0",
-  "summary": "1 dimensions changed, 16 dimensions unchanged.",
+  "schema_version": "2.3.0",
+  "summary": "1 dimensions changed, 28 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -74,7 +74,19 @@
     "system_mount_resolution",
     "dynamic_partition_state",
     "apex_mount_set",
-    "magisk_presence",
+    "observer_uid_root",
+    "root_shell_availability",
+    "su_invocation_tested",
+    "su_invocation_result",
+    "root_management_artifact",
+    "magisk_binary_visibility",
+    "magisk_daemon_visibility",
+    "magisk_process_visibility",
+    "zygisk_visibility",
+    "magisk_version_name",
+    "magisk_version_code",
+    "magisk_module_context",
+    "magisk_command_status",
     "property_consistency",
     "emulator_state",
     "observer_privilege"

@@ -76,6 +76,30 @@ def test_invalid_normalized_model_creates_no_destination_parent(
     assert not destination.parent.exists()
 
 
+def test_no_validate_still_enforces_portable_privacy_gate(
+    tmp_path, monkeypatch, capsys
+):
+    unsafe = valid_report()
+    unsafe["target"]["model"]["value"] = "alice@example.com"
+    monkeypatch.setattr(cli, "normalize_raw_file", lambda *args, **kwargs: unsafe)
+    destination = tmp_path / "report.json"
+
+    code = cli.main(
+        [
+            "normalize",
+            "--input",
+            str(RAW_FIXTURE),
+            "--output",
+            str(destination),
+            "--no-validate",
+        ]
+    )
+
+    assert_clean_error(capsys, code, "portable privacy validation")
+    assert code == cli.EXIT_SCHEMA_VALIDATION
+    assert not destination.exists()
+
+
 @pytest.mark.parametrize("no_validate", [False, True])
 def test_normalize_refuses_to_replace_its_input(tmp_path, capsys, no_validate):
     raw = tmp_path / "raw.txt"

@@ -90,6 +90,7 @@ KNOWN_SECTION_NAMES = frozenset(
         "SELINUX_DENIALS",
         "CMDLINE",
         "SU_PATHS",
+        "ROOT_PROBE",
         "MAGISK",
         "PS",
         "PS_SELECTED",

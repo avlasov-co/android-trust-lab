@@ -56,7 +56,7 @@ def test_checked_in_adversarial_fixture_preserves_evidence_semantics():
     assert report["mounts"]["system_mount"]["classification"] == "overlay"
     assert report["mounts"]["vendor_mount"]["classification"] == "tmpfs"
     assert report["mounts"]["product_mount"]["classification"] == "other"
-    assert report["mounts"]["product_mount"]["raw"].endswith("rw,bind")
+    assert report["mounts"]["product_mount"]["raw"] == "<withheld>"
     assert report["limitations"]["collection_errors"] == []
 
 

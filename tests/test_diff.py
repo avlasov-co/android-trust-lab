@@ -11,7 +11,7 @@ from trustlab.diff import make_diff
 from trustlab.exceptions import SchemaValidationError
 from trustlab.identity import finalize_report_identity
 from trustlab.migrations import migrate_report_to_current, migrate_report_v1_to_v2
-from trustlab.report_writer import load_json
+from trustlab.report_writer import diff_to_markdown, load_json
 from trustlab.validators import validate_diff
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +44,7 @@ def test_diff_root_change_without_observer_change():
     )
     diff = make_diff(base, compare)
     dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
-    assert "root_presence" in dimensions
+    assert "su_binary_visibility" in dimensions
     assert "observer_privilege" not in dimensions
 
 
@@ -58,7 +58,22 @@ def test_diff_observer_change_is_separate_from_target_mutation():
     diff = make_diff(base, compare)
     dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
     assert "observer_privilege" in dimensions
-    assert "root_presence" not in dimensions
+    assert "su_binary_visibility" not in dimensions
+
+
+def test_diff_keeps_su_invocation_tested_separate_from_result():
+    base = load_report(
+        "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json"
+    )
+    compare = load_report(
+        "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json"
+    )
+
+    diff = make_diff(base, compare)
+    dimensions = {item["dimension"] for item in diff["changed_dimensions"]}
+
+    assert "su_invocation_tested" in dimensions
+    assert "su_invocation_result" not in dimensions
 
 
 def test_diff_does_not_emit_fake_visibility_or_physical_dimensions():
@@ -98,10 +113,10 @@ def test_diff_id_is_deterministic():
     assert make_diff(base, compare)["diff_id"] == make_diff(base, compare)["diff_id"]
 
 
-def test_diff_id_preserves_prior_utf8_canonicalization():
+def test_diff_id_changes_for_portable_property_transition():
     base = load_report("tests/fixtures/sample_normalized_report.json")
     compare = copy.deepcopy(base)
-    compare["properties"]["security"]["value"]["ro.secure"] = "sécurisé"
+    compare["properties"]["security"]["value"]["ro.secure"] = "0"
     compare = finalize_report_identity(compare)
 
     assert make_diff(base, compare)["diff_id"] != make_diff(base, base)["diff_id"]
@@ -113,10 +128,10 @@ def test_cross_version_diff_uses_explicit_migration_chain():
 
     diff = make_diff(v1, v2)
     assert diff["changed_dimensions"] == []
-    assert len(diff["unchanged_dimensions"]) == 17
+    assert len(diff["unchanged_dimensions"]) == 29
     current = migrate_report_to_current(v2)
     provenance = diff["provenance"]
-    assert provenance["common_report_schema_version"] == "5.0.0"
+    assert provenance["common_report_schema_version"] == "6.0.0"
     assert provenance["base"]["original_schema_version"] == "1.0.0"
     assert provenance["compare"]["original_schema_version"] == "2.0.0"
     assert (
@@ -131,7 +146,7 @@ def test_cross_version_diff_uses_explicit_migration_chain():
         == {
             "report_id": current["report_id"],
             "content_digest": current["content_digest"],
-            "schema_version": "5.0.0",
+            "schema_version": "6.0.0",
         }
     )
     assert [
@@ -142,11 +157,17 @@ def test_cross_version_diff_uses_explicit_migration_chain():
         "report-v2-to-v3",
         "report-v3-to-v4",
         "report-v4-to-v5",
+        "report-v5-to-v6",
     ]
     assert [
         migration["migration_id"]
         for migration in provenance["compare"]["applied_migrations"]
-    ] == ["report-v2-to-v3", "report-v3-to-v4", "report-v4-to-v5"]
+    ] == [
+        "report-v2-to-v3",
+        "report-v3-to-v4",
+        "report-v4-to-v5",
+        "report-v5-to-v6",
+    ]
     validate_diff(diff)
 
 
@@ -161,6 +182,60 @@ def test_diff_validation_rejects_rehashed_unregistered_migration_chain():
 
     with pytest.raises(SchemaValidationError, match="registered migration chain"):
         validate_diff(forged)
+
+
+def test_diff_and_markdown_reject_sensitive_values():
+    base = load_report(
+        "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json"
+    )
+    compare = load_report(
+        "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json"
+    )
+    forged = make_diff(base, compare)
+    forged["changed_dimensions"][0]["before"] = "ghp_DIFF_PRIVATEVALUE12345678"
+    rehash_diff(forged)
+
+    with pytest.raises(SchemaValidationError, match="privacy"):
+        validate_diff(forged)
+    with pytest.raises(SchemaValidationError, match="privacy"):
+        diff_to_markdown(forged)
+
+
+def test_diff_rejects_account_name_in_magisk_version_dimension():
+    base = load_report(
+        "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json"
+    )
+    compare = load_report(
+        "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json"
+    )
+    forged = make_diff(base, compare)
+    version = next(
+        item
+        for item in forged["changed_dimensions"]
+        if item["dimension"] == "magisk_version_name"
+    )
+    version["before"] = {"status": "observed", "value": "alice"}
+    rehash_diff(forged)
+
+    with pytest.raises(SchemaValidationError, match="dimension"):
+        validate_diff(forged)
+    with pytest.raises(SchemaValidationError, match="dimension"):
+        diff_to_markdown(forged)
+
+
+def test_diff_rejects_account_name_in_migration_provenance():
+    base = load_report("tests/fixtures/report_v1_historical.json")
+    compare = load_report("tests/fixtures/sample_normalized_report.json")
+    forged = make_diff(base, compare)
+    forged["provenance"]["base"]["applied_migrations"][0]["implementation"]["name"] = (
+        "alice"
+    )
+    rehash_diff(forged)
+
+    with pytest.raises(SchemaValidationError, match="provenance"):
+        validate_diff(forged)
+    with pytest.raises(SchemaValidationError, match="provenance"):
+        diff_to_markdown(forged)
 
 
 @pytest.mark.parametrize("field", ["original_report_id", "original_content_digest"])

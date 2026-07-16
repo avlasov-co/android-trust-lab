@@ -16,6 +16,7 @@ from .exceptions import (
     SchemaValidationError,
     safe_path_label,
 )
+from .privacy import validate_portable_diff, validate_portable_report
 
 MAX_JSON_INPUT_BYTES = MAX_CANONICAL_BYTES
 
@@ -130,6 +131,7 @@ def _evidence_value(value: Any) -> Any:
 
 
 def diff_to_markdown(diff: dict[str, Any]) -> str:
+    validate_portable_diff(diff)
     lines = [
         f"# Trust Diff {diff.get('diff_id', '')}",
         "",
@@ -171,8 +173,12 @@ def _selected_process_summary(process_state: dict[str, Any]) -> str:
 
 
 def report_to_markdown(report: dict[str, Any]) -> str:
+    validate_portable_report(report)
     selinux = report.get("selinux", {})
     process_state = report.get("process_state", {})
+    root_state = report.get("root_state", {})
+    magisk_state = report.get("magisk_state", {})
+    confidence = report.get("verified_boot", {}).get("confidence", {})
     process_limitations = process_state.get("limitations", [])
     process_capture = _status(
         {"status": process_state.get("capture_status", "not_collected")}
@@ -192,8 +198,20 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         f"- Process capture: `{process_capture}` (scope `{process_state.get('scope', 'unknown')}`, completeness `{process_state.get('completeness', 'unknown')}`)",
         f"- Selected processes (visibility/context): `{_selected_process_summary(process_state)}`",
         f"- Process limitations: `{', '.join(process_limitations) if process_limitations else 'none'}`",
-        f"- Root present: `{_evidence_value(report.get('root_state', {}).get('su_present', 'not_collected'))}`",
-        f"- Magisk present: `{_evidence_value(report.get('magisk_state', {}).get('magisk_binary_present', 'not_collected'))}`",
+        f"- Observer effective UID is root: `{_evidence_value(root_state.get('observer_effective_uid_is_root', 'not_collected'))}`",
+        f"- Root shell available: `{_evidence_value(root_state.get('root_shell_available', 'not_collected'))}`",
+        f"- su binary visible: `{_evidence_value(root_state.get('su_binary_observed', 'not_collected'))}`",
+        f"- su invocation tested: `{_evidence_value(root_state.get('su_invocation_tested', 'not_collected'))}`",
+        f"- su invocation result: `{_evidence_value(root_state.get('su_invocation_result', 'not_collected'))}`",
+        f"- Root-management artifact visible: `{_evidence_value(root_state.get('root_management_artifact_observed', 'not_collected'))}`",
+        f"- Magisk binary visible: `{_evidence_value(magisk_state.get('binary_visibility', 'not_collected'))}`",
+        f"- Magisk daemon visible: `{_evidence_value(magisk_state.get('daemon_visibility', 'not_collected'))}`",
+        f"- Magisk process visible: `{_evidence_value(magisk_state.get('process_visibility', 'not_collected'))}`",
+        f"- Zygisk indicator visible: `{_evidence_value(magisk_state.get('zygisk_visibility', 'not_collected'))}`",
+        f"- Magisk version: name `{_evidence_value(magisk_state.get('version_name', 'not_collected'))}`, code `{_evidence_value(magisk_state.get('version_code', 'not_collected'))}`",
+        f"- Magisk module context: `{_evidence_value(magisk_state.get('module_context', 'not_collected'))}`",
+        f"- Magisk command status: `{_status(magisk_state.get('command_status'))}`",
+        f"- Verified-boot confidence: `{confidence.get('level', 'unassessed')}` (source `{confidence.get('source_quality', 'unavailable')}`, command `{confidence.get('command_success', 'not_collected')}`, observer `{confidence.get('observer_capability', 'unspecified')}`)",
         f"- Emulator: `{_evidence_value(report.get('emulator_state', {}).get('is_emulator', 'not_collected'))}`",
     ]
     return "\n".join(lines) + "\n"

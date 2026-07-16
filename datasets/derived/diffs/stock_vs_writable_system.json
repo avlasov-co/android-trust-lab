@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-    "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-    "schema_version": "5.0.0"
+    "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+    "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+    "schema_version": "6.0.0"
   },
   "changed_dimensions": [
     {
@@ -45,11 +45,7 @@
           5
         ],
         "sources": [
-          "/dev/block/dm-2",
-          "/dev/block/dm-3",
-          "/dev/block/dm-4",
-          "/dev/block/dm-5",
-          "/dev/block/dm-6"
+          "/dev/block/dm-redacted"
         ],
         "state": "detected"
       },
@@ -63,12 +59,7 @@
           5
         ],
         "sources": [
-          "/dev/block/dm-1",
-          "/dev/block/dm-2",
-          "/dev/block/dm-3",
-          "/dev/block/dm-4",
-          "/dev/block/dm-5",
-          "/dev/block/dm-6"
+          "/dev/block/dm-redacted"
         ],
         "state": "detected"
       },
@@ -81,44 +72,44 @@
     }
   ],
   "compare_report": {
-    "content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
-    "report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
-    "schema_version": "5.0.0"
+    "content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
+    "report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+    "schema_version": "6.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "563fe9b5eeaece42be2ec3ab2d17e535fda55977e52034dbe18241377e460a21",
-  "diff_id": "atldiff-563fe9b5eeaece42be2ec3ab2d17e535",
+  "content_digest": "5c130255dca56be9772c66be41311f9a4ca731692235e3a7745698cb720a6d64",
+  "diff_id": "atldiff-5c130255dca56be9772c66be41311f9a",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-        "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-        "schema_version": "5.0.0"
+        "content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+        "report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
-      "original_document_digest": "3832a9cb6949e7ad521f3bf81778a9b1fb8810ab0a0f4e3149781fa997e24490",
-      "original_report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "fe5ff5a6d0de7f5fda69425d062d717b166c40f4f1610daba6b75b05b09f805f",
+      "original_document_digest": "4d91f1f57164e6695baa849fa1988b1a3f2bbfaa973bb1061bb2206d41d38b55",
+      "original_report_id": "atlrep-302f83dc9de1b8ef047905a6b5074477",
+      "original_schema_version": "6.0.0"
     },
-    "common_report_schema_version": "5.0.0",
+    "common_report_schema_version": "6.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
-        "report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
-        "schema_version": "5.0.0"
+        "content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
+        "report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+        "schema_version": "6.0.0"
       },
-      "original_content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
-      "original_document_digest": "d52b80ba22ad20839fa460e7f7715138d7a1d8876800dbf5827d8428ca23b7d7",
-      "original_report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
-      "original_schema_version": "5.0.0"
+      "original_content_digest": "88daa4a6997cbd717db71ece64b03e73f6c03b7700b569f3f30c9c4a531cb220",
+      "original_document_digest": "226c1f276bb71ab0b57a8905491246ef10388f2a5fed897c19df597f23767e5e",
+      "original_report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
+      "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.2.0",
-  "summary": "2 dimensions changed, 15 dimensions unchanged.",
+  "schema_version": "2.3.0",
+  "summary": "2 dimensions changed, 27 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -130,8 +121,20 @@
     "selected_process_visibility",
     "system_mount_resolution",
     "apex_mount_set",
-    "root_presence",
-    "magisk_presence",
+    "observer_uid_root",
+    "root_shell_availability",
+    "su_binary_visibility",
+    "su_invocation_tested",
+    "su_invocation_result",
+    "root_management_artifact",
+    "magisk_binary_visibility",
+    "magisk_daemon_visibility",
+    "magisk_process_visibility",
+    "zygisk_visibility",
+    "magisk_version_name",
+    "magisk_version_code",
+    "magisk_module_context",
+    "magisk_command_status",
     "property_consistency",
     "emulator_state",
     "observer_privilege"

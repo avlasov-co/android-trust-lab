@@ -1,7 +1,7 @@
 # Report Schema v3
 
 Report schema `3.0.0` is a frozen readable compatibility contract. Its canonical
-resource is `trust_report_v3_0_0.schema.json`; report `5.0.0` is the sole current
+resource is `trust_report_v3_0_0.schema.json`; report `6.0.0` is the sole current
 writer.
 
 V3 introduced structured raw-artifact references, `content_digest`,

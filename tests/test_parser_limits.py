@@ -172,12 +172,11 @@ unstructured output
         collection_timestamp="2026-07-16T12:00:00Z",
     )
 
-    assert report["root_state"]["root_paths"]["status"] == "not_collected"
-    assert report["root_state"]["su_present"]["status"] == "not_collected"
-    assert any(
-        "inferred inaccessible" in warning
-        for warning in report["extensions"]["org.androidtrustlab.adapter"]["warnings"]
-    )
+    assert report["root_state"]["su_binary_observed"]["status"] == "inaccessible"
+    assert report["extensions"]["org.androidtrustlab.adapter"]["warnings"] == [
+        "adapter warning 001 withheld",
+        "adapter warning 002 withheld",
+    ]
 
 
 def test_genuinely_empty_success_remains_distinct_from_command_failure():
@@ -278,13 +277,13 @@ def test_unrecognized_sections_are_hashed_for_provenance_only(tmp_path):
 
     assert provenance == [
         {
-            "name": "FUTURE_EMPTY",
+            "name": "unrecognized-section-001",
             "occurrence_count": 1,
             "byte_size": 0,
             "sha256": hashlib.sha256(b"").hexdigest(),
         },
         {
-            "name": "FUTURE_PROBE",
+            "name": "unrecognized-section-002",
             "occurrence_count": 1,
             "byte_size": len(content.encode()),
             "sha256": hashlib.sha256(content.encode()).hexdigest(),

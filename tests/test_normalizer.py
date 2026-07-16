@@ -18,7 +18,7 @@ def test_normalize_fixture():
     )
     assert report["target"]["target_type"] == "avd"
     assert report["selinux"]["policy_mode"]["value"] == "enforcing"
-    assert report["root_state"]["su_present"]["status"] == "observed_absent"
+    assert report["root_state"]["su_binary_observed"]["status"] == "observed_absent"
     assert report["mounts"]["system_mount"]["classification"] == "read-only"
     assert report["emulator_state"]["is_emulator"]["value"] is True
 
@@ -37,8 +37,10 @@ def test_normalize_magisk_sample():
         collection_timestamp="2026-04-25T15:50:00Z",
         raw_artifact_ref="datasets/samples/magisk_collector/raw_sample.txt",
     )
-    assert report["root_state"]["su_present"]["value"] is True
-    assert report["magisk_state"]["magisk_binary_present"]["value"] is True
+    assert report["root_state"]["su_binary_observed"]["value"] is True
+    assert report["magisk_state"]["binary_visibility"]["value"] is True
+    assert report["magisk_state"]["version_name"]["value"] == "28.1"
+    assert report["magisk_state"]["version_code"]["value"] == "28100"
     assert report["observer"]["collection_method"] == "magisk_module_manual"
 
 
@@ -96,7 +98,9 @@ def test_default_raw_artifact_reference_does_not_embed_host_path(tmp_path):
         encoding="utf-8",
     )
     report = normalize_raw_file(raw, collection_timestamp="2026-04-25T15:06:21Z")
-    assert report["raw_artifacts"][0]["relative_path"] == "raw.txt"
+    assert report["raw_artifacts"][0]["relative_path"] == (
+        "artifacts/raw-artifact-001.txt"
+    )
     assert str(tmp_path) not in str(report)
 
 
@@ -115,8 +119,8 @@ def test_missing_probes_do_not_become_affirmative_absence(tmp_path):
         report["mounts"]["integrity_summary"]["overlay_detected"],
         report["mounts"]["integrity_summary"]["writable_sensitive_mounts"],
         report["properties"]["security"],
-        report["root_state"]["su_present"],
-        report["magisk_state"]["magisk_binary_present"],
+        report["root_state"]["su_binary_observed"],
+        report["magisk_state"]["binary_visibility"],
         report["process_state"]["selected_processes"][0]["visibility"],
         report["process_state"]["selected_processes"][0]["context"],
         report["emulator_state"]["is_emulator"],
@@ -149,7 +153,7 @@ def test_default_provenance_distinguishes_same_named_artifacts(tmp_path):
     assert {
         first_report["raw_artifacts"][0]["relative_path"],
         second_report["raw_artifacts"][0]["relative_path"],
-    } == {"raw.txt"}
+    } == {"artifacts/raw-artifact-001.txt"}
     assert (
         first_report["raw_artifacts"][0]["sha256"]
         != second_report["raw_artifacts"][0]["sha256"]

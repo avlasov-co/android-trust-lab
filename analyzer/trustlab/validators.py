@@ -40,9 +40,15 @@ from .identity import (
     validate_report_identities,
 )
 from .migration_codec import encode_legacy_report, legacy_report_digest
+from .privacy import (
+    validate_portable_collection_manifest,
+    validate_portable_diff,
+    validate_portable_report,
+)
 from .report_v3 import migrate_v2_source_reference
 from .report_v4 import report_v4_from_v3_shape
 from .report_v5 import report_v5_from_v4_shape
+from .report_v6 import report_v6_from_v5_shape
 from .security_evidence import SELECTED_PROCESS_NAMES, is_selected_process_capture
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
@@ -280,7 +286,7 @@ def validate_report(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.REPORT)
     )
-    if resource_version in {"2.0.0", "3.0.0", "4.0.0", "5.0.0"}:
+    if resource_version in {"2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"}:
         _validate_canonical_document(data, artifact_name="report")
     validate_with_schema(
         data,
@@ -296,6 +302,9 @@ def validate_report(data: object) -> None:
         _validate_v4_report_semantics(data)
     elif resource_version == "5.0.0":
         _validate_v5_report_semantics(data)
+    elif resource_version == "6.0.0":
+        _validate_v6_report_semantics(data)
+        validate_portable_report(data)
 
 
 def _migration_provenance_error(detail: str) -> SchemaValidationError:
@@ -1350,6 +1359,321 @@ def _validate_v5_report_semantics(data: object) -> None:
     validate_report_identities(data)
 
 
+def _validate_v6_direct_evidence(data: dict[str, Any]) -> None:
+    adapter = data["extensions"].get("org.androidtrustlab.adapter")
+    if not isinstance(adapter, dict) or not isinstance(adapter.get("captures"), list):
+        raise SchemaValidationError(
+            "direct report root and Magisk evidence requires adapter provenance"
+        )
+    captures = {
+        capture["name"]: capture
+        for capture in adapter["captures"]
+        if isinstance(capture, dict)
+        and isinstance(capture.get("name"), str)
+        and isinstance(capture.get("source_ref"), str)
+    }
+
+    def validate_refs(
+        evidence: dict[str, Any], allowed_names: frozenset[str], label: str
+    ) -> None:
+        refs = evidence["evidence_refs"]
+        if evidence["status"] in {"observed", "observed_absent"}:
+            allowed_refs = {
+                captures[name]["source_ref"]
+                for name in allowed_names
+                if name in captures
+                and captures[name].get("status") in {"observed", "empty"}
+            }
+            if len(refs) != 1 or refs[0] not in allowed_refs:
+                raise SchemaValidationError(
+                    f"report {label} does not bind its semantic adapter capture"
+                )
+        elif refs:
+            raise SchemaValidationError(
+                f"unavailable report {label} must not claim source references"
+            )
+
+    root = data["root_state"]
+    magisk = data["magisk_state"]
+    observer = data["observer"]["observer_type"]
+    if root["source_observer"] != observer or magisk["source_observer"] != observer:
+        raise SchemaValidationError(
+            "report root and Magisk source observers must match the report observer"
+        )
+    validate_refs(
+        root["observer_effective_uid_is_root"],
+        frozenset({"root_probe", "identity", "id"}),
+        "observer effective UID evidence",
+    )
+    for field, label in (
+        ("root_shell_available", "root-shell evidence"),
+        ("su_invocation_tested", "su invocation-test evidence"),
+        ("su_invocation_result", "su invocation-result evidence"),
+        ("root_management_artifact_observed", "root-management evidence"),
+    ):
+        validate_refs(root[field], frozenset({"root_probe"}), label)
+    validate_refs(
+        root["su_binary_observed"],
+        frozenset({"root_probe", "su_paths"}),
+        "su binary evidence",
+    )
+    su_tested = root["su_invocation_tested"]
+    su_result = root["su_invocation_result"]
+    invocation_was_tested = (
+        su_tested["status"] == "observed" and su_tested["value"] is True
+    )
+    result_was_observed = su_result["status"] == "observed"
+    if invocation_was_tested != result_was_observed:
+        raise SchemaValidationError(
+            "report su invocation tested/result evidence is contradictory"
+        )
+    for field in (
+        "binary_visibility",
+        "zygisk_visibility",
+        "version_name",
+        "version_code",
+        "module_context",
+    ):
+        validate_refs(
+            magisk[field],
+            frozenset({"magisk"}),
+            f"Magisk {field.replace('_', ' ')} evidence",
+        )
+    for field in ("daemon_visibility", "process_visibility"):
+        validate_refs(
+            magisk[field],
+            frozenset({"processes", "ps_selected"}),
+            f"Magisk {field.replace('_', ' ')} evidence",
+        )
+    validate_refs(
+        magisk["command_status"],
+        frozenset({"magisk"}),
+        "command status",
+    )
+    relevant_names = {"properties", "getprop_selected", "boot_state"}
+    relevant = [captures[name] for name in relevant_names if name in captures]
+    observed = [
+        capture
+        for capture in relevant
+        if capture.get("status") in {"observed", "empty"}
+    ]
+    failures = [
+        capture
+        for capture in relevant
+        if capture.get("status")
+        in {"inaccessible", "command_error", "timeout", "error"}
+    ]
+    inferred = adapter.get("input_kind") == "legacy_sectioned_text" or any(
+        str(capture["source_ref"]).startswith("legacy-sections/")
+        for capture in relevant
+    )
+    source_quality = (
+        "structured_capture"
+        if observed and not inferred
+        else "legacy_inferred"
+        if observed
+        else "unavailable"
+    )
+    boot_fields = (
+        "flash_locked",
+        "verified_boot_state",
+        "vbmeta_device_state",
+        "verity_mode",
+    )
+    signal_count = sum(
+        data["verified_boot"][field]["status"] == "observed" for field in boot_fields
+    )
+    command_success = (
+        "complete"
+        if observed and not failures and signal_count == len(boot_fields)
+        else "partial"
+        if observed and signal_count
+        else "failed"
+        if failures
+        else "not_collected"
+    )
+    observer_capability = data["observer"]["privilege_level"]
+    limitations = ["hardware_attestation_not_collected"]
+    if data["target"]["target_type"] == "avd":
+        limitations.append("virtual_target_not_hardware_backed")
+    if inferred:
+        limitations.append("legacy_capture_status_inferred")
+    if observer_capability in {"app_sandbox", "unspecified"}:
+        limitations.append("observer_capability_limited")
+    level = (
+        "unassessed"
+        if signal_count == 0
+        else "medium"
+        if source_quality == "structured_capture"
+        and command_success == "complete"
+        and observer_capability in {"shell", "root"}
+        else "low"
+    )
+    expected_confidence = {
+        "level": level,
+        "source_quality": source_quality,
+        "command_success": command_success,
+        "observer_capability": observer_capability,
+        "corroborating_signal_count": signal_count,
+        "target_limitations": sorted(limitations),
+        "evidence_refs": sorted({str(capture["source_ref"]) for capture in observed}),
+    }
+    if data["verified_boot"]["confidence"] != expected_confidence:
+        raise SchemaValidationError(
+            "report confidence does not match its evidence and provenance factors"
+        )
+
+
+def _validate_v6_raw_provenance(
+    data: dict[str, Any], raw_artifacts: list[dict[str, Any]]
+) -> None:
+    extension = data["extensions"].get("org.androidtrustlab.collection")
+    manifest_digest: str | None = None
+    if extension is not None:
+        if len(raw_artifacts) != 1:
+            raise SchemaValidationError(
+                "report collection provenance must bind its unique observed raw_report"
+            )
+        if not isinstance(extension, dict) or set(extension) != {
+            "canonicalization",
+            "canonical_manifest_sha256",
+            "portable_binding",
+        }:
+            raise SchemaValidationError(
+                "report portable collection binding has an invalid shape"
+            )
+        manifest_digest = extension["canonical_manifest_sha256"]
+        binding = extension["portable_binding"]
+        if (
+            extension["canonicalization"] != "atl-canonical-json-v1"
+            or not isinstance(manifest_digest, str)
+            or re.fullmatch(r"[a-f0-9]{64}", manifest_digest) is None
+            or not isinstance(binding, dict)
+            or set(binding)
+            != {
+                "artifact_results",
+                "collection_id",
+                "collection_errors",
+                "completion_status",
+                "raw_artifact_sha256",
+                "raw_artifact_status",
+                "redaction_state",
+            }
+            or binding["collection_id"] != raw_artifacts[0]["collection_id"]
+            or binding["raw_artifact_sha256"] != raw_artifacts[0]["sha256"]
+            or binding["raw_artifact_status"] != raw_artifacts[0]["status"]
+            or binding["redaction_state"] != raw_artifacts[0]["redaction_state"]
+            or binding["completion_status"] not in {"complete", "partial", "failed"}
+        ):
+            raise SchemaValidationError(
+                "report portable collection binding does not match its raw artifact"
+            )
+        if binding["artifact_results"] != data["provenance"]["command_results"]:
+            raise SchemaValidationError(
+                "report command results do not match the portable collection binding"
+            )
+        if not set(binding["collection_errors"]) <= set(
+            data["limitations"]["collection_errors"]
+        ):
+            raise SchemaValidationError(
+                "report limitations do not retain portable collection limitations"
+            )
+    expected_event_id = collection_event_identity(
+        collection_id=raw_artifacts[0]["collection_id"],
+        timestamp=data["collection_timestamp"],
+        experiment_id=data["experiment_id"],
+        target_type=data["target"]["target_type"],
+        observer_type=data["observer"]["observer_type"],
+        collection_method=data["observer"]["collection_method"],
+        collection_manifest_sha256=manifest_digest,
+    )
+    if not secrets.compare_digest(data["collection_event_id"], expected_event_id):
+        raise _migration_provenance_error(
+            "the raw v6 collection event identity does not match its provenance"
+        )
+
+
+def _validate_v6_report_semantics(data: object) -> None:
+    """Validate v6 direct evidence or its exact deterministic v5 migration."""
+
+    if not isinstance(data, dict):
+        return
+    _validate_v4_mount_semantics(data["mounts"])
+    raw_artifacts = _validate_v3_raw_artifacts(data)
+    source_version = data["provenance"]["source_schema_version"]
+    migration_extension = data["extensions"].get("org.androidtrustlab.migration-v6")
+    if source_version == "raw":
+        if migration_extension is not None or any(
+            key.startswith("org.androidtrustlab.migration")
+            for key in data["extensions"]
+        ):
+            raise _migration_provenance_error(
+                "raw v6 reports must not claim migration provenance"
+            )
+        _validate_v5_security_semantics(data)
+        _validate_v6_direct_evidence(data)
+        if data["provenance"]["migration_history"]:
+            raise _migration_provenance_error(
+                "raw v6 reports must not claim migration history"
+            )
+        _validate_v6_raw_provenance(data, raw_artifacts)
+        validate_report_identities(data)
+        return
+    if source_version != "5.0.0":
+        raise _migration_provenance_error("v6 migrations require one exact v5 source")
+    if not isinstance(migration_extension, dict) or set(migration_extension) != {
+        "encoding",
+        "source_report_json",
+        "source_sha256",
+    }:
+        raise _migration_provenance_error(
+            "the exact canonical v5 source extension is required"
+        )
+    encoded_source = migration_extension.get("source_report_json")
+    source_digest = migration_extension.get("source_sha256")
+    if (
+        migration_extension.get("encoding") != "atl-canonical-json-v1"
+        or not isinstance(encoded_source, str)
+        or not isinstance(source_digest, str)
+    ):
+        raise _migration_provenance_error("the canonical v5 source is invalid")
+    try:
+        source = parse_canonical_json(encoded_source.encode("utf-8"))
+    except ValueError as exc:
+        raise _migration_provenance_error(
+            "the preserved v5 source is not canonical JSON"
+        ) from exc
+    if (
+        not isinstance(source, dict)
+        or source.get("schema_version") != "5.0.0"
+        or canonical_json_bytes(source).decode("utf-8") != encoded_source
+        or not secrets.compare_digest(
+            hashlib.sha256(encoded_source.encode("utf-8")).hexdigest(),
+            source_digest,
+        )
+    ):
+        raise _migration_provenance_error(
+            "the preserved v5 source binding does not match"
+        )
+    validate_report(source)
+    history = data["provenance"]["migration_history"]
+    if not history:
+        raise _migration_provenance_error(
+            "the report-v5-to-v6 migration record is required"
+        )
+    declared_version = history[-1]["implementation"]["version"]
+    expected = report_v6_from_v5_shape(
+        source,
+        add_v5_to_v6_migration=True,
+        migration_implementation_version=declared_version,
+    )
+    if data != expected:
+        raise _migration_provenance_error(
+            "the v6 report is not the deterministic migration of its v5 source"
+        )
+    validate_report_identities(data)
+
+
 def _mount_semantic_error(detail: str) -> SchemaValidationError:
     return SchemaValidationError(f"report mount validation failed: {detail}")
 
@@ -1617,7 +1941,7 @@ def validate_diff(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.DIFF)
     )
-    if resource_version in {"2.0.0", "2.1.0", "2.2.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0"}:
         _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
         data,
@@ -1625,8 +1949,9 @@ def validate_diff(data: object) -> None:
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
-    if resource_version in {"2.0.0", "2.1.0", "2.2.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0"}:
         _validate_v2_diff_semantics(data, schema_version=resource_version)
+    validate_portable_diff(data)
 
 
 def _validate_canonical_document(data: object, *, artifact_name: str) -> None:
@@ -1673,6 +1998,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.0.0": {"3.0.0"},
             "2.1.0": {"3.0.0", "4.0.0"},
             "2.2.0": {"3.0.0", "4.0.0", "5.0.0"},
+            "2.3.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
         }[schema_version]
         if (original_version in content_addressed_versions) != (
             original_digest is not None
@@ -1721,6 +2047,32 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
                 "4.0.0": [("report-v4-to-v5", "4.0.0", "5.0.0")],
                 "5.0.0": [],
             },
+            "2.3.0": {
+                "1.0.0": [
+                    ("report-v1-to-v2", "1.0.0", "2.0.0"),
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                    ("report-v5-to-v6", "5.0.0", "6.0.0"),
+                ],
+                "2.0.0": [
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                    ("report-v5-to-v6", "5.0.0", "6.0.0"),
+                ],
+                "3.0.0": [
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                    ("report-v5-to-v6", "5.0.0", "6.0.0"),
+                ],
+                "4.0.0": [
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                    ("report-v5-to-v6", "5.0.0", "6.0.0"),
+                ],
+                "5.0.0": [("report-v5-to-v6", "5.0.0", "6.0.0")],
+                "6.0.0": [],
+            },
         }
         expected_steps = expected_steps_by_version[schema_version].get(original_version)
         if expected_steps is None or len(migrations) != len(expected_steps):
@@ -1744,6 +2096,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.0.0": "3.0.0",
             "2.1.0": "4.0.0",
             "2.2.0": "5.0.0",
+            "2.3.0": "6.0.0",
         }[schema_version]
         if original_version == current_report_version and (
             provenance["original_report_id"] != common_report["report_id"]
@@ -2046,6 +2399,7 @@ def _validate_collection_manifest_semantics(data: object) -> None:
     _validate_manifest_artifacts(data)
     _validate_manifest_completion(data)
     _validate_manifest_timestamps(data)
+    validate_portable_collection_manifest(data)
 
 
 def validate_collection_manifest(data: object) -> None:
