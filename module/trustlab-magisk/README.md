@@ -32,12 +32,17 @@ su -c /data/adb/modules/androidtrustlab/action.sh
 ## Output path
 
 ```text
-/data/local/tmp/android-trust-lab/reports/
+/data/adb/android-trust-lab/reports/run_<timestamp>.<random>/
 ```
+
+Each exclusive run directory is mode `0700`; `raw.txt` and
+`collector_manifest.json` are mode `0600`. The collector deliberately excludes
+the kernel command line and non-allowlisted Android properties.
 
 ## Uninstall behavior
 
-`uninstall.sh` removes internal temporary files and preserves exported reports.
+`uninstall.sh` preserves the private report directories. The collector keeps no
+separate temporary state.
 
 ## Limitations
 

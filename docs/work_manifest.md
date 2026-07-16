@@ -17,6 +17,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Component | Status | Evidence | Verification command |
 |---|---|---|---|
 | Analyzer CLI | Implemented | `analyzer/trustlab/cli.py`, `analyzer/pyproject.toml` | `PYTHONPATH=analyzer trustlab --help` after editable install, or `PYTHONPATH=analyzer python -m trustlab.cli --help` |
+| CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `results/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
 | JSON schemas | Implemented | `collector/schema/trust_report.schema.json`, `collector/schema/trust_diff.schema.json`, `tests/test_schema_validation.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py` |
@@ -85,7 +86,12 @@ Disallowed scope:
 - real user identifiers or secrets;
 - production security certification claims.
 
-The Magisk module is treated as a read-only collector. The packaging helper refuses common payload paths such as `system/`, `vendor/`, `product/`, `system_ext/`, `odm/`, `system.prop`, `META-INF`, and embedded zip files.
+The Magisk module is treated as a read-only collector. Its output is private by
+default (`0700` run directories and `0600` artifacts under `/data/adb`), uses a
+property allowlist, and omits the kernel command line. The packaging helper
+enforces those controls and refuses common payload paths such as `system/`,
+`vendor/`, `product/`, `system_ext/`, `odm/`, `system.prop`, `META-INF`, and
+embedded zip files.
 
 ## Reproducibility commands
 
@@ -95,17 +101,18 @@ From the repository root:
 bash scripts/verify_release.sh
 ```
 
-The script runs the strongest checked-in release checks:
+The compatibility wrapper runs `scripts/check.sh`, the strongest checked-in
+repository gate:
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m compileall -q analyzer tools tests
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer python -m pytest -q
-python tools/generate_report.py --check
-python tools/package_magisk_module.py --check-only
-find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;
+PYTHON_BIN=python3 bash scripts/check.sh
 ```
 
-If the analyzer has not been installed, the script still sets `PYTHONPATH=analyzer` so local tests can run from source. If `pytest` or `jsonschema` are missing, install development dependencies first:
+The command performs Python compilation, tests with branch coverage, canonical
+metadata and version checks, explicit JSON Schema and artifact validation,
+generated-output freshness checks, Magisk package safety checks, and shell
+syntax checks. It sets `PYTHONPATH=analyzer` so local tests run from source. If
+development dependencies are missing, install them first:
 
 ```bash
 python -m pip install -e "analyzer[dev]"
@@ -117,15 +124,18 @@ Latest validation for this evidence packet:
 
 | Check | Command | Status |
 |---|---|---|
-| Release verification | `bash scripts/verify_release.sh` | Not completed in this container: normal Python startup timed out before repo code executed |
-| Python compile check | `python -S -m compileall -q analyzer tools tests` | Pass |
-| Unit tests | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer python -m pytest -q` | Not completed in this container because Python site-package startup timed out |
-| Generated report freshness | `python tools/generate_report.py --check` | Not completed in this container because normal Python startup timed out |
-| Magisk package safety | `python -S tools/package_magisk_module.py --check-only` | Pass |
-| Magisk shell syntax | `find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;` | Pass |
-| Artifact manifest JSON syntax | `jq empty results/artifact_manifest.json` | Pass |
+| Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
+| Unit tests | Gate step 2 | 112 passed |
+| Branch-aware coverage | Gate step 2 | 87% overall; 553 statements and 130 branches |
+| Canonical metadata | Gate step 3 | Pass, including CFF 1.2 structure |
+| Project version | Gate step 4 | Pass at `0.3.0.dev0` |
+| Schema and checked-in artifacts | Gate step 5 | 2 schemas, 6 reports, and 5 diffs validated |
+| Generated report freshness | Gate step 6 | Pass; generated artifacts are up to date |
+| Magisk package safety | Gate step 7 | Pass |
+| Shell syntax | Gate step 8 | Pass for 11 Magisk scripts and both repository Bash scripts |
 
-Fallback validation was used only because of the container Python environment. In a normal local or CI environment with analyzer development dependencies installed, run `bash scripts/verify_release.sh` as the authoritative release check.
+Run `bash scripts/check.sh` or the compatible `bash scripts/verify_release.sh`
+from an activated environment containing `analyzer[dev]`.
 
 ## Known limitations
 

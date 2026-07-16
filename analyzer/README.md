@@ -18,3 +18,9 @@ trustlab diff --base ../datasets/samples/stock_avd/E01_stock_avd__observer-adb__
 trustlab diff --base ../datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json --compare ../datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json --output /tmp/observer_diff.json
 trustlab summarize /tmp/diff.json
 ```
+
+## Failure behavior
+
+Reports and diffs are validate-first and atomically replaced. Expected failures
+use stable nonzero exit codes and concise stderr without a traceback. See
+`docs/cli_contract.md` from the repository root for the complete contract.

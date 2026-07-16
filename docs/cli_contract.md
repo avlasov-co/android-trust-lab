@@ -1,0 +1,55 @@
+# CLI Output and Failure Contract
+
+The `trustlab` CLI validates authoritative JSON artifacts before publishing them.
+Normalize validates its in-memory report before writing. Diff always validates
+both input reports and the generated diff before writing.
+
+Successful JSON writes use a temporary file in the destination directory. The
+writer serializes before creating the directory, creates the temporary file with
+mode `0600`, flushes and `fsync`s it, closes it, and uses `os.replace` on the same
+filesystem. Failed validation creates no output. A failed write preserves an
+existing destination and removes its ordinary temporary file.
+
+New and replaced reports are intentionally private (`0600`) because reports can
+contain device metadata. Portable raw-artifact references default to the input
+basename; a non-published digest of parsed evidence prevents same-name report-ID
+collisions. Use `--raw-artifact-ref` for a stable non-sensitive logical
+reference.
+
+## Exit codes
+
+Project-domain failures print one `error: ...` line to stderr, print no
+traceback or stdout, and return:
+
+| Code | Meaning |
+|---:|---|
+| 1 | Unexpected/internal project error |
+| 2 | Command usage error reported by argparse |
+| 3 | Missing input file |
+| 4 | Invalid or non-UTF-8 JSON |
+| 5 | Unsupported report or diff schema version |
+| 6 | Schema validation failure |
+| 7 | Collection or input-read failure |
+| 8 | Normalization failure |
+| 9 | Atomic output-write failure |
+
+Usage failures retain argparse's standard usage diagnostic and exit code 2.
+Unexpected exceptions are reduced to a generic code-1 message unless `--debug`
+is active, so host details from exception text are not disclosed by default.
+
+Successful write commands are silent, so a closed or encoding-incompatible
+stdout cannot turn a completed publication into a failed command. Validation
+commands emit short ASCII status text without echoing user paths. Normalize
+refuses an output that aliases its raw input, and diff refuses an output that
+aliases either input report.
+
+Place `--debug` before the subcommand to retain exception chaining and show a
+traceback for an expected project error:
+
+```bash
+trustlab --debug validate-report report.json
+```
+
+Normalize retains `--no-validate` only for explicit low-level diagnosis. Its
+help labels it **DANGEROUS**. It is never the default and is not used by project
+generators or verification. Diff has no validation bypass.

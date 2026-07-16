@@ -5,9 +5,8 @@ type: software
 authors:
   - family-names: Vlasov
     given-names: Aleksander
-version: 0.1.0
-date-released: 2026-04-25
-repository-code: https://github.com/aleksander-vlasov/android-trust-lab
+version: 0.3.0-dev0
+repository-code: https://github.com/avlasov-co/android-trust-lab
 abstract: "A reproducible research framework for measuring Android trust-state transitions across controlled system configurations."
 preferred-citation:
   type: software
@@ -15,6 +14,5 @@ preferred-citation:
   authors:
     - family-names: Vlasov
       given-names: Aleksander
-  version: 0.1.0
-  date-released: 2026-04-25
-  repository-code: https://github.com/aleksander-vlasov/android-trust-lab
+  version: 0.3.0-dev0
+  repository-code: https://github.com/avlasov-co/android-trust-lab

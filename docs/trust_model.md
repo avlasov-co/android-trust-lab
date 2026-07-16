@@ -32,7 +32,7 @@ Canonical dimensions:
 Signals may come from:
 
 - Android properties
-- kernel command line
+- allowlisted boot properties (not raw kernel command-line contents)
 - mount table
 - SELinux tools and contexts
 - process table
@@ -42,7 +42,7 @@ Signals may come from:
 - root collector output
 - host provenance data
 
-## Observer types
+## Supported observer types
 
 | Observer | Description |
 |---|---|
@@ -50,7 +50,9 @@ Signals may come from:
 | adb_shell | Android shell observer through adb |
 | unprivileged_app | Normal app sandbox observer |
 | root_collector | Privileged read-only collector |
-| boot_kernel | Boot/kernel-level evidence, when available |
+
+Boot/kernel-level evidence is a signal source when available; it is not a
+standalone observer ID in the current report schema or analyzer registry.
 
 ## Privilege boundaries
 
@@ -73,6 +75,6 @@ Some signals are missing, virtualized, vendor-specific, or observer-dependent. M
 
 - Unknown values stay `unknown`.
 - Missing values are recorded in `limitations.collection_errors` or as `unknown`.
-- Raw evidence paths are preserved where practical.
+- Raw evidence uses portable, non-sensitive logical names where practical.
 - Emulator evidence must carry lower confidence for hardware-backed trust dimensions.
 - A changed signal is not automatically a security failure. It is an observed transition.

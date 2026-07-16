@@ -1,4 +1,5 @@
 from pathlib import Path
+import copy
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
@@ -53,3 +54,11 @@ def test_diff_id_is_deterministic():
     base = load_report("datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json")
     compare = load_report("datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json")
     assert make_diff(base, compare)["diff_id"] == make_diff(base, compare)["diff_id"]
+
+
+def test_diff_id_preserves_prior_utf8_canonicalization():
+    base = load_report("tests/fixtures/sample_normalized_report.json")
+    compare = copy.deepcopy(base)
+    compare["properties"]["security"]["ro.secure"] = "sécurisé"
+
+    assert make_diff(base, compare)["diff_id"] == "atldiff-17db72a9f1c4dec1"

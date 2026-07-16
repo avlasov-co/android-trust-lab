@@ -1,4 +1,4 @@
 #!/system/bin/sh
-# Remove temporary internal state. Preserve exported reports.
-rm -rf /data/local/tmp/android-trust-lab/tmp 2>/dev/null
+# Reports remain in the private output directory for explicit owner review.
+# The collector keeps no separate temporary state.
 exit 0

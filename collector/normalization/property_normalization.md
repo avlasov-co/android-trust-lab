@@ -9,6 +9,11 @@
 - adb/security: `ro.debuggable`, `ro.secure`, `ro.adb.secure`
 - runtime: `sys.boot_completed`
 
+Only an explicit allowlist of trust-relevant, non-unique keys is copied into
+these groups. Unknown properties and unique identifiers, account/host fields,
+and network addresses remain private by default. Reports retain the total
+property count without copying those values into a group.
+
 ## Missing values
 
 Expected missing values are normalized as `unknown`.
