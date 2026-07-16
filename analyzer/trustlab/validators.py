@@ -197,9 +197,7 @@ def validate_with_schema(
     if not isinstance(data, dict):
         raise SchemaValidationError(f"{artifact_name} must be a JSON object")
     version = data.get("schema_version")
-    if not isinstance(version, str):
-        raise SchemaValidationError(f"{artifact_name} schema_version is required")
-    if version not in supported_versions:
+    if isinstance(version, str) and version not in supported_versions:
         raise UnsupportedSchemaVersionError(
             f"unsupported {artifact_name} schema version"
         )
@@ -220,11 +218,19 @@ def validate_with_schema(
         )
         diagnostics = [f"{issue.instance_path}: {issue.message}" for issue in issues]
         plural = "error" if len(errors) == 1 else "errors"
+        version_label = version if isinstance(version, str) else "<missing or invalid>"
+        first_error = errors[0]
+        safe_cause = JSONSchemaValidationError(
+            _constraint_message(first_error),
+            validator=str(first_error.validator),
+            path=tuple(first_error.absolute_path),
+            schema_path=tuple(first_error.absolute_schema_path),
+        )
         raise SchemaValidationError(
-            f"{artifact_name} schema validation failed for version {version} "
+            f"{artifact_name} schema validation failed for version {version_label} "
             f"({len(errors)} {plural}): " + "; ".join(diagnostics),
             issues=issues,
-        ) from errors[0]
+        ) from safe_cause
 
 
 def validate_report(data: dict[str, Any]) -> None:

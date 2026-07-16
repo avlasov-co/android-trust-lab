@@ -19,6 +19,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Analyzer CLI | Implemented | `analyzer/trustlab/cli.py`, `analyzer/pyproject.toml` | `PYTHONPATH=analyzer trustlab --help` after editable install, or `PYTHONPATH=analyzer python -m trustlab.cli --help` |
 | Python support matrix | Implemented | `docs/python_support.md`, `.github/workflows/ci.yml`, `tools/check_python_support.py` | `python tools/check_python_support.py` |
 | Repository quality controls | Implemented | `pyproject.toml`, `.pre-commit-config.yaml`, `.editorconfig`, `.gitattributes` | `bash scripts/check.sh` and `pre-commit run --all-files` |
+| Independent CLI and adversarial tests | Implemented | `tests/test_installed_cli.py`, `tests/test_adversarial_inputs.py`, `tests/golden/` | `python -m pytest -q tests/test_installed_cli.py tests/test_adversarial_inputs.py` |
 | CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `results/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
@@ -127,10 +128,11 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 34 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 20 analyzer and tool modules |
-| Unit tests | Gate step 5 | 146 passed on Python 3.11, 3.12, 3.13, and 3.14 |
-| Branch-aware coverage | Gate step 5 | 89% overall; 657 statements and 170 branches |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 38 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 21 analyzer and tool modules |
+| Unit tests | Gate step 5 | 166 passed on Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 94.68% statements (623/658); 82.74% branches (139/168); floors 85%/80% |
+| Tools coverage | Gate step 5 | 87.66% statements (618/705); 74.83% branches (220/294); floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
@@ -138,6 +140,7 @@ Latest validation for this evidence packet:
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk package safety | Gate step 12 | Pass |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
+| Secret detection | Gate step 15 | Pass against the checked-in baseline with network verification disabled |
 | Pre-commit hygiene | `pre-commit run --all-files` | Pass for whitespace, EOF, JSON, YAML, Ruff, schemas, secrets, and ShellCheck |
 
 Run `bash scripts/check.sh` or the compatible `bash scripts/verify_release.sh`

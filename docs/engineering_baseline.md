@@ -56,8 +56,10 @@ Focused commands are:
 
 ```bash
 PYTHONPATH=analyzer python3 -m pytest -q
-PYTHONPATH=analyzer python3 -m coverage run --branch --source=analyzer/trustlab -m pytest -q
+PYTHONPATH=analyzer python3 -m coverage run -m pytest
 python3 -m coverage report -m
+python3 -m coverage json -o /tmp/android-trust-lab-coverage.json
+python3 tools/check_coverage.py /tmp/android-trust-lab-coverage.json
 PYTHONPATH=analyzer python3 tools/check_schemas.py
 PYTHONPATH=analyzer python3 tools/generate_report.py --check
 python3 tools/package_magisk_module.py --check-only
@@ -132,6 +134,12 @@ package metadata, classifiers, documentation, and the workflow matrix.
 Phase 2 Step 09 establishes deterministic Ruff formatting and linting, strict
 typing for analyzer and tool code, branch-aware pytest/coverage configuration,
 pre-commit hygiene, line-ending policy, and ShellCheck as repository gates.
+
+Phase 2 Step 10 measures statements and branches independently. The enforced
+floors are 85% statements and 80% branches for `analyzer/trustlab`, plus 70%
+statements and 60% branches for `tools`. No source lines or branches are
+excluded from coverage. Installed-console tests use manually curated goldens;
+generated fixtures remain freshness checks rather than semantic oracles.
 
 These defects are recorded here rather than encoded as expected Step 01
 behavior. The Step 01 product path remains unchanged apart from a valid CLI

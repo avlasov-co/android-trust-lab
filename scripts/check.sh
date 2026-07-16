@@ -41,55 +41,67 @@ require_path module/trustlab-magisk
 export PYTHONPATH="$ROOT_DIR/analyzer${PYTHONPATH:+:$PYTHONPATH}"
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 
-echo "[1/14] Python source compile check"
+echo "[1/15] Python source compile check"
 "$PYTHON_BIN" -m compileall -q analyzer tools tests
 
-echo "[2/14] Ruff formatting check"
+echo "[2/15] Ruff formatting check"
 "$PYTHON_BIN" -m ruff format --check analyzer tools tests
 
-echo "[3/14] Ruff lint check"
+echo "[3/15] Ruff lint check"
 "$PYTHON_BIN" -m ruff check analyzer tools tests
 
-echo "[4/14] Static type check"
+echo "[4/15] Static type check"
 "$PYTHON_BIN" -m mypy
 
-echo "[5/14] Unit tests with branch coverage"
+echo "[5/15] Unit tests with branch coverage"
 "$PYTHON_BIN" -m coverage erase
 "$PYTHON_BIN" -m coverage run -m pytest
 "$PYTHON_BIN" -m coverage report -m
+COVERAGE_JSON=$(mktemp "${TMPDIR:-/tmp}/android-trust-lab-coverage.XXXXXX")
+trap 'rm -f "$COVERAGE_JSON"' EXIT
+"$PYTHON_BIN" -m coverage json -o "$COVERAGE_JSON"
+"$PYTHON_BIN" tools/check_coverage.py "$COVERAGE_JSON"
 
-echo "[6/14] Canonical project metadata validation"
+echo "[6/15] Canonical project metadata validation"
 "$PYTHON_BIN" tools/check_metadata.py
 
-echo "[7/14] Project version consistency check"
+echo "[7/15] Project version consistency check"
 "$PYTHON_BIN" tools/check_version_consistency.py
 
-echo "[8/14] Python support policy consistency check"
+echo "[8/15] Python support policy consistency check"
 "$PYTHON_BIN" tools/check_python_support.py
 
-echo "[9/14] Packaged schema consistency check"
+echo "[9/15] Packaged schema consistency check"
 "$PYTHON_BIN" tools/check_schema_consistency.py
 
-echo "[10/14] JSON Schema and checked-in artifact validation"
+echo "[10/15] JSON Schema and checked-in artifact validation"
 "$PYTHON_BIN" tools/check_schemas.py
 
-echo "[11/14] Generated artifact freshness check"
+echo "[11/15] Generated artifact freshness check"
 "$PYTHON_BIN" tools/generate_report.py --check
 
-echo "[12/14] Magisk package safety check"
+echo "[12/15] Magisk package safety check"
 "$PYTHON_BIN" tools/package_magisk_module.py --check-only
 
-echo "[13/14] Shell syntax check"
+echo "[13/15] Shell syntax check"
 while IFS= read -r script; do
   echo "$script"
   sh -n "$script"
 done < <(find module/trustlab-magisk -name "*.sh" -print | sort)
 bash -n scripts/check.sh scripts/verify_release.sh
 
-echo "[14/14] ShellCheck"
+echo "[14/15] ShellCheck"
 find module/trustlab-magisk -name "*.sh" -print0 \
   | sort -z \
   | xargs -0 shellcheck --shell=sh --external-sources
 shellcheck --shell=bash scripts/check.sh scripts/verify_release.sh
+
+echo "[15/15] Baseline-aware secret detection"
+git ls-files --cached --others --exclude-standard -z \
+  | xargs -0 "$PYTHON_BIN" -m detect_secrets.pre_commit_hook \
+    --baseline .secrets.baseline \
+    --exclude-files '^(\.secrets\.baseline|results/artifact_manifest\.json)$' \
+    --no-verify \
+    --
 
 echo "repository checks passed"

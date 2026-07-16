@@ -41,6 +41,10 @@ Usage failures retain argparse's standard usage diagnostic and exit code 2.
 Unexpected exceptions are reduced to a generic code-1 message unless `--debug`
 is active, so host details from exception text are not disclosed by default.
 
+All raw text artifacts and JSON documents use strict UTF-8. Invalid raw bytes
+are a collection failure (exit 7); invalid UTF-8 in JSON is an invalid-document
+failure (exit 4). Decoding never substitutes replacement characters.
+
 Successful write commands are silent, so a closed or encoding-incompatible
 stdout cannot turn a completed publication into a failed command. Validation
 commands emit short ASCII status text without echoing user paths. Normalize
@@ -48,7 +52,9 @@ refuses an output that aliases its raw input, and diff refuses an output that
 aliases either input report.
 
 Place `--debug` before the subcommand to retain exception chaining and show a
-traceback for an expected project error:
+traceback for an expected project error. Schema-validation causes retain native
+validator/path metadata but replace rejected instance values with value-safe
+constraint messages:
 
 ```bash
 trustlab --debug validate-report report.json

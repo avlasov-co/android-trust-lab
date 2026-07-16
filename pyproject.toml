@@ -41,7 +41,7 @@ pythonpath = ["analyzer"]
 
 [tool.coverage.run]
 branch = true
-source = ["analyzer/trustlab"]
+source = ["analyzer/trustlab", "tools"]
 
 [tool.coverage.report]
 show_missing = true

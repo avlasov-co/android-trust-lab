@@ -1,0 +1,21 @@
+   === GETPROP ===
+  [ro.secure]:   [unknown]
+[ro.debuggable]: [unknown]
+=== GETPROP ===
+[sys.boot_completed]: [1]
+  [ro.debuggable]: [0]
+  [ro.boot.verifiedbootstate]: [orange]
+
+=== MOUNT ===
+/dev/block/dm-1 on /system type ext4 (ro,seclabel)
+truncated mount command output (
+=== MOUNT ===
+overlay /system overlay rw,lowerdir=/system
+tmpfs /vendor tmpfs rw,seclabel
+/source /product none rw,bind
+
+=== ID ===
+uid=2000(shell) gid=2000(shell) groups=2000(shell)
+
+=== GETENFORCE ===
+  Permission denied

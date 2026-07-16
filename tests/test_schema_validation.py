@@ -117,6 +117,32 @@ def test_multiple_validation_errors_are_complete_and_deterministic():
     assert caught.value.__cause__ is not None
 
 
+def test_missing_schema_version_collects_all_structured_schema_issues():
+    with pytest.raises(SchemaValidationError) as caught:
+        validate_report({})
+
+    assert len(caught.value.issues) > 2
+    messages = [issue.message for issue in caught.value.issues]
+    assert "missing required property: schema_version" in messages
+    assert "missing required property: target" in messages
+    assert caught.value.__cause__ is not None
+    assert "<missing or invalid>" in str(caught.value)
+
+
+def test_invalid_schema_version_type_does_not_leak_through_native_cause():
+    report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    sensitive_value = "sensitive-device-value"
+    report["schema_version"] = {"private": sensitive_value}
+
+    with pytest.raises(SchemaValidationError) as caught:
+        validate_report(report)
+
+    assert [issue.instance_path for issue in caught.value.issues] == ["/schema_version"]
+    assert sensitive_value not in str(caught.value)
+    assert caught.value.__cause__ is not None
+    assert sensitive_value not in str(caught.value.__cause__)
+
+
 def test_malformed_packaged_schema_fails_explicitly(monkeypatch):
     malformed = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

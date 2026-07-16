@@ -59,7 +59,10 @@ def test_normalize_writable_system_sample():
     assert "/system" in report["mounts"]["writable_sensitive_mounts"]
 
 
-def test_fixture_normalized_report_matches_current_normalizer():
+def test_legacy_normalized_snapshot_remains_compatible():
+    # This pre-Step-10 snapshot is retained for serialization compatibility;
+    # it is neither generator-owned nor an independent semantic oracle. Manual
+    # behavior expectations and their provenance live under tests/golden.
     import json
 
     fixture_dir = Path(__file__).parent / "fixtures"

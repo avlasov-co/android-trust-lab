@@ -5,12 +5,17 @@ import json
 import os
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 import pytest
 
 from trustlab import cli, normalizer, report_writer
-from trustlab.exceptions import NormalizationError, OutputWriteError
+from trustlab.exceptions import (
+    NormalizationError,
+    OutputWriteError,
+    SchemaValidationError,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_FIXTURE = ROOT / "tests/fixtures/sample_raw_report.txt"
@@ -383,6 +388,21 @@ def test_debug_reraises_expected_error(tmp_path):
     invalid.write_text("{\n", encoding="utf-8")
     with pytest.raises(cli.InvalidJSONError):
         cli.main(["--debug", "validate-report", str(invalid)])
+
+
+def test_debug_traceback_keeps_rejected_schema_values_private(tmp_path):
+    report = valid_report()
+    sensitive_value = "private-rejected-device-value"
+    report["observer"]["privilege_level"] = sensitive_value
+    invalid = tmp_path / "invalid.json"
+    write_document(invalid, report)
+
+    with pytest.raises(SchemaValidationError) as caught:
+        cli.main(["--debug", "validate-report", str(invalid)])
+
+    rendered = "".join(traceback.format_exception(caught.type, caught.value, caught.tb))
+    assert sensitive_value not in rendered
+    assert "value is not permitted" in rendered
 
 
 def test_unexpected_error_is_sanitized_without_debug(monkeypatch, capsys):

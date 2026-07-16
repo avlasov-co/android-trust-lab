@@ -1,0 +1,57 @@
+{
+  "normalize": {
+    "report_id": "atl-4f360e670e68448a",
+    "collection_timestamp": "2026-01-02T03:04:05Z",
+    "experiment_id": "E10_golden",
+    "target": {
+      "target_type": "avd",
+      "device_codename": "generic_x86_64",
+      "manufacturer": "Google",
+      "model": "sdk_gphone64_x86_64",
+      "android_version": "14",
+      "sdk": "34",
+      "build_fingerprint": "google/sdk_gphone64_x86_64/generic:14/UP1A/test-keys"
+    },
+    "observer": {
+      "observer_type": "adb_shell",
+      "privilege_level": "shell",
+      "collection_method": "golden_fixture"
+    },
+    "selinux_mode": "enforcing",
+    "system_mount": {
+      "mount_point": "/system",
+      "fs_type": "ext4",
+      "options": [
+        "ro",
+        "seclabel",
+        "relatime"
+      ],
+      "classification": "read-only"
+    },
+    "root_state": {
+      "su_present": false,
+      "uid": "2000",
+      "gid": "2000",
+      "root_shell_available": false,
+      "root_paths": []
+    },
+    "raw_artifacts": [
+      "tests/golden/raw_observation.txt"
+    ]
+  },
+  "diff": {
+    "diff_id": "atldiff-437a3ab8dea2b570",
+    "summary": "1 dimensions changed, 10 dimensions unchanged.",
+    "changed_dimensions": [
+      {
+        "dimension": "root_presence",
+        "before": false,
+        "after": true,
+        "severity": "medium",
+        "evidence_paths": [
+          "root_state.su_present"
+        ]
+      }
+    ]
+  }
+}

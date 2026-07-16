@@ -68,5 +68,5 @@ bash scripts/check.sh
 
 The gate checks deterministic formatting, linting, static types, branch-aware
 tests, metadata and schemas, generated artifacts, package safety, shell syntax,
-and ShellCheck. Pre-commit uses the same Ruff and repository-specific checks for
-shorter feedback while editing.
+ShellCheck, and baseline-aware secret detection. Pre-commit uses the same Ruff
+and repository-specific checks for shorter feedback while editing.
