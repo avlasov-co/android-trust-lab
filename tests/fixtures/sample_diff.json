@@ -19,7 +19,13 @@
         "root_state.su_binary_observed"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "observed_absent",
+        "classification": "state_change",
+        "confidence_impact": "unchanged"
+      }
     }
   ],
   "compare_report": {
@@ -89,8 +95,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "34f692c633d446a2eb467ad0e61a02cbad32315f29ee8633a8c7e4ad7ff6743c",
-  "diff_id": "atldiff-34f692c633d446a2eb467ad0e61a02cb",
+  "content_digest": "97f83f5ae83109fd8326075da7d14d0475e586ddafccb278713a1836038754cd",
+  "diff_id": "atldiff-97f83f5ae83109fd8326075da7d14d04",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -120,8 +126,8 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.5.0",
-  "summary": "1 dimensions changed, 26 dimensions unchanged.",
+  "schema_version": "2.6.0",
+  "summary": "1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",

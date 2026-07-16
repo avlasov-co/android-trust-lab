@@ -183,13 +183,49 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
             for warning in comparison.get("warnings", [])
         ],
         *([""] if comparison.get("warnings") else []),
-        "| Dimension | Severity | Before | After |",
-        "|---|---|---|---|",
+        "| Dimension | Severity | Transition | Before | After |",
+        "|---|---|---|---|---|",
     ]
     for item in diff.get("changed_dimensions", []):
+        transition = item.get("transition", {})
         lines.append(
-            f"| {item['dimension']} | {item['severity']} | `{_cell(item['before'])}` | `{_cell(item['after'])}` |"
+            f"| {item['dimension']} | {item['severity']} | "
+            f"{transition.get('classification', 'unknown')} "
+            f"({transition.get('before_status', 'unknown')} → "
+            f"{transition.get('after_status', 'unknown')}) | "
+            f"`{_cell(item['before'])}` | `{_cell(item['after'])}` |"
         )
+    for title, field in (
+        ("Signals Became Available", "new_signals"),
+        ("Signals Became Unavailable", "missing_signals"),
+    ):
+        lines.extend(["", f"## {title}", ""])
+        signals = diff.get(field, [])
+        if not signals:
+            lines.append("None.")
+            continue
+        lines.extend(
+            [
+                "| Dimension | Status transition | Classification | Confidence impact | Observed values | Source evidence | Interpretation |",
+                "|---|---|---|---|---|---|---|",
+            ]
+        )
+        for signal in signals:
+            if isinstance(signal, str):
+                lines.append(
+                    f"| {signal} | legacy | legacy | indeterminate | `unknown` | "
+                    "`unknown` | Historical diff did not record structured status "
+                    "transition metadata. |"
+                )
+                continue
+            lines.append(
+                f"| {signal['dimension']} | {signal['before_status']} → "
+                f"{signal['after_status']} | {signal['classification']} | "
+                f"{signal['confidence_impact']} | "
+                f"`{_cell(signal['observed_values'])}` | "
+                f"`{_cell(signal['source_evidence'])}` | "
+                f"{signal['interpretation']} |"
+            )
     return "\n".join(lines) + "\n"
 
 

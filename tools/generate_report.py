@@ -368,18 +368,45 @@ def diff_markdown(
             for warning in comparison["warnings"]:
                 lines += [f"> **Comparison warning:** `{warning}`", ""]
             lines += [
-                "| Dimension | Severity | Before | After | Interpretation |",
-                "|---|---|---|---|---|",
+                "| Dimension | Severity | Transition | Before | After | Interpretation |",
+                "|---|---|---|---|---|---|",
             ]
             for item in diff["changed_dimensions"]:
+                transition = item["transition"]
                 lines.append(
-                    f"| {item['dimension']} | {item['severity']} | `{fmt(item['before'])}` | `{fmt(item['after'])}` | {item['interpretation']} |"
+                    f"| {item['dimension']} | {item['severity']} | "
+                    f"{transition['classification']} "
+                    f"({transition['before_status']} → {transition['after_status']}) | "
+                    f"`{fmt(item['before'])}` | `{fmt(item['after'])}` | "
+                    f"{item['interpretation']} |"
                 )
             if not diff["changed_dimensions"]:
                 lines.append(
-                    "| none | info | `unchanged` | `unchanged` | No measured default dimension changed. |"
+                    "| none | info | unchanged | `unchanged` | `unchanged` | No measured default dimension changed. |"
                 )
             lines.append("")
+            for label, field in (
+                ("Signals became available", "new_signals"),
+                ("Signals became unavailable", "missing_signals"),
+            ):
+                signals = diff[field]
+                if not signals:
+                    continue
+                lines += [f"#### {label}", ""]
+                lines += [
+                    "| Dimension | Status transition | Classification | Confidence impact | Observed values | Source evidence | Interpretation |",
+                    "|---|---|---|---|---|---|---|",
+                ]
+                for signal in signals:
+                    lines.append(
+                        f"| {signal['dimension']} | {signal['before_status']} → "
+                        f"{signal['after_status']} | {signal['classification']} | "
+                        f"{signal['confidence_impact']} | "
+                        f"`{fmt(signal['observed_values'])}` | "
+                        f"`{fmt(signal['source_evidence'])}` | "
+                        f"{signal['interpretation']} |"
+                    )
+                lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
 

@@ -51,8 +51,8 @@
     ]
   },
   "diff": {
-    "diff_id": "atldiff-6799804da774a533e8aef89467119486",
-    "summary": "1 dimensions changed, 26 dimensions unchanged.",
+    "diff_id": "atldiff-6bbb73f616df822a50792b89eceda478",
+    "summary": "1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
     "compatibility": {
       "input_schema_versions": {
         "base": "6.0.0",

@@ -2,7 +2,7 @@
 
 Report schema `6.0.0` is the sole writer contract. Versions `1.0.0` through
 `5.0.0` remain readable and migrate through explicit, source-bound major steps.
-Diff schema `2.5.0` adds comparison-axis classification to the validated, canonical comparison introduced by frozen diff `2.4.0`.
+Diff schema `2.6.0` adds structured status transitions to comparison-axis classification introduced by frozen diff `2.5.0`.
 
 ## Root evidence
 

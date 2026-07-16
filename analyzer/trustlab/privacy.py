@@ -10,6 +10,14 @@ from typing import Any
 
 from .comparison import observer_protocol
 from .exceptions import SchemaValidationError
+from .transitions import (
+    classify_status_transition,
+    confidence_impact,
+    evidence_is_available,
+    evidence_status,
+    signal_direction,
+    transition_interpretation,
+)
 
 _SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:+/@-]{1,255}$", flags=re.ASCII)
 _SAFE_ANDROID_PATHS = frozenset(
@@ -1783,12 +1791,86 @@ def _validate_diff_comparison_portability(diff: dict[str, Any]) -> None:
         raise SchemaValidationError("diff comparison classification is not portable")
 
 
-def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
-    all_dimensions = set(_DIFF_DIMENSION_PATHS)
-    if diff.get("schema_version") == "2.5.0":
-        all_dimensions -= {"observer_privilege", "observer_uid_root"}
+def _expected_observed_value(value: object, status: str) -> object:
+    if not evidence_is_available(status):
+        return None
+    if isinstance(value, dict) and value.get("status") == status:
+        return value.get("value")
+    return value
+
+
+def _validate_structured_signal_portability(
+    diff: dict[str, Any],
+    changed_by_name: dict[str, dict[str, Any]],
+    *,
+    field_name: str,
+    expected_direction: str,
+) -> None:
+    signals = diff.get(field_name)
+    if not isinstance(signals, list):
+        raise SchemaValidationError("diff structured signals are not portable")
+    names: list[str] = []
+    for signal in signals:
+        if not isinstance(signal, dict):
+            raise SchemaValidationError("diff structured signal is not portable")
+        dimension = signal.get("dimension")
+        if not isinstance(dimension, str) or dimension not in changed_by_name:
+            raise SchemaValidationError("diff structured signal dimension is invalid")
+        names.append(dimension)
+        change = changed_by_name[dimension]
+        transition = change["transition"]
+        before_status = transition["before_status"]
+        after_status = transition["after_status"]
+        if signal_direction(before_status, after_status) != expected_direction:
+            raise SchemaValidationError("diff structured signal direction is invalid")
+        expected_transition = {
+            "before_status": before_status,
+            "after_status": after_status,
+            "classification": transition["classification"],
+            "confidence_impact": transition["confidence_impact"],
+        }
+        if any(signal.get(key) != value for key, value in expected_transition.items()):
+            raise SchemaValidationError("diff structured signal transition is invalid")
+        expected_values = {
+            "before": _expected_observed_value(change["before"], before_status),
+            "after": _expected_observed_value(change["after"], after_status),
+        }
+        if signal.get("observed_values") != expected_values:
+            raise SchemaValidationError("diff structured signal values are invalid")
+        source_evidence = signal.get("source_evidence")
+        if not isinstance(source_evidence, dict) or set(source_evidence) != {
+            "before",
+            "after",
+        }:
+            raise SchemaValidationError("diff structured signal evidence is invalid")
+        for refs in source_evidence.values():
+            if (
+                not isinstance(refs, list)
+                or any(not isinstance(ref, str) for ref in refs)
+                or refs != sorted(set(refs))
+            ):
+                raise SchemaValidationError(
+                    "diff structured signal evidence is invalid"
+                )
+        if signal.get("interpretation") != transition_interpretation(
+            before_status,
+            after_status,
+            transition["classification"],
+        ):
+            raise SchemaValidationError(
+                "diff structured signal interpretation is invalid"
+            )
+    if len(names) != len(set(names)):
+        raise SchemaValidationError("diff structured signals are not unique")
+
+
+def _validate_changed_dimensions_portability(
+    diff: dict[str, Any], all_dimensions: set[str]
+) -> tuple[list[str], dict[str, dict[str, Any]]]:
+    schema_version = diff["schema_version"]
     changed = diff.get("changed_dimensions", [])
     changed_names: list[str] = []
+    changed_by_name: dict[str, dict[str, Any]] = {}
     for item in changed if isinstance(changed, list) else []:
         if not isinstance(item, dict):
             raise SchemaValidationError("diff changed dimension is not portable")
@@ -1796,6 +1878,7 @@ def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
         if not isinstance(dimension, str) or dimension not in all_dimensions:
             raise SchemaValidationError("diff dimension is not portable")
         changed_names.append(dimension)
+        changed_by_name[dimension] = item
         if (
             item.get("evidence_paths") != [_DIFF_DIMENSION_PATHS[dimension]]
             or item.get("severity") != _DIFF_SEVERITIES[dimension]
@@ -1805,28 +1888,72 @@ def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
             raise SchemaValidationError("diff dimension metadata is not canonical")
         _validate_diff_dimension_value(dimension, item.get("before"))
         _validate_diff_dimension_value(dimension, item.get("after"))
+        if schema_version == "2.6.0":
+            before_status = evidence_status(item.get("before"))
+            after_status = evidence_status(item.get("after"))
+            expected_transition = {
+                "before_status": before_status,
+                "after_status": after_status,
+                "classification": classify_status_transition(
+                    before_status,
+                    after_status,
+                    comparison_axis=diff["comparison"]["axis"],
+                ),
+                "confidence_impact": confidence_impact(before_status, after_status),
+            }
+            if item.get("transition") != expected_transition:
+                raise SchemaValidationError("diff status transition is not canonical")
     if len(changed_names) != len(set(changed_names)):
         raise SchemaValidationError("diff changed dimensions are not unique")
+    return changed_names, changed_by_name
+
+
+def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
+    all_dimensions = set(_DIFF_DIMENSION_PATHS)
+    schema_version = diff.get("schema_version")
+    if schema_version in {"2.5.0", "2.6.0"}:
+        all_dimensions -= {"observer_privilege", "observer_uid_root"}
+    changed_names, changed_by_name = _validate_changed_dimensions_portability(
+        diff, all_dimensions
+    )
     unchanged = diff.get("unchanged_dimensions", [])
-    for field in (
-        unchanged,
-        diff.get("new_signals", []),
-        diff.get("missing_signals", []),
-    ):
+    for field in (unchanged,):
         if not isinstance(field, list) or not set(field) <= all_dimensions:
             raise SchemaValidationError("diff signal list is not portable")
+    if schema_version == "2.6.0":
+        _validate_structured_signal_portability(
+            diff,
+            changed_by_name,
+            field_name="new_signals",
+            expected_direction="new",
+        )
+        _validate_structured_signal_portability(
+            diff,
+            changed_by_name,
+            field_name="missing_signals",
+            expected_direction="missing",
+        )
+    else:
+        for field in (diff.get("new_signals", []), diff.get("missing_signals", [])):
+            if not isinstance(field, list) or not set(field) <= all_dimensions:
+                raise SchemaValidationError("diff signal list is not portable")
     if set(changed_names) & set(unchanged):
         raise SchemaValidationError("diff changed and unchanged dimensions overlap")
     if (
-        diff.get("schema_version") == "2.5.0"
+        schema_version in {"2.5.0", "2.6.0"}
         and (set(changed_names) | set(unchanged)) != all_dimensions
     ):
         raise SchemaValidationError(
             "diff target-state dimensions do not form a complete partition"
         )
-    if diff.get("summary") != (
-        f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions unchanged."
-    ):
+    expected_summary = f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions unchanged."
+    if schema_version == "2.6.0":
+        expected_summary = (
+            f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions "
+            f"unchanged; {len(diff['new_signals'])} signals became available, "
+            f"{len(diff['missing_signals'])} signals became unavailable."
+        )
+    if diff.get("summary") != expected_summary:
         raise SchemaValidationError("diff summary is not canonical")
     for item in diff.get("confidence_changes", []):
         if not isinstance(item, dict) or item.get("path") != "verified_boot.confidence":
@@ -1843,12 +1970,13 @@ def validate_portable_diff(diff: object) -> None:
         "2.3.0",
         "2.4.0",
         "2.5.0",
+        "2.6.0",
     }:
         return
     _validate_diff_provenance(diff)
-    if diff.get("schema_version") in {"2.4.0", "2.5.0"}:
+    if diff.get("schema_version") in {"2.4.0", "2.5.0", "2.6.0"}:
         _validate_diff_compatibility_portability(diff)
-    if diff.get("schema_version") == "2.5.0":
+    if diff.get("schema_version") in {"2.5.0", "2.6.0"}:
         _validate_diff_comparison_portability(diff)
     _validate_diff_dimensions_portability(diff)
 

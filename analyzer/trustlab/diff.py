@@ -11,6 +11,14 @@ from .compatibility import (
     current_write_version,
     prepare_report_for_comparison,
 )
+from .transitions import (
+    classify_status_transition,
+    confidence_impact,
+    evidence_is_available,
+    evidence_status,
+    signal_direction,
+    transition_interpretation,
+)
 from .trust_dimensions import severity_for_dimension
 
 # Default dimensions must represent actual measured trust-state fields.
@@ -70,13 +78,84 @@ def _comparison_value(value: Any) -> Any:
     return value
 
 
-def get_path(obj: dict[str, Any], path: list[str]) -> Any:
+def get_raw_path(obj: dict[str, Any], path: list[str]) -> Any:
     current: Any = obj
     for part in path:
         if not isinstance(current, dict):
             return "unknown"
         current = current.get(part, "unknown")
-    return _comparison_value(current)
+    return current
+
+
+def get_path(obj: dict[str, Any], path: list[str]) -> Any:
+    return _comparison_value(get_raw_path(obj, path))
+
+
+def _source_evidence(value: Any) -> list[str]:
+    refs: set[str] = set()
+    if isinstance(value, dict):
+        evidence_refs = value.get("evidence_refs")
+        if isinstance(evidence_refs, list):
+            refs.update(ref for ref in evidence_refs if isinstance(ref, str))
+        for nested in value.values():
+            refs.update(_source_evidence(nested))
+    elif isinstance(value, list):
+        for nested in value:
+            refs.update(_source_evidence(nested))
+    return sorted(refs)
+
+
+def _observed_value(value: Any, status: str) -> Any:
+    if not evidence_is_available(status):
+        return None
+    if isinstance(value, dict) and value.get("status") == status:
+        return _comparison_value(value.get("value"))
+    return _comparison_value(value)
+
+
+def _transition(
+    before_status: str,
+    after_status: str,
+    *,
+    comparison_axis: str,
+) -> dict[str, str]:
+    return {
+        "before_status": before_status,
+        "after_status": after_status,
+        "classification": classify_status_transition(
+            before_status,
+            after_status,
+            comparison_axis=comparison_axis,
+        ),
+        "confidence_impact": confidence_impact(before_status, after_status),
+    }
+
+
+def _signal_entry(
+    dimension: str,
+    before_raw: Any,
+    after_raw: Any,
+    transition: dict[str, str],
+) -> dict[str, Any]:
+    before_status = transition["before_status"]
+    after_status = transition["after_status"]
+    return {
+        "dimension": dimension,
+        **transition,
+        "observed_values": {
+            "before": _observed_value(before_raw, before_status),
+            "after": _observed_value(after_raw, after_status),
+        },
+        "source_evidence": {
+            "before": _source_evidence(before_raw),
+            "after": _source_evidence(after_raw),
+        },
+        "interpretation": transition_interpretation(
+            before_status,
+            after_status,
+            transition["classification"],
+        ),
+    }
 
 
 def interpretation(dimension: str) -> str:
@@ -140,22 +219,43 @@ def make_diff(
     }
     changed = []
     unchanged = []
+    new_signals: list[dict[str, Any]] = []
+    missing_signals: list[dict[str, Any]] = []
     confidence_changes = []
 
     for dimension, path in DIMENSION_PATHS.items():
-        before = get_path(base, path)
-        after = get_path(compare, path)
+        before_raw = get_raw_path(base, path)
+        after_raw = get_raw_path(compare, path)
+        before = _comparison_value(before_raw)
+        after = _comparison_value(after_raw)
         if before != after:
+            transition = _transition(
+                evidence_status(before_raw),
+                evidence_status(after_raw),
+                comparison_axis=comparison["axis"],
+            )
             changed.append(
                 {
                     "dimension": dimension,
                     "before": before,
                     "after": after,
+                    "transition": transition,
                     "severity": severity_for_dimension(dimension),
                     "interpretation": interpretation(dimension),
                     "evidence_paths": [".".join(path)],
                 }
             )
+            direction = signal_direction(
+                transition["before_status"], transition["after_status"]
+            )
+            if direction is not None:
+                entry = _signal_entry(
+                    dimension,
+                    before_raw,
+                    after_raw,
+                    transition,
+                )
+                (new_signals if direction == "new" else missing_signals).append(entry)
         else:
             unchanged.append(dimension)
 
@@ -171,7 +271,9 @@ def make_diff(
         )
 
     summary = (
-        f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged."
+        f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged; "
+        f"{len(new_signals)} signals became available, "
+        f"{len(missing_signals)} signals became unavailable."
     )
     schema_version = current_write_version(SchemaFamily.DIFF)
     result = {
@@ -188,8 +290,8 @@ def make_diff(
         },
         "changed_dimensions": changed,
         "unchanged_dimensions": unchanged,
-        "new_signals": [],
-        "missing_signals": [],
+        "new_signals": new_signals,
+        "missing_signals": missing_signals,
         "confidence_changes": confidence_changes,
         "summary": summary,
         "compatibility": compatibility,

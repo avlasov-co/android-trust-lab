@@ -169,7 +169,13 @@
         "process_state.selected_processes"
       ],
       "interpretation": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "observed",
+        "classification": "context_change",
+        "confidence_impact": "unchanged"
+      }
     },
     {
       "after": {
@@ -185,7 +191,13 @@
         "root_state.root_shell_available"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -201,7 +213,13 @@
         "root_state.su_invocation_tested"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "low"
+      "severity": "low",
+      "transition": {
+        "after_status": "observed_absent",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -217,7 +235,13 @@
         "root_state.root_management_artifact_observed"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -233,7 +257,13 @@
         "magisk_state.binary_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "observed_absent",
+        "classification": "context_change",
+        "confidence_impact": "unchanged"
+      }
     },
     {
       "after": {
@@ -249,7 +279,13 @@
         "magisk_state.daemon_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -265,7 +301,13 @@
         "magisk_state.process_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -281,7 +323,13 @@
         "magisk_state.zygisk_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium"
+      "severity": "medium",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -297,7 +345,13 @@
         "magisk_state.version_name"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info"
+      "severity": "info",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -313,7 +367,13 @@
         "magisk_state.version_code"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info"
+      "severity": "info",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     },
     {
       "after": {
@@ -329,7 +389,13 @@
         "magisk_state.module_context"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info"
+      "severity": "info",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "not_collected",
+        "classification": "collection_quality_change",
+        "confidence_impact": "increased"
+      }
     }
   ],
   "compare_report": {
@@ -429,10 +495,173 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "b23ecc0e75afcce7e9964a4abeacb334b98ee186a74e8791bd9ddc719dc8ca32",
-  "diff_id": "atldiff-b23ecc0e75afcce7e9964a4abeacb334",
+  "content_digest": "9ae9dd5283b5dbb1a980c09d34d3da3699c88586a53c53974dc808c2fe5b2752",
+  "diff_id": "atldiff-9ae9dd5283b5dbb1a980c09d34d3da36",
   "missing_signals": [],
-  "new_signals": [],
+  "new_signals": [
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "root_shell_availability",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": true,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/ROOT_PROBE"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed_absent",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "su_invocation_tested",
+      "interpretation": "Collection outcome changed from not_collected to observed_absent; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": false,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/ROOT_PROBE"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "root_management_artifact",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": true,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/ROOT_PROBE"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "magisk_daemon_visibility",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": true,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/PS"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "magisk_process_visibility",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": true,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/PS"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "zygisk_visibility",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": true,
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/MAGISK"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "magisk_version_name",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": "28.1",
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/MAGISK"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "magisk_version_code",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": "28100",
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/MAGISK"
+        ],
+        "before": []
+      }
+    },
+    {
+      "after_status": "observed",
+      "before_status": "not_collected",
+      "classification": "collection_quality_change",
+      "confidence_impact": "increased",
+      "dimension": "magisk_module_context",
+      "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "observed_values": {
+        "after": "androidtrustlab",
+        "before": null
+      },
+      "source_evidence": {
+        "after": [
+          "legacy-sections/MAGISK"
+        ],
+        "before": []
+      }
+    }
+  ],
   "provenance": {
     "base": {
       "applied_migrations": [],
@@ -460,8 +689,8 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.5.0",
-  "summary": "11 dimensions changed, 16 dimensions unchanged.",
+  "schema_version": "2.6.0",
+  "summary": "11 dimensions changed, 16 dimensions unchanged; 9 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",

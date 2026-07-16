@@ -33,7 +33,13 @@
         "mounts.integrity_summary"
       ],
       "interpretation": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
-      "severity": "high"
+      "severity": "high",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "observed_absent",
+        "classification": "state_change",
+        "confidence_impact": "unchanged"
+      }
     },
     {
       "after": {
@@ -68,7 +74,13 @@
         "mounts.dynamic_partitions"
       ],
       "interpretation": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
-      "severity": "low"
+      "severity": "low",
+      "transition": {
+        "after_status": "observed",
+        "before_status": "observed",
+        "classification": "state_change",
+        "confidence_impact": "unchanged"
+      }
     }
   ],
   "compare_report": {
@@ -138,8 +150,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "566232bb492f9f5bc90a32527502917800bcfc7464469d2dbb9d42051e9f49a2",
-  "diff_id": "atldiff-566232bb492f9f5bc90a325275029178",
+  "content_digest": "e4ad32cbbcdde179c850183b884e32f2f565018d2b08e389c0a7d463b3bbdbab",
+  "diff_id": "atldiff-e4ad32cbbcdde179c850183b884e32f2",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -169,8 +181,8 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.5.0",
-  "summary": "2 dimensions changed, 25 dimensions unchanged.",
+  "schema_version": "2.6.0",
+  "summary": "2 dimensions changed, 25 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",

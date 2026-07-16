@@ -1,6 +1,6 @@
-# Trust Diff atldiff-6799804da774a533e8aef89467119486
+# Trust Diff atldiff-6bbb73f616df822a50792b89eceda478
 
-1 dimensions changed, 26 dimensions unchanged.
+1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
 
 ## Compatibility
 
@@ -18,6 +18,14 @@
 
 > **Warning:** Required comparison metadata is missing; inputs are incomparable.
 
-| Dimension | Severity | Before | After |
-|---|---|---|---|
-| su_binary_visibility | medium | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` |
+| Dimension | Severity | Transition | Before | After |
+|---|---|---|---|---|
+| su_binary_visibility | medium | context_change (observed_absent → observed) | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` |
+
+## Signals Became Available
+
+None.
+
+## Signals Became Unavailable
+
+None.

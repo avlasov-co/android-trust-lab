@@ -39,6 +39,7 @@ SCHEMA_IDS = {
     "trust_diff_v2_3_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.3.0",
     "trust_diff_v2_4_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.4.0",
     "trust_diff_v2_5_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.5.0",
+    "trust_diff_v2_6_0.schema.json": f"{REPOSITORY_URL}/schema/diff/2.6.0",
     "trust_report_v1_0_0.schema.json": f"{REPOSITORY_URL}/blob/main/collector/schema/trust_report.schema.json",
     "trust_report_v2_0_0.schema.json": f"{REPOSITORY_URL}/schema/report/2.0.0",
     "trust_report_v3_0_0.schema.json": f"{REPOSITORY_URL}/schema/report/3.0.0",
