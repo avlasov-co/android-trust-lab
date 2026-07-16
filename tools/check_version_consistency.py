@@ -7,16 +7,12 @@ import ast
 import importlib.metadata
 import json
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 import yaml
 from packaging.version import InvalidVersion, Version
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.9 and 3.10
-    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))

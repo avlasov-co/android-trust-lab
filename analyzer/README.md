@@ -4,6 +4,9 @@ The analyzer parses raw Android Trust Lab artifacts, normalizes reports, validat
 
 ## Install
 
+Supported runtimes are Python 3.11, 3.12, 3.13, and 3.14. Use Python 3.11 or
+newer to install the analyzer.
+
 ```bash
 cd analyzer
 python -m pip install -e ".[dev]"

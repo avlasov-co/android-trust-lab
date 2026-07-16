@@ -129,6 +129,10 @@ Phase 2 Step 07 resolves baseline defect 4: `jsonschema` is a mandatory runtime
 dependency, Draft 2020-12 schemas are meta-validated, formats are enforced, and
 all validation failures are reported deterministically.
 
+Phase 2 Step 08 establishes Python 3.11 as the minimum and tests the complete
+3.11, 3.12, 3.13, and 3.14 support matrix in CI. A consistency checker binds
+package metadata, classifiers, documentation, and the workflow matrix.
+
 These defects are recorded here rather than encoded as expected Step 01
 behavior. The Step 01 product path remains unchanged apart from a valid CLI
 smoke test.

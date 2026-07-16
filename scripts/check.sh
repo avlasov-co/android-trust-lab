@@ -17,6 +17,10 @@ else
   echo "Python 3 is required (set PYTHON_BIN to an interpreter path)" >&2
   exit 1
 fi
+if ! "$PYTHON_BIN" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)'; then
+  echo "Python 3.11 or newer is required" >&2
+  exit 1
+fi
 
 require_path() {
   if [[ ! -e "$1" ]]; then
@@ -37,33 +41,36 @@ require_path module/trustlab-magisk
 export PYTHONPATH="$ROOT_DIR/analyzer${PYTHONPATH:+:$PYTHONPATH}"
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 
-echo "[1/9] Python source compile check"
+echo "[1/10] Python source compile check"
 "$PYTHON_BIN" -m compileall -q analyzer tools tests
 
-echo "[2/9] Unit tests with branch coverage"
+echo "[2/10] Unit tests with branch coverage"
 "$PYTHON_BIN" -m coverage erase
 "$PYTHON_BIN" -m coverage run --branch --source=analyzer/trustlab -m pytest -q
 "$PYTHON_BIN" -m coverage report -m
 
-echo "[3/9] Canonical project metadata validation"
+echo "[3/10] Canonical project metadata validation"
 "$PYTHON_BIN" tools/check_metadata.py
 
-echo "[4/9] Project version consistency check"
+echo "[4/10] Project version consistency check"
 "$PYTHON_BIN" tools/check_version_consistency.py
 
-echo "[5/9] Packaged schema consistency check"
+echo "[5/10] Python support policy consistency check"
+"$PYTHON_BIN" tools/check_python_support.py
+
+echo "[6/10] Packaged schema consistency check"
 "$PYTHON_BIN" tools/check_schema_consistency.py
 
-echo "[6/9] JSON Schema and checked-in artifact validation"
+echo "[7/10] JSON Schema and checked-in artifact validation"
 "$PYTHON_BIN" tools/check_schemas.py
 
-echo "[7/9] Generated artifact freshness check"
+echo "[8/10] Generated artifact freshness check"
 "$PYTHON_BIN" tools/generate_report.py --check
 
-echo "[8/9] Magisk package safety check"
+echo "[9/10] Magisk package safety check"
 "$PYTHON_BIN" tools/package_magisk_module.py --check-only
 
-echo "[9/9] Shell syntax check"
+echo "[10/10] Shell syntax check"
 while IFS= read -r script; do
   echo "$script"
   sh -n "$script"

@@ -15,6 +15,9 @@ Start here if you are evaluating the repository quickly:
 
 Android Trust Lab is a reproducible research harness for measuring Android trust-state transitions across controlled system configurations.
 
+The analyzer supports Python 3.11, 3.12, 3.13, and 3.14. Python 3.11 is the
+minimum supported runtime.
+
 It is not a root detector, bypass tool, root-hiding framework, Magisk hiding project, Play Integrity bypass project, SafetyNet bypass project, banking-app bypass project, or DuckDetector clone.
 
 The project studies a narrower and cleaner question:

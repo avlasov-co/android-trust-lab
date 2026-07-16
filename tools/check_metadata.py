@@ -8,13 +8,10 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
+import tomllib
+
 import yaml
 from jsonschema import Draft7Validator, FormatChecker
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.9 and 3.10
-    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_URL = "https://github.com/avlasov-co/android-trust-lab"

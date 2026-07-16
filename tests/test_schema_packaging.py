@@ -88,7 +88,10 @@ def _offline_wheelhouse(path):
     source_root = path.parent / "dependency-sources"
     source_root.mkdir()
     for project in DEPENDENCY_PROJECTS:
-        distribution = importlib.metadata.distribution(project)
+        try:
+            distribution = importlib.metadata.distribution(project)
+        except importlib.metadata.PackageNotFoundError:
+            continue
         source = source_root / project
         source.mkdir()
         for entry in distribution.files or ():
@@ -186,6 +189,14 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
     }
     with zipfile.ZipFile(wheel) as archive:
         assert expected <= set(archive.namelist())
+        metadata_name = next(
+            name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+        )
+        metadata = archive.read(metadata_name).decode("utf-8")
+        assert "Requires-Python: >=3.11\n" in metadata
+        for version in ("3.11", "3.12", "3.13", "3.14"):
+            assert f"Classifier: Programming Language :: Python :: {version}\n" in metadata
+        assert "Requires-Dist: tomli" not in metadata
     with tarfile.open(sdist, "r:gz") as archive:
         names = {"/".join(name.split("/")[1:]) for name in archive.getnames()}
         assert expected <= names
