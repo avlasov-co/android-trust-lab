@@ -1565,13 +1565,85 @@ def _validate_diff_provenance(diff: dict[str, Any]) -> None:
                 raise SchemaValidationError("diff migration provenance is not portable")
 
 
+def _validate_diff_compatibility_portability(diff: dict[str, Any]) -> None:
+    compatibility = diff.get("compatibility")
+    if not isinstance(compatibility, dict) or set(compatibility) != {
+        "canonical_comparison_schema_version",
+        "input_schema_versions",
+        "migration_mode",
+        "migrations",
+        "warnings",
+    }:
+        raise SchemaValidationError("diff compatibility is not portable")
+    versions = compatibility.get("input_schema_versions")
+    migrations = compatibility.get("migrations")
+    warnings = compatibility.get("warnings")
+    readable_report_versions = {
+        "1.0.0",
+        "2.0.0",
+        "3.0.0",
+        "4.0.0",
+        "5.0.0",
+        "6.0.0",
+    }
+    migration_ids = {
+        "report-v1-to-v2",
+        "report-v2-to-v3",
+        "report-v3-to-v4",
+        "report-v4-to-v5",
+        "report-v5-to-v6",
+    }
+    migration_values_portable = isinstance(migrations, dict) and all(
+        isinstance(migrations.get(side), list)
+        and all(
+            isinstance(step, dict)
+            and set(step)
+            == {
+                "migration_id",
+                "source_schema_version",
+                "target_schema_version",
+            }
+            and step.get("migration_id") in migration_ids
+            and step.get("source_schema_version") in readable_report_versions
+            and step.get("target_schema_version") in readable_report_versions
+            for step in migrations[side]
+        )
+        for side in ("base", "compare")
+    )
+    if (
+        compatibility.get("canonical_comparison_schema_version") != "6.0.0"
+        or compatibility.get("migration_mode") != "temporary_in_memory"
+        or not isinstance(versions, dict)
+        or set(versions) != {"base", "compare"}
+        or any(version not in readable_report_versions for version in versions.values())
+        or not isinstance(migrations, dict)
+        or set(migrations) != {"base", "compare"}
+        or not migration_values_portable
+        or not isinstance(warnings, list)
+        or any(
+            warning
+            not in {
+                "base_input_migrated_temporarily_in_memory",
+                "compare_input_migrated_temporarily_in_memory",
+            }
+            for warning in warnings
+        )
+    ):
+        raise SchemaValidationError("diff compatibility is not portable")
+
+
 def validate_portable_diff(diff: object) -> None:
     """Reject sensitive or non-semantic values before portable diff output."""
 
     _reject_sensitive_strings(diff, artifact="diff")
-    if not isinstance(diff, dict) or diff.get("schema_version") != "2.3.0":
+    if not isinstance(diff, dict) or diff.get("schema_version") not in {
+        "2.3.0",
+        "2.4.0",
+    }:
         return
     _validate_diff_provenance(diff)
+    if diff.get("schema_version") == "2.4.0":
+        _validate_diff_compatibility_portability(diff)
     all_dimensions = set(_DIFF_DIMENSION_PATHS)
     changed = diff.get("changed_dimensions", [])
     changed_names: list[str] = []

@@ -49,6 +49,7 @@ require_path collector/schema/trust_diff_v2_0_0.schema.json
 require_path collector/schema/trust_diff_v2_1_0.schema.json
 require_path collector/schema/trust_diff_v2_2_0.schema.json
 require_path collector/schema/trust_diff_v2_3_0.schema.json
+require_path collector/schema/trust_diff_v2_4_0.schema.json
 require_path datasets/manifest.json
 require_path datasets/source.json
 require_path results/artifact_manifest.json

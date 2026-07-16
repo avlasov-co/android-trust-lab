@@ -363,6 +363,19 @@
     "report_id": "atlrep-89b21cdc3f332683fc134c7168158575",
     "schema_version": "6.0.0"
   },
+  "compatibility": {
+    "canonical_comparison_schema_version": "6.0.0",
+    "input_schema_versions": {
+      "base": "6.0.0",
+      "compare": "6.0.0"
+    },
+    "migration_mode": "temporary_in_memory",
+    "migrations": {
+      "base": [],
+      "compare": []
+    },
+    "warnings": []
+  },
   "confidence_changes": [
     {
       "after": {
@@ -392,8 +405,8 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "60124c4bca514321a176f3b979ebfed17b511c669dc33dc028a9bb5199097af1",
-  "diff_id": "atldiff-60124c4bca514321a176f3b979ebfed1",
+  "content_digest": "b09bb26a7dd04dced3efa46cf28ff465a3b8e1c6ec940797f8b3d05a074c1647",
+  "diff_id": "atldiff-b09bb26a7dd04dced3efa46cf28ff465",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -423,7 +436,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.3.0",
+  "schema_version": "2.4.0",
   "summary": "13 dimensions changed, 16 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

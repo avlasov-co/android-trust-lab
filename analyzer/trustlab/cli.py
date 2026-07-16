@@ -118,8 +118,6 @@ def cmd_normalize(args: argparse.Namespace) -> int:
 def cmd_diff(args: argparse.Namespace) -> int:
     base = load_json(args.base)
     compare = load_json(args.compare)
-    validate_report(base)
-    validate_report(compare)
     _require_distinct_output(args.output, args.base, args.compare)
     diff = make_diff(base, compare)
     validate_diff(diff)
@@ -227,7 +225,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     normalize.set_defaults(func=cmd_normalize)
 
-    diff = sub.add_parser("diff", help="Diff two trust reports")
+    diff = sub.add_parser(
+        "diff",
+        help=("Diff two trust reports after validated temporary in-memory migration"),
+    )
     diff.add_argument("--base", required=True)
     diff.add_argument("--compare", required=True)
     diff.add_argument("--output", required=True)

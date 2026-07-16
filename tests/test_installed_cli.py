@@ -129,6 +129,7 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
     expected_diff = GOLDEN["diff"]
     assert diff_document["diff_id"] == expected_diff["diff_id"]
     assert diff_document["summary"] == expected_diff["summary"]
+    assert diff_document["compatibility"] == expected_diff["compatibility"]
     projected_changes = [
         {
             "dimension": change["dimension"],

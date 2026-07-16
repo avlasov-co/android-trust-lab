@@ -30,7 +30,7 @@
     "raw_artifact": "1.0.0",
     "collection_manifest": "1.0.0",
     "normalized_report": "6.0.0",
-    "derived_diff": "2.3.0"
+    "derived_diff": "2.4.0"
   },
   "aggregate_limitations": [
     "All current samples are synthetic and model AVD-visible state.",
@@ -213,7 +213,7 @@
       "relative_path": "derived/diffs/stock_adb_vs_rooted_adb.json",
       "media_type": "application/json",
       "schema_family": "diff",
-      "schema_version": "2.3.0",
+      "schema_version": "2.4.0",
       "producer": {
         "kind": "generator",
         "name": "trustlab",
@@ -227,7 +227,7 @@
       "relative_path": "derived/diffs/rooted_adb_vs_rooted_root.json",
       "media_type": "application/json",
       "schema_family": "diff",
-      "schema_version": "2.3.0",
+      "schema_version": "2.4.0",
       "producer": {
         "kind": "generator",
         "name": "trustlab",
@@ -241,7 +241,7 @@
       "relative_path": "derived/diffs/stock_vs_writable_system.json",
       "media_type": "application/json",
       "schema_family": "diff",
-      "schema_version": "2.3.0",
+      "schema_version": "2.4.0",
       "producer": {
         "kind": "generator",
         "name": "trustlab",
@@ -255,7 +255,7 @@
       "relative_path": "derived/diffs/rooted_adb_vs_magisk_root_collector.json",
       "media_type": "application/json",
       "schema_family": "diff",
-      "schema_version": "2.3.0",
+      "schema_version": "2.4.0",
       "producer": {
         "kind": "generator",
         "name": "trustlab",

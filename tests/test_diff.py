@@ -1,6 +1,7 @@
 import copy
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -8,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
 from trustlab.canonical_json import framed_content_digest
 from trustlab.diff import make_diff
-from trustlab.exceptions import SchemaValidationError
+from trustlab.exceptions import SchemaValidationError, UnsupportedSchemaVersionError
 from trustlab.identity import finalize_report_identity
 from trustlab.migrations import migrate_report_to_current, migrate_report_v1_to_v2
 from trustlab.report_writer import diff_to_markdown, load_json
@@ -131,6 +132,24 @@ def test_cross_version_diff_uses_explicit_migration_chain():
     assert len(diff["unchanged_dimensions"]) == 29
     current = migrate_report_to_current(v2)
     provenance = diff["provenance"]
+    compatibility = diff["compatibility"]
+    assert compatibility["input_schema_versions"] == {
+        "base": "1.0.0",
+        "compare": "2.0.0",
+    }
+    assert compatibility["canonical_comparison_schema_version"] == "6.0.0"
+    assert compatibility["migration_mode"] == "temporary_in_memory"
+    assert compatibility["warnings"] == [
+        "base_input_migrated_temporarily_in_memory",
+        "compare_input_migrated_temporarily_in_memory",
+    ]
+    assert [item["migration_id"] for item in compatibility["migrations"]["base"]] == [
+        "report-v1-to-v2",
+        "report-v2-to-v3",
+        "report-v3-to-v4",
+        "report-v4-to-v5",
+        "report-v5-to-v6",
+    ]
     assert provenance["common_report_schema_version"] == "6.0.0"
     assert provenance["base"]["original_schema_version"] == "1.0.0"
     assert provenance["compare"]["original_schema_version"] == "2.0.0"
@@ -171,6 +190,72 @@ def test_cross_version_diff_uses_explicit_migration_chain():
     validate_diff(diff)
 
 
+def test_v2_inputs_record_temporary_canonical_migration():
+    v1 = load_report("tests/fixtures/report_v1_historical.json")
+    v2 = migrate_report_v1_to_v2(v1)
+
+    diff = make_diff(v2, v2)
+
+    assert diff["compatibility"]["input_schema_versions"] == {
+        "base": "2.0.0",
+        "compare": "2.0.0",
+    }
+    assert len(diff["compatibility"]["migrations"]["base"]) == 4
+    assert len(diff["compatibility"]["migrations"]["compare"]) == 4
+    assert diff["compatibility"]["warnings"] == [
+        "base_input_migrated_temporarily_in_memory",
+        "compare_input_migrated_temporarily_in_memory",
+    ]
+    validate_diff(diff)
+
+
+def test_current_inputs_record_no_migration_warning():
+    current = load_report("tests/fixtures/sample_normalized_report.json")
+
+    diff = make_diff(current, current)
+
+    assert diff["compatibility"] == {
+        "input_schema_versions": {"base": "6.0.0", "compare": "6.0.0"},
+        "migrations": {"base": [], "compare": []},
+        "warnings": [],
+        "canonical_comparison_schema_version": "6.0.0",
+        "migration_mode": "temporary_in_memory",
+    }
+
+
+@pytest.mark.parametrize("version", [None, "v6", "6", "06.0.0", "6.0"])
+def test_diff_rejects_malformed_report_versions(version):
+    current = load_report("tests/fixtures/sample_normalized_report.json")
+    malformed = copy.deepcopy(current)
+    malformed["schema_version"] = version
+
+    with pytest.raises(SchemaValidationError, match="semantic version"):
+        make_diff(malformed, current)
+
+
+def test_diff_rejects_unsupported_report_version_before_comparison():
+    current = load_report("tests/fixtures/sample_normalized_report.json")
+    unsupported = copy.deepcopy(current)
+    unsupported["schema_version"] = "7.0.0"
+
+    with pytest.raises(UnsupportedSchemaVersionError, match="unsupported"):
+        make_diff(unsupported, current)
+
+
+def test_diff_rejects_malformed_document_and_tampered_identity():
+    current = load_report("tests/fixtures/sample_normalized_report.json")
+    malformed = {"schema_version": "6.0.0"}
+    tampered = copy.deepcopy(current)
+    tampered["target"]["android_version"]["value"] = "15"
+
+    with pytest.raises(SchemaValidationError, match="schema validation failed"):
+        make_diff(malformed, current)
+    with pytest.raises(SchemaValidationError, match="content digest"):
+        make_diff(tampered, current)
+    with pytest.raises(SchemaValidationError, match="JSON object"):
+        make_diff(cast(Any, []), current)
+
+
 def test_diff_validation_rejects_rehashed_unregistered_migration_chain():
     v1 = load_report("tests/fixtures/report_v1_historical.json")
     current = load_report("tests/fixtures/sample_normalized_report.json")
@@ -181,6 +266,30 @@ def test_diff_validation_rejects_rehashed_unregistered_migration_chain():
     rehash_diff(forged)
 
     with pytest.raises(SchemaValidationError, match="registered migration chain"):
+        validate_diff(forged)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        ("input_version", "input version"),
+        ("migrations", "registered migration path"),
+        ("warnings", "warnings"),
+    ],
+)
+def test_diff_validation_binds_compatibility_to_provenance(field, message):
+    v1 = load_report("tests/fixtures/report_v1_historical.json")
+    current = load_report("tests/fixtures/sample_normalized_report.json")
+    forged = make_diff(v1, current)
+    if field == "input_version":
+        forged["compatibility"]["input_schema_versions"]["base"] = "2.0.0"
+    elif field == "migrations":
+        forged["compatibility"]["migrations"]["base"] = []
+    else:
+        forged["compatibility"]["warnings"] = []
+    rehash_diff(forged)
+
+    with pytest.raises(SchemaValidationError, match=message):
         validate_diff(forged)
 
 

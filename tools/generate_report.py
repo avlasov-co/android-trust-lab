@@ -327,10 +327,14 @@ def diff_markdown(
         "",
     ]
     for meta, diff in diff_entries:
+        compatibility = diff["compatibility"]
+        versions = compatibility["input_schema_versions"]
         lines += [
             f"## {meta['title']}",
             "",
             diff["summary"],
+            "",
+            f"Input schemas: base `{versions['base']}`, compare `{versions['compare']}`; canonical comparison schema: `{compatibility['canonical_comparison_schema_version']}`; migration mode: `{compatibility['migration_mode']}`.",
             "",
             "| Dimension | Severity | Before | After | Interpretation |",
             "|---|---|---|---|---|",

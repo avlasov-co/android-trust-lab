@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from trustlab.cli import main
@@ -57,9 +58,19 @@ def test_valid_normalize_validate_diff_summarize_flow(tmp_path, capsys):
     assert main(["validate-diff", str(diff_path)]) == 0
     assert main(["summarize", str(diff_path)]) == 0
 
+    diff = json.loads(diff_path.read_text(encoding="utf-8"))
+    assert diff["compatibility"] == {
+        "input_schema_versions": {"base": "6.0.0", "compare": "6.0.0"},
+        "migrations": {"base": [], "compare": []},
+        "warnings": [],
+        "canonical_comparison_schema_version": "6.0.0",
+        "migration_mode": "temporary_in_memory",
+    }
+
     output = capsys.readouterr().out
     assert "valid report\n" in output
     assert "valid diff\n" in output
     assert str(tmp_path) not in output
     assert "# Trust Diff" in output
+    assert "## Compatibility" in output
     assert "su_binary_visibility" in output

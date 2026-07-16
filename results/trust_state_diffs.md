@@ -6,6 +6,8 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 1 dimensions changed, 28 dimensions unchanged.
 
+Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
+
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
 | su_binary_visibility | medium | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` | Trust-state dimension changed between reports. |
@@ -13,6 +15,8 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 ## E02 rooted AVD ADB observer vs E02 rooted AVD root observer
 
 2 dimensions changed, 27 dimensions unchanged.
+
+Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -23,6 +27,8 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 2 dimensions changed, 27 dimensions unchanged.
 
+Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
+
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
 | mount_integrity | high | `{"overlay_detected": {"status": "observed_absent", "value": false}, "writable_sensitive_mounts": {"status": "observed_absent", "value": []}}` | `{"overlay_detected": {"status": "observed", "value": true}, "writable_sensitive_mounts": {"status": "observed", "value": ["/system"]}}` | Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion. |
@@ -31,6 +37,8 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 ## E02 rooted ADB observer vs E05 Magisk root collector fixture
 
 13 dimensions changed, 16 dimensions unchanged.
+
+Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|

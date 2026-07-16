@@ -132,10 +132,29 @@ def _evidence_value(value: Any) -> Any:
 
 def diff_to_markdown(diff: dict[str, Any]) -> str:
     validate_portable_diff(diff)
+    compatibility = diff.get("compatibility", {})
+    versions = compatibility.get("input_schema_versions", {})
+    migrations = compatibility.get("migrations", {})
+    base_migrations = (
+        ", ".join(item["migration_id"] for item in migrations.get("base", [])) or "none"
+    )
+    compare_migrations = (
+        ", ".join(item["migration_id"] for item in migrations.get("compare", []))
+        or "none"
+    )
+    warnings = ", ".join(compatibility.get("warnings", [])) or "none"
     lines = [
         f"# Trust Diff {diff.get('diff_id', '')}",
         "",
         diff.get("summary", ""),
+        "",
+        "## Compatibility",
+        "",
+        f"- Input schemas: base `{versions.get('base', 'unknown')}`, compare `{versions.get('compare', 'unknown')}`",
+        f"- Canonical comparison schema: `{compatibility.get('canonical_comparison_schema_version', 'unknown')}`",
+        f"- Base migrations: {base_migrations}",
+        f"- Compare migrations: {compare_migrations}",
+        f"- Warnings: {warnings}",
         "",
         "| Dimension | Severity | Before | After |",
         "|---|---|---|---|",

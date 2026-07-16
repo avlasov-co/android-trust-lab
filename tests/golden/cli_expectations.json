@@ -51,8 +51,21 @@
     ]
   },
   "diff": {
-    "diff_id": "atldiff-47c94b928474d0a5798e233d019932d7",
+    "diff_id": "atldiff-c2badc95a1977285d5e3936b152c300c",
     "summary": "1 dimensions changed, 28 dimensions unchanged.",
+    "compatibility": {
+      "input_schema_versions": {
+        "base": "6.0.0",
+        "compare": "6.0.0"
+      },
+      "migrations": {
+        "base": [],
+        "compare": []
+      },
+      "warnings": [],
+      "canonical_comparison_schema_version": "6.0.0",
+      "migration_mode": "temporary_in_memory"
+    },
     "changed_dimensions": [
       {
         "dimension": "su_binary_visibility",

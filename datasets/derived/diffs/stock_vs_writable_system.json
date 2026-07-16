@@ -76,9 +76,22 @@
     "report_id": "atlrep-211c99c6ca7316b895ff0a828ce031c1",
     "schema_version": "6.0.0"
   },
+  "compatibility": {
+    "canonical_comparison_schema_version": "6.0.0",
+    "input_schema_versions": {
+      "base": "6.0.0",
+      "compare": "6.0.0"
+    },
+    "migration_mode": "temporary_in_memory",
+    "migrations": {
+      "base": [],
+      "compare": []
+    },
+    "warnings": []
+  },
   "confidence_changes": [],
-  "content_digest": "5c130255dca56be9772c66be41311f9a4ca731692235e3a7745698cb720a6d64",
-  "diff_id": "atldiff-5c130255dca56be9772c66be41311f9a",
+  "content_digest": "a3b3bc65277a6ed2d87fb9894f9bfd6baca08b8c02078692ca4546be262658fb",
+  "diff_id": "atldiff-a3b3bc65277a6ed2d87fb9894f9bfd6b",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -108,7 +121,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.3.0",
+  "schema_version": "2.4.0",
   "summary": "2 dimensions changed, 27 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

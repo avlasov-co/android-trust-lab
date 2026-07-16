@@ -24,6 +24,7 @@ from .canonical_json import (
 from .compatibility import (
     SchemaFamily,
     current_write_version,
+    report_migration_path,
     schema_resource_name,
     supported_schema_versions,
 )
@@ -1941,7 +1942,7 @@ def validate_diff(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.DIFF)
     )
-    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"}:
         _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
         data,
@@ -1949,7 +1950,7 @@ def validate_diff(data: object) -> None:
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
-    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"}:
         _validate_v2_diff_semantics(data, schema_version=resource_version)
     validate_portable_diff(data)
 
@@ -1999,6 +2000,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.1.0": {"3.0.0", "4.0.0"},
             "2.2.0": {"3.0.0", "4.0.0", "5.0.0"},
             "2.3.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
+            "2.4.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
         }[schema_version]
         if (original_version in content_addressed_versions) != (
             original_digest is not None
@@ -2073,6 +2075,17 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
                 "5.0.0": [("report-v5-to-v6", "5.0.0", "6.0.0")],
                 "6.0.0": [],
             },
+            "2.4.0": {
+                version: [
+                    (
+                        step.migration_id,
+                        step.source_schema_version,
+                        step.target_schema_version,
+                    )
+                    for step in report_migration_path(version)
+                ]
+                for version in SUPPORTED_REPORT_SCHEMA_VERSIONS
+            },
         }
         expected_steps = expected_steps_by_version[schema_version].get(original_version)
         if expected_steps is None or len(migrations) != len(expected_steps):
@@ -2097,6 +2110,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.1.0": "4.0.0",
             "2.2.0": "5.0.0",
             "2.3.0": "6.0.0",
+            "2.4.0": "6.0.0",
         }[schema_version]
         if original_version == current_report_version and (
             provenance["original_report_id"] != common_report["report_id"]
@@ -2107,6 +2121,42 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             raise SchemaValidationError(
                 "diff provenance does not bind the original current report identity"
             )
+    if schema_version == "2.4.0":
+        _validate_diff_compatibility(data)
+
+
+def _validate_diff_compatibility(data: dict[str, Any]) -> None:
+    compatibility = data["compatibility"]
+    input_versions = compatibility["input_schema_versions"]
+    migrations = compatibility["migrations"]
+    warnings = compatibility["warnings"]
+    if (
+        compatibility["canonical_comparison_schema_version"]
+        != (data["provenance"]["common_report_schema_version"])
+    ):
+        raise SchemaValidationError(
+            "diff compatibility does not bind the canonical comparison schema"
+        )
+    expected_warnings: list[str] = []
+    for side in ("base", "compare"):
+        provenance = data["provenance"][side]
+        source_version = provenance["original_schema_version"]
+        if input_versions[side] != source_version:
+            raise SchemaValidationError(
+                "diff compatibility input version does not bind provenance"
+            )
+        expected_migrations = [
+            step.to_compatibility_dict()
+            for step in report_migration_path(source_version)
+        ]
+        if migrations[side] != expected_migrations:
+            raise SchemaValidationError(
+                "diff compatibility does not use the registered migration path"
+            )
+        if expected_migrations:
+            expected_warnings.append(f"{side}_input_migrated_temporarily_in_memory")
+    if warnings != expected_warnings:
+        raise SchemaValidationError("diff compatibility warnings are not canonical")
 
 
 def _collection_manifest_semantic_error(detail: str) -> SchemaValidationError:

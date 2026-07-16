@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from types import MappingProxyType
 from typing import Any
 
+from .compatibility import (
+    SchemaFamily,
+    current_write_version,
+    report_migration_path,
+)
 from .exceptions import UnsupportedSchemaVersionError
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import (
@@ -103,30 +109,29 @@ def migrate_report_v5_to_v6(source: dict[str, Any]) -> dict[str, Any]:
 def migrate_report_to_current(source: dict[str, Any]) -> dict[str, Any]:
     """Migrate any readable historical report through explicit major steps."""
 
-    version = source.get("schema_version")
-    if version == "1.0.0":
-        return migrate_report_v5_to_v6(
-            migrate_report_v4_to_v5(
-                migrate_report_v3_to_v4(
-                    migrate_report_v2_to_v3(migrate_report_v1_to_v2(source))
-                )
-            )
-        )
-    if version == "2.0.0":
-        return migrate_report_v5_to_v6(
-            migrate_report_v4_to_v5(
-                migrate_report_v3_to_v4(migrate_report_v2_to_v3(source))
-            )
-        )
-    if version == "3.0.0":
-        return migrate_report_v5_to_v6(
-            migrate_report_v4_to_v5(migrate_report_v3_to_v4(source))
-        )
-    if version == "4.0.0":
-        return migrate_report_v5_to_v6(migrate_report_v4_to_v5(source))
-    if version == "5.0.0":
-        return migrate_report_v5_to_v6(source)
-    if version == "6.0.0":
+    migrators = MappingProxyType(
+        {
+            "report-v1-to-v2": migrate_report_v1_to_v2,
+            "report-v2-to-v3": migrate_report_v2_to_v3,
+            "report-v3-to-v4": migrate_report_v3_to_v4,
+            "report-v4-to-v5": migrate_report_v4_to_v5,
+            "report-v5-to-v6": migrate_report_v5_to_v6,
+        }
+    )
+    steps = report_migration_path(
+        source.get("schema_version"),
+        target_version=current_write_version(SchemaFamily.REPORT),
+    )
+    if not steps:
         validate_report(source)
         return deepcopy(source)
-    raise UnsupportedSchemaVersionError("unsupported report schema version")
+    migrated = source
+    for step in steps:
+        try:
+            migrator = migrators[step.migration_id]
+        except KeyError as exc:
+            raise UnsupportedSchemaVersionError(
+                "registered report migration has no implementation"
+            ) from exc
+        migrated = migrator(migrated)
+    return migrated

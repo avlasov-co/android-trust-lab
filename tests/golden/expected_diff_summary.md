@@ -1,6 +1,14 @@
-# Trust Diff atldiff-47c94b928474d0a5798e233d019932d7
+# Trust Diff atldiff-c2badc95a1977285d5e3936b152c300c
 
 1 dimensions changed, 28 dimensions unchanged.
+
+## Compatibility
+
+- Input schemas: base `6.0.0`, compare `6.0.0`
+- Canonical comparison schema: `6.0.0`
+- Base migrations: none
+- Compare migrations: none
+- Warnings: none
 
 | Dimension | Severity | Before | After |
 |---|---|---|---|

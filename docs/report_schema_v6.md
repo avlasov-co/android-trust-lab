@@ -2,7 +2,7 @@
 
 Report schema `6.0.0` is the sole writer contract. Versions `1.0.0` through
 `5.0.0` remain readable and migrate through explicit, source-bound major steps.
-Diff schema `2.3.0` compares reports only after migration to v6.
+Diff schema `2.4.0` validates each input and records temporary in-memory migrations before comparing canonical v6 representations. Diff `2.3.0` remains readable and frozen.
 
 ## Root evidence
 

@@ -79,7 +79,7 @@ evidence status, sanitized context, scope, completeness, limitation, or selected
 observation changes report content identity. Evidence references are retained in
 reports but excluded from semantic diff values.
 
-Diff schema `2.2.0` is frozen and readable. Current diff `2.3.0` migrates readable inputs to report
+Diff schemas `2.2.0` and `2.3.0` are frozen and readable. Current diff `2.4.0` migrates readable inputs to report
 v5 and adds status-aware dimensions for current SELinux context, denial
 collection, and selected-process visibility. Consequently, an inaccessible
 process view differs from a complete observation of absence without leaking

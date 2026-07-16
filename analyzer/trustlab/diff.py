@@ -5,11 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from .canonical_json import framed_content_digest
-from .compatibility import SchemaFamily, current_write_version
-from .migration_codec import encode_legacy_report, legacy_report_digest
-from .migrations import migrate_report_to_current
+from .compatibility import (
+    SchemaFamily,
+    current_write_version,
+    prepare_report_for_comparison,
+)
 from .trust_dimensions import severity_for_dimension
-from .validators import validate_report
 
 # Default dimensions must represent actual measured trust-state fields.
 # App-visible/root-visible dimensions are intentionally not included here until
@@ -79,41 +80,6 @@ def get_path(obj: dict[str, Any], path: list[str]) -> Any:
     return _comparison_value(current)
 
 
-def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    original_id = report.get("report_id", "unknown")
-    original_version = str(report.get("schema_version", "unknown"))
-    validate_report(report)
-    common = migrate_report_to_current(report)
-    applied_count = {
-        "1.0.0": 5,
-        "2.0.0": 4,
-        "3.0.0": 3,
-        "4.0.0": 2,
-        "5.0.0": 1,
-        "6.0.0": 0,
-    }.get(original_version, 0)
-    migrations = (
-        common["provenance"]["migration_history"][-applied_count:]
-        if applied_count
-        else []
-    )
-    common_identity = {
-        "report_id": common["report_id"],
-        "content_digest": common["content_digest"],
-        "schema_version": common["schema_version"],
-    }
-    return common, {
-        "original_report_id": original_id,
-        "original_schema_version": original_version,
-        "original_content_digest": report.get("content_digest")
-        if original_version in {"3.0.0", "4.0.0", "5.0.0", "6.0.0"}
-        else None,
-        "original_document_digest": legacy_report_digest(encode_legacy_report(report)),
-        "common_report": common_identity,
-        "applied_migrations": migrations,
-    }
-
-
 def interpretation(dimension: str) -> str:
     messages = {
         "bootloader_lock_state": "Bootloader lock evidence changed. On virtual targets this is property evidence only, not hardware-backed proof.",
@@ -137,8 +103,12 @@ def interpretation(dimension: str) -> str:
 
 
 def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
-    base, base_provenance = _report_for_diff(base)
-    compare, compare_provenance = _report_for_diff(compare)
+    base, base_provenance, base_compatibility = prepare_report_for_comparison(
+        base, side="base"
+    )
+    compare, compare_provenance, compare_compatibility = prepare_report_for_comparison(
+        compare, side="compare"
+    )
     common_version = base.get("schema_version")
     if compare.get("schema_version") != common_version:
         raise ValueError("report migration did not produce one common schema version")
@@ -146,6 +116,22 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
         "common_report_schema_version": common_version,
         "base": base_provenance,
         "compare": compare_provenance,
+    }
+    compatibility = {
+        "input_schema_versions": {
+            "base": base_compatibility["schema_version"],
+            "compare": compare_compatibility["schema_version"],
+        },
+        "migrations": {
+            "base": base_compatibility["migrations"],
+            "compare": compare_compatibility["migrations"],
+        },
+        "warnings": [
+            *base_compatibility["warnings"],
+            *compare_compatibility["warnings"],
+        ],
+        "canonical_comparison_schema_version": common_version,
+        "migration_mode": "temporary_in_memory",
     }
     changed = []
     unchanged = []
@@ -201,6 +187,7 @@ def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
         "missing_signals": [],
         "confidence_changes": confidence_changes,
         "summary": summary,
+        "compatibility": compatibility,
         "provenance": provenance,
     }
     content_digest = framed_content_digest(

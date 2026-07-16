@@ -192,6 +192,33 @@ def test_diff_rejects_unsupported_input_schema_version(tmp_path, capsys):
     assert destination.read_bytes() == b"sentinel\n"
 
 
+def test_diff_rejects_malformed_input_schema_version(tmp_path, capsys):
+    base = valid_report()
+    base["schema_version"] = "v6"
+    base_path = tmp_path / "base.json"
+    compare_path = tmp_path / "compare.json"
+    write_document(base_path, base)
+    write_document(compare_path, valid_report())
+    destination = tmp_path / "diff.json"
+    destination.write_bytes(b"sentinel\n")
+
+    code = cli.main(
+        [
+            "diff",
+            "--base",
+            str(base_path),
+            "--compare",
+            str(compare_path),
+            "--output",
+            str(destination),
+        ]
+    )
+
+    assert_clean_error(capsys, code, "schema version must be a semantic version")
+    assert code == cli.EXIT_SCHEMA_VALIDATION
+    assert destination.read_bytes() == b"sentinel\n"
+
+
 @pytest.mark.parametrize("output_side", ["base", "compare"])
 def test_diff_refuses_to_replace_an_input(tmp_path, capsys, output_side):
     base_path = tmp_path / "base.json"

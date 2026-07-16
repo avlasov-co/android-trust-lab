@@ -10,17 +10,20 @@ import pytest
 
 import trustlab.validators as validators_module
 from trustlab.compatibility import (
+    REPORT_MIGRATION_REGISTRY,
     SCHEMA_RESOURCE_REGISTRY,
     SCHEMA_SUPPORT,
     EvidenceStatus,
     SchemaFamily,
     SchemaSupport,
     current_write_version,
+    report_migration_path,
+    require_supported_schema_version,
     schema_resource_name,
     supported_schema_versions,
 )
 from trustlab.diff import make_diff
-from trustlab.exceptions import UnsupportedSchemaVersionError
+from trustlab.exceptions import SchemaValidationError, UnsupportedSchemaVersionError
 from trustlab.normalizer import normalize_raw_file
 from trustlab.report_writer import load_json
 from trustlab.validators import (
@@ -43,8 +46,10 @@ def test_supported_version_table_is_complete_and_exact():
             ),
         ),
         SchemaFamily.DIFF: SchemaSupport(
-            current_write_version="2.3.0",
-            readable_versions=frozenset({"1.0.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0"}),
+            current_write_version="2.4.0",
+            readable_versions=frozenset(
+                {"1.0.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"}
+            ),
         ),
         SchemaFamily.DATASET_MANIFEST: SchemaSupport(
             current_write_version="2.0.0",
@@ -83,6 +88,7 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
         (SchemaFamily.DIFF, "2.1.0"): "trust_diff_v2_1_0.schema.json",
         (SchemaFamily.DIFF, "2.2.0"): "trust_diff_v2_2_0.schema.json",
         (SchemaFamily.DIFF, "2.3.0"): "trust_diff_v2_3_0.schema.json",
+        (SchemaFamily.DIFF, "2.4.0"): "trust_diff_v2_4_0.schema.json",
         (SchemaFamily.DATASET_MANIFEST, "1.0.0"): (
             "dataset_manifest_v1_0_0.schema.json"
         ),
@@ -119,6 +125,33 @@ def test_schema_registries_and_support_records_are_immutable():
     assert current_write_version(SchemaFamily.REPORT) == "6.0.0"
 
 
+def test_report_migrations_resolve_only_through_the_registered_chain():
+    assert list(REPORT_MIGRATION_REGISTRY) == [
+        "1.0.0",
+        "2.0.0",
+        "3.0.0",
+        "4.0.0",
+        "5.0.0",
+    ]
+    assert [step.migration_id for step in report_migration_path("1.0.0")] == [
+        "report-v1-to-v2",
+        "report-v2-to-v3",
+        "report-v3-to-v4",
+        "report-v4-to-v5",
+        "report-v5-to-v6",
+    ]
+    assert report_migration_path("6.0.0") == ()
+    assert require_supported_schema_version(SchemaFamily.REPORT, "2.0.0") == ("2.0.0")
+    with pytest.raises(SchemaValidationError, match="semantic version"):
+        require_supported_schema_version(SchemaFamily.REPORT, "v2")
+    with pytest.raises(SchemaValidationError, match="semantic version"):
+        require_supported_schema_version(SchemaFamily.REPORT, None)
+    with pytest.raises(UnsupportedSchemaVersionError, match="unsupported"):
+        report_migration_path("7.0.0")
+    with pytest.raises(UnsupportedSchemaVersionError, match="downgrade"):
+        report_migration_path("6.0.0", target_version="5.0.0")
+
+
 def test_supported_schema_versions_do_not_imply_planned_support():
     assert supported_schema_versions(SchemaFamily.REPORT) == frozenset(
         {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"}
@@ -145,7 +178,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         "dataset_manifest": dataset_manifest["schema_version"],
     } == {
         "report": "6.0.0",
-        "diff": "2.3.0",
+        "diff": "2.4.0",
         "dataset_manifest": "2.0.0",
     }
     assert report["schema_version"] == current_write_version(SchemaFamily.REPORT)
@@ -176,7 +209,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         (
             validate_diff,
             "tests/fixtures/sample_diff.json",
-            "trust_diff_v2_3_0.schema.json",
+            "trust_diff_v2_4_0.schema.json",
         ),
         (
             validate_diff,
