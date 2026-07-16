@@ -22,6 +22,7 @@ from .exceptions import (
     TrustLabError,
     UnsupportedSchemaVersionError,
 )
+from .host_collector import collect_host
 from .migrations import migrate_report_to_current
 from .normalizer import normalize_collection_manifest_with_inputs, normalize_raw_file
 from .observers import OBSERVER_REGISTRY
@@ -172,6 +173,11 @@ def cmd_summarize(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_collect_host(args: argparse.Namespace) -> int:
+    collect_host(args.output)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="trustlab", description="Android Trust Lab analyzer"
@@ -182,6 +188,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show tracebacks for expected project errors",
     )
     sub = parser.add_subparsers(required=True)
+
+    collect = sub.add_parser("collect", help="Collect read-only trust provenance")
+    collect_sub = collect.add_subparsers(required=True)
+    collect_host_parser = collect_sub.add_parser(
+        "host", help="Collect bounded host and Android SDK tool provenance"
+    )
+    collect_host_parser.add_argument("--output", required=True)
+    collect_host_parser.set_defaults(func=cmd_collect_host)
 
     normalize = sub.add_parser(
         "normalize", help="Normalize raw artifact into trust report JSON"

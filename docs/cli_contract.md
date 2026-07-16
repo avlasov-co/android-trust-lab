@@ -16,6 +16,11 @@ direct-input selection explicit and is rejected with `--manifest`.
 `dataset verify` is read-only: it validates dataset source and manifest
 contracts, safe relative paths, exact size/hash bindings, the closed reference
 graph, collection relationships, and deterministic report/diff freshness.
+`collect host --output DIR` runs only the reviewed host-version command
+allowlist, captures bounded and redacted provenance, and atomically publishes a
+private unique collection directory. Missing SDK tools and command failures are
+represented inside the completed collection rather than treated as CLI
+failures.
 
 Validation uses Draft 2020-12 with explicit format checking. All detected
 schema errors are reported in deterministic JSON-pointer order; diagnostics
@@ -65,6 +70,9 @@ refuses an output that aliases its raw input, diff refuses an output that aliase
 either input report, and migration refuses an output that aliases its source.
 Manifest normalization refuses to replace either the manifest or any bound
 source artifact.
+Host collection also remains silent after successful publication; the created
+directory uses an opaque `atlcol-*` name beneath the caller-selected output
+root.
 Successful dataset verification prints exactly `dataset verified` and never
 modifies the bundle.
 

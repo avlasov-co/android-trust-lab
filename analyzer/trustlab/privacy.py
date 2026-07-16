@@ -113,6 +113,7 @@ _PORTABLE_EXPERIMENT_IDS = frozenset(
         "E18_partial_generic_mount",
         "E18_partial_mounts",
         "E19_structured_security",
+        "E26_host_collection",
         "E99_manual",
         "E99_physical_device_template",
     }
@@ -2099,10 +2100,13 @@ def _validate_manifest_tools(manifest: dict[str, Any]) -> None:
         allowed_tools = {
             "adb",
             "android_shell",
+            "avdmanager",
             "emulator",
             "ps",
             "python",
+            "sdkmanager",
             "trustlab_fixture",
+            "trustlab_host",
             "trustlab_magisk",
         }
         for name, version in tool_versions.items():
@@ -2121,6 +2125,8 @@ def _validate_manifest_tools(manifest: dict[str, Any]) -> None:
 
 
 def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
+    collector = manifest.get("collector", {})
+    collector_name = collector.get("name") if isinstance(collector, dict) else None
     for artifact in manifest.get("artifacts", []):
         if not isinstance(artifact, dict):
             continue
@@ -2160,11 +2166,19 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
                 )
             )
         elif logical_name == "command_results":
+            is_host_capture = collector_name == "trustlab-host"
             valid = (
-                relative_path is None
-                and probe_id in safe_probe_ids
+                probe_id in safe_probe_ids
                 and str(probe_id).endswith(".command_results")
                 and artifact.get("media_type") == "application/json"
+                and (
+                    (
+                        is_host_capture
+                        and relative_path == "host_provenance.json"
+                        and artifact.get("status") == "observed"
+                    )
+                    or relative_path is None
+                )
             )
         elif logical_name == "other_observed_artifact":
             valid = (
