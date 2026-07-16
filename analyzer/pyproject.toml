@@ -35,5 +35,8 @@ trustlab = "trustlab.cli:main"
 where = ["."]
 include = ["trustlab*"]
 
+[tool.setuptools.package-data]
+trustlab = ["schemas/*.json"]
+
 [tool.setuptools.dynamic]
 version = {attr = "trustlab._version.__version__"}

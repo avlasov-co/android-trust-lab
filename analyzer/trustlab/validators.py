@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from importlib.resources import files
 from typing import Any, Dict
 
 from jsonschema import Draft202012Validator
@@ -15,24 +15,11 @@ SUPPORTED_REPORT_SCHEMA_VERSIONS = frozenset({"1.0.0"})
 SUPPORTED_DIFF_SCHEMA_VERSIONS = frozenset({"1.0.0"})
 
 
-def repo_root_from(start: Path | None = None) -> Path:
-    # Prefer the source checkout containing this module. Searching the working
-    # directory first lets an unrelated checkout shadow project validation.
-    here = Path(__file__).resolve()
-    for candidate in [here, *here.parents]:
-        if (candidate / "collector" / "schema" / "trust_report.schema.json").exists():
-            return candidate
-    if start is not None:
-        current = start.resolve()
-        for candidate in [current, *current.parents]:
-            if (candidate / "collector" / "schema" / "trust_report.schema.json").exists():
-                return candidate
-    raise FileNotFoundError("Could not locate project schemas in the source checkout.")
-
-
 def load_schema(name: str) -> Dict[str, Any]:
-    path = repo_root_from() / "collector" / "schema" / name
-    return json.loads(path.read_text(encoding="utf-8"))
+    """Load a canonical schema from the installed analyzer package."""
+
+    resource = files("trustlab.schemas").joinpath(name)
+    return json.loads(resource.read_text(encoding="utf-8"))
 
 
 def _json_pointer(parts: Any) -> str:

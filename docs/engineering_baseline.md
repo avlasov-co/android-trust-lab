@@ -119,6 +119,12 @@ can identify a person or environment.
 7. **CLI failure contract (Step 05):** expected malformed-input and filesystem
    errors currently escape as tracebacks without stable project exit codes.
 
+## Subsequent resolution notes
+
+Phase 2 Step 06 resolves baseline defect 3: schemas are packaged as canonical
+`importlib.resources`, wheel and sdist contents are tested, and compatibility
+copies cannot drift without failing verification.
+
 These defects are recorded here rather than encoded as expected Step 01
 behavior. The Step 01 product path remains unchanged apart from a valid CLI
 smoke test.

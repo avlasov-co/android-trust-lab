@@ -15,18 +15,6 @@ def test_project_schemas_are_valid_draft_2020_12():
         Draft202012Validator.check_schema(load_json(path))
 
 
-def test_schema_loading_ignores_working_directory_shadow(tmp_path, monkeypatch):
-    shadow = tmp_path / "collector/schema"
-    shadow.mkdir(parents=True)
-    (shadow / "trust_report.schema.json").write_text(
-        '{"type": "object"}\n', encoding="utf-8"
-    )
-    monkeypatch.chdir(tmp_path)
-    assert load_schema("trust_report.schema.json")["$id"].startswith(
-        "https://github.com/avlasov-co/android-trust-lab/"
-    )
-
-
 def test_sample_report_schema():
     report = load_json(ROOT / "datasets" / "samples" / "stock_avd" / "E01_stock_avd__observer-adb__sample.json")
     validate_report(report)

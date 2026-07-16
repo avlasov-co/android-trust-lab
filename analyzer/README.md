@@ -9,6 +9,12 @@ cd analyzer
 python -m pip install -e ".[dev]"
 ```
 
+JSON Schemas ship inside wheel and sdist artifacts. Validation therefore works
+from any current directory and does not depend on a source checkout. The
+packaged resources under `trustlab/schemas/` are canonical; repository-level
+copies under `collector/schema/` are compatibility paths checked byte-for-byte
+by the complete repository gate.
+
 ## Commands
 
 ```bash
