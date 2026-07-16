@@ -37,24 +37,27 @@ require_path module/trustlab-magisk
 export PYTHONPATH="$ROOT_DIR/analyzer${PYTHONPATH:+:$PYTHONPATH}"
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 
-echo "[1/6] Python source compile check"
+echo "[1/7] Python source compile check"
 "$PYTHON_BIN" -m compileall -q analyzer tools tests
 
-echo "[2/6] Unit tests with branch coverage"
+echo "[2/7] Unit tests with branch coverage"
 "$PYTHON_BIN" -m coverage erase
 "$PYTHON_BIN" -m coverage run --branch --source=analyzer/trustlab -m pytest -q
 "$PYTHON_BIN" -m coverage report -m
 
-echo "[3/6] JSON Schema and checked-in artifact validation"
+echo "[3/7] Canonical project metadata validation"
+"$PYTHON_BIN" tools/check_metadata.py
+
+echo "[4/7] JSON Schema and checked-in artifact validation"
 "$PYTHON_BIN" tools/check_schemas.py
 
-echo "[4/6] Generated artifact freshness check"
+echo "[5/7] Generated artifact freshness check"
 "$PYTHON_BIN" tools/generate_report.py --check
 
-echo "[5/6] Magisk package safety check"
+echo "[6/7] Magisk package safety check"
 "$PYTHON_BIN" tools/package_magisk_module.py --check-only
 
-echo "[6/6] Shell syntax check"
+echo "[7/7] Shell syntax check"
 while IFS= read -r script; do
   echo "$script"
   sh -n "$script"

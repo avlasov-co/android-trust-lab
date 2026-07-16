@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/aleksander-vlasov/android-trust-lab/blob/main/collector/schema/trust_report.schema.json",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/blob/main/collector/schema/trust_report.schema.json",
   "title": "Android Trust Lab Trust Report",
   "type": "object",
   "required": [

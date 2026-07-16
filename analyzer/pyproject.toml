@@ -13,8 +13,16 @@ license = {text = "Apache-2.0"}
 dependencies = ["jsonschema>=4.0"]
 
 [project.optional-dependencies]
-dev = ["coverage>=7.0", "pytest>=7.0"]
+dev = [
+    "coverage>=7.0",
+    "pytest>=7.0",
+    "PyYAML>=6.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
 rich = ["rich>=13.0"]
+
+[project.urls]
+Repository = "https://github.com/avlasov-co/android-trust-lab"
 
 [project.scripts]
 trustlab = "trustlab.cli:main"

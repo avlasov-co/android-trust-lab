@@ -8,6 +8,7 @@ Start here if you are evaluating the repository quickly:
 - Reviewer quickstart: `docs/reviewer_quickstart.md`
 - Evidence matrix: `docs/evidence_matrix.md`
 - Reviewer packet: `docs/reviewer_packet.md`
+- Canonical project metadata: `docs/project_metadata.md`
 - Artifact manifest: `results/artifact_manifest.json`
 - One-command validation: `bash scripts/verify_release.sh`
 
