@@ -67,7 +67,7 @@ SCHEMA_SUPPORT: Final[Mapping[SchemaFamily, SchemaSupport]] = MappingProxyType(
             ),
         ),
         SchemaFamily.DIFF: SchemaSupport(
-            current_write_version="2.6.0",
+            current_write_version="2.7.0",
             readable_versions=frozenset(
                 {
                     "1.0.0",
@@ -78,6 +78,7 @@ SCHEMA_SUPPORT: Final[Mapping[SchemaFamily, SchemaSupport]] = MappingProxyType(
                     "2.4.0",
                     "2.5.0",
                     "2.6.0",
+                    "2.7.0",
                 }
             ),
         ),
@@ -114,6 +115,7 @@ SCHEMA_RESOURCE_REGISTRY: Final[Mapping[tuple[SchemaFamily, str], str]] = (
             (SchemaFamily.DIFF, "2.4.0"): "trust_diff_v2_4_0.schema.json",
             (SchemaFamily.DIFF, "2.5.0"): "trust_diff_v2_5_0.schema.json",
             (SchemaFamily.DIFF, "2.6.0"): "trust_diff_v2_6_0.schema.json",
+            (SchemaFamily.DIFF, "2.7.0"): "trust_diff_v2_7_0.schema.json",
             (SchemaFamily.DATASET_MANIFEST, "1.0.0"): (
                 "dataset_manifest_v1_0_0.schema.json"
             ),

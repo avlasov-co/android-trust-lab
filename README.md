@@ -128,13 +128,45 @@ trustlab summarize /tmp/root_diff.json
   "dimension": "su_binary_visibility",
   "before": {"status": "observed_absent", "value": false},
   "after": {"status": "observed", "value": true},
-  "severity": "medium",
+  "transition": {
+    "before_status": "observed_absent",
+    "after_status": "observed",
+    "classification": "state_change",
+    "confidence_impact": "unchanged"
+  },
+  "materiality": "moderate",
+  "direction": "indeterminate",
+  "confidence": {
+    "level": "moderate",
+    "factors": {
+      "evidence_statuses": {"before": "observed_absent", "after": "observed"},
+      "field_confidence": {"before": "not_available", "after": "not_available"},
+      "corroborating_evidence_count": 1,
+      "migration_count": 0,
+      "comparability": "comparable",
+      "comparability_warning_count": 0
+    },
+    "rationale": [
+      "both_sides_successfully_observed",
+      "field_confidence_unavailable",
+      "corroborating_evidence_limited",
+      "inputs_compared_without_migration",
+      "comparison_fully_comparable"
+    ]
+  },
+  "rationale": [
+    "materiality_from_dimension_policy",
+    "no_justified_direction_rule",
+    "confidence_from_explicit_factors"
+  ],
   "interpretation": "Root-related evidence changed between reports. This is an observation, not an app verdict or bypass claim.",
   "evidence_paths": [
     "root_state.su_binary_observed"
   ]
 }
 ```
+
+Materiality, direction, and confidence are separate per-dimension assessments. They are never aggregated into a universal trust score.
 
 ## Current limitations
 

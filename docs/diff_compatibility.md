@@ -1,6 +1,6 @@
 # Diff Input Compatibility
 
-Trust diff schema `2.6.0` compares only validated report documents. The library and CLI use the same `trustlab.compatibility.prepare_report_for_comparison` path for both inputs. Diffs through `2.5.0` remain readable and frozen.
+Trust diff schema `2.7.0` compares only validated report documents. The library and CLI use the same `trustlab.compatibility.prepare_report_for_comparison` path for both inputs. Diffs through `2.6.0` remain readable and frozen.
 
 Before comparison, that path:
 

@@ -58,38 +58,38 @@ STATE_CLASSES = {
     "F": "physical rooted device",
 }
 
-SEVERITY_BY_DIMENSION = {
+MATERIALITY_BY_DIMENSION = {
     "bootloader_lock_state": "high",
-    "observer_uid_root": "medium",
-    "root_shell_availability": "medium",
-    "su_binary_visibility": "medium",
+    "observer_uid_root": "moderate",
+    "root_shell_availability": "moderate",
+    "su_binary_visibility": "moderate",
     "su_invocation_tested": "low",
-    "su_invocation_result": "medium",
-    "root_management_artifact": "medium",
-    "magisk_binary_visibility": "medium",
-    "magisk_daemon_visibility": "medium",
-    "magisk_process_visibility": "medium",
-    "zygisk_visibility": "medium",
-    "magisk_version_name": "info",
-    "magisk_version_code": "info",
-    "magisk_module_context": "info",
+    "su_invocation_result": "moderate",
+    "root_management_artifact": "moderate",
+    "magisk_binary_visibility": "moderate",
+    "magisk_daemon_visibility": "moderate",
+    "magisk_process_visibility": "moderate",
+    "zygisk_visibility": "moderate",
+    "magisk_version_name": "informational",
+    "magisk_version_code": "informational",
+    "magisk_module_context": "informational",
     "magisk_command_status": "low",
     "mount_integrity": "high",
-    "system_mount_resolution": "medium",
+    "system_mount_resolution": "moderate",
     "dynamic_partition_state": "low",
-    "apex_mount_set": "medium",
+    "apex_mount_set": "moderate",
     "selinux_mode": "high",
-    "selinux_current_context": "medium",
+    "selinux_current_context": "moderate",
     "selinux_denial_collection": "low",
-    "selected_process_visibility": "medium",
+    "selected_process_visibility": "moderate",
     "verified_boot_state": "high",
     "vbmeta_state": "high",
     "verity_mode": "high",
-    "property_consistency": "medium",
-    "observer_privilege": "info",
-    "emulator_state": "info",
+    "property_consistency": "moderate",
+    "observer_privilege": "informational",
+    "emulator_state": "informational",
 }
 
 
-def severity_for_dimension(dimension: str) -> str:
-    return SEVERITY_BY_DIMENSION.get(dimension, "low")
+def materiality_for_dimension(dimension: str) -> str:
+    return MATERIALITY_BY_DIMENSION.get(dimension, "low")

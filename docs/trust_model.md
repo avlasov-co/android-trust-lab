@@ -43,7 +43,7 @@ Canonical dimensions:
 - `root_visible_state`
 `app_visible_state` and `root_visible_state` are contextual dimensions. They should only be diffed when reports contain real app-probe or root-probe payloads. They must not be inferred only from `observer.observer_type`, because that creates fake signal when the observer changes.
 
-Observer type, privilege, effective UID, and protocol are visibility-context fields, not target-state dimensions. Diff schema `2.6.0` records them under `comparison.context` and uses them to classify observer changes without reporting them as target mutation. Its structured status transitions also keep inaccessible, uncollected, failed, and observed-absent evidence distinct.
+Observer type, privilege, effective UID, and protocol are visibility-context fields, not target-state dimensions. Diff schema `2.7.0` records them under `comparison.context` and uses them to classify observer changes without reporting them as target mutation. Its structured status transitions also keep inaccessible, uncollected, failed, and observed-absent evidence distinct. Materiality, direction, and confidence remain separate per-dimension assessments and are not combined into a trust score.
 
 ## Signal sources
 

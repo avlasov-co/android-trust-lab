@@ -51,7 +51,7 @@
     ]
   },
   "diff": {
-    "diff_id": "atldiff-6bbb73f616df822a50792b89eceda478",
+    "diff_id": "atldiff-f42c3e8e089930e237df0c996806fd43",
     "summary": "1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
     "compatibility": {
       "input_schema_versions": {
@@ -93,7 +93,43 @@
         "dimension": "su_binary_visibility",
         "before": false,
         "after": true,
-        "severity": "medium",
+        "transition": {
+          "before_status": "observed_absent",
+          "after_status": "observed",
+          "classification": "context_change",
+          "confidence_impact": "unchanged"
+        },
+        "materiality": "moderate",
+        "direction": "context_change",
+        "confidence": {
+          "level": "low",
+          "factors": {
+            "evidence_statuses": {
+              "before": "observed_absent",
+              "after": "observed"
+            },
+            "field_confidence": {
+              "before": "not_available",
+              "after": "not_available"
+            },
+            "corroborating_evidence_count": 1,
+            "migration_count": 0,
+            "comparability": "incomparable",
+            "comparability_warning_count": 1
+          },
+          "rationale": [
+            "both_sides_successfully_observed",
+            "field_confidence_unavailable",
+            "corroborating_evidence_limited",
+            "inputs_compared_without_migration",
+            "comparison_incomparable"
+          ]
+        },
+        "rationale": [
+          "materiality_from_dimension_policy",
+          "observer_or_target_context_changed",
+          "confidence_from_explicit_factors"
+        ],
         "evidence_paths": [
           "root_state.su_binary_observed"
         ]

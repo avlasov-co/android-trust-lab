@@ -368,21 +368,23 @@ def diff_markdown(
             for warning in comparison["warnings"]:
                 lines += [f"> **Comparison warning:** `{warning}`", ""]
             lines += [
-                "| Dimension | Severity | Transition | Before | After | Interpretation |",
-                "|---|---|---|---|---|---|",
+                "| Dimension | Materiality | Direction | Confidence | Transition | Before | After | Rationale | Interpretation |",
+                "|---|---|---|---|---|---|---|---|---|",
             ]
             for item in diff["changed_dimensions"]:
                 transition = item["transition"]
                 lines.append(
-                    f"| {item['dimension']} | {item['severity']} | "
+                    f"| {item['dimension']} | {item['materiality']} | "
+                    f"{item['direction']} | {item['confidence']['level']} | "
                     f"{transition['classification']} "
                     f"({transition['before_status']} → {transition['after_status']}) | "
                     f"`{fmt(item['before'])}` | `{fmt(item['after'])}` | "
+                    f"{', '.join(item['rationale'])} | "
                     f"{item['interpretation']} |"
                 )
             if not diff["changed_dimensions"]:
                 lines.append(
-                    "| none | info | unchanged | `unchanged` | `unchanged` | No measured default dimension changed. |"
+                    "| none | informational | indeterminate | low | unchanged | `unchanged` | `unchanged` | none | No measured default dimension changed. |"
                 )
             lines.append("")
             for label, field in (
@@ -394,16 +396,20 @@ def diff_markdown(
                     continue
                 lines += [f"#### {label}", ""]
                 lines += [
-                    "| Dimension | Status transition | Classification | Confidence impact | Observed values | Source evidence | Interpretation |",
-                    "|---|---|---|---|---|---|---|",
+                    "| Dimension | Materiality | Direction | Confidence | Status transition | Classification | Confidence impact | Observed values | Source evidence | Evidence paths | Rationale | Interpretation |",
+                    "|---|---|---|---|---|---|---|---|---|---|---|---|",
                 ]
                 for signal in signals:
                     lines.append(
-                        f"| {signal['dimension']} | {signal['before_status']} → "
+                        f"| {signal['dimension']} | {signal['materiality']} | "
+                        f"{signal['direction']} | {signal['confidence']['level']} | "
+                        f"{signal['before_status']} → "
                         f"{signal['after_status']} | {signal['classification']} | "
                         f"{signal['confidence_impact']} | "
                         f"`{fmt(signal['observed_values'])}` | "
                         f"`{fmt(signal['source_evidence'])}` | "
+                        f"`{fmt(signal['evidence_paths'])}` | "
+                        f"{', '.join(signal['rationale'])} | "
                         f"{signal['interpretation']} |"
                     )
                 lines.append("")

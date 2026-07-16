@@ -183,17 +183,23 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
             for warning in comparison.get("warnings", [])
         ],
         *([""] if comparison.get("warnings") else []),
-        "| Dimension | Severity | Transition | Before | After |",
-        "|---|---|---|---|---|",
+        "| Dimension | Materiality | Direction | Confidence | Transition | Before | After | Rationale |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for item in diff.get("changed_dimensions", []):
         transition = item.get("transition", {})
+        materiality = item.get(
+            "materiality", f"legacy severity: {item.get('severity', 'unknown')}"
+        )
+        confidence = item.get("confidence", {}).get("level", "not recorded")
+        rationale = ", ".join(item.get("rationale", [])) or "not recorded"
         lines.append(
-            f"| {item['dimension']} | {item['severity']} | "
+            f"| {item['dimension']} | {materiality} | "
+            f"{item.get('direction', 'not recorded')} | {confidence} | "
             f"{transition.get('classification', 'unknown')} "
             f"({transition.get('before_status', 'unknown')} → "
             f"{transition.get('after_status', 'unknown')}) | "
-            f"`{_cell(item['before'])}` | `{_cell(item['after'])}` |"
+            f"`{_cell(item['before'])}` | `{_cell(item['after'])}` | {rationale} |"
         )
     for title, field in (
         ("Signals Became Available", "new_signals"),
@@ -206,24 +212,31 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
             continue
         lines.extend(
             [
-                "| Dimension | Status transition | Classification | Confidence impact | Observed values | Source evidence | Interpretation |",
-                "|---|---|---|---|---|---|---|",
+                "| Dimension | Materiality | Direction | Confidence | Status transition | Classification | Confidence impact | Observed values | Source evidence | Evidence paths | Rationale | Interpretation |",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|",
             ]
         )
         for signal in signals:
             if isinstance(signal, str):
                 lines.append(
-                    f"| {signal} | legacy | legacy | indeterminate | `unknown` | "
-                    "`unknown` | Historical diff did not record structured status "
+                    f"| {signal} | legacy | not recorded | not recorded | legacy | "
+                    "legacy | indeterminate | `unknown` | `unknown` | `unknown` | "
+                    "not recorded | Historical diff did not record structured status "
                     "transition metadata. |"
                 )
                 continue
             lines.append(
-                f"| {signal['dimension']} | {signal['before_status']} → "
+                f"| {signal['dimension']} | "
+                f"{signal.get('materiality', 'not recorded')} | "
+                f"{signal.get('direction', 'not recorded')} | "
+                f"{signal.get('confidence', {}).get('level', 'not recorded')} | "
+                f"{signal['before_status']} → "
                 f"{signal['after_status']} | {signal['classification']} | "
                 f"{signal['confidence_impact']} | "
                 f"`{_cell(signal['observed_values'])}` | "
                 f"`{_cell(signal['source_evidence'])}` | "
+                f"`{_cell(signal.get('evidence_paths', []))}` | "
+                f"{', '.join(signal.get('rationale', [])) or 'not recorded'} | "
                 f"{signal['interpretation']} |"
             )
     return "\n".join(lines) + "\n"

@@ -28,12 +28,42 @@
           "value": []
         }
       },
+      "confidence": {
+        "factors": {
+          "comparability": "comparable",
+          "comparability_warning_count": 0,
+          "corroborating_evidence_count": 0,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "observed_absent"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "both_sides_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_fully_comparable"
+        ]
+      },
       "dimension": "mount_integrity",
+      "direction": "regression",
       "evidence_paths": [
         "mounts.integrity_summary"
       ],
       "interpretation": "Sensitive mount state changed. Review raw mount evidence before making any platform-integrity conclusion.",
-      "severity": "high",
+      "materiality": "high",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "ordered_dimension_rule_applied",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "observed_absent",
@@ -69,12 +99,42 @@
         ],
         "state": "detected"
       },
+      "confidence": {
+        "factors": {
+          "comparability": "comparable",
+          "comparability_warning_count": 0,
+          "corroborating_evidence_count": 0,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "observed"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "both_sides_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_fully_comparable"
+        ]
+      },
       "dimension": "dynamic_partition_state",
+      "direction": "indeterminate",
       "evidence_paths": [
         "mounts.dynamic_partitions"
       ],
       "interpretation": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
-      "severity": "low",
+      "materiality": "low",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "no_justified_direction_rule",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "observed",
@@ -150,8 +210,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "e4ad32cbbcdde179c850183b884e32f2f565018d2b08e389c0a7d463b3bbdbab",
-  "diff_id": "atldiff-e4ad32cbbcdde179c850183b884e32f2",
+  "content_digest": "3d92983943e930fe475e61a4aea862a1a16810cf00897af0f582d7c0a31e8a5d",
+  "diff_id": "atldiff-3d92983943e930fe475e61a4aea862a1",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -181,7 +241,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.6.0",
+  "schema_version": "2.7.0",
   "summary": "2 dimensions changed, 25 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

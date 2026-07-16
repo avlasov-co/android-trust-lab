@@ -164,12 +164,42 @@
           }
         }
       ],
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "observed"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "both_sides_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "selected_process_visibility",
+      "direction": "context_change",
       "evidence_paths": [
         "process_state.selected_processes"
       ],
       "interpretation": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "observer_or_target_context_changed",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "observed",
@@ -186,12 +216,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "root_shell_availability",
+      "direction": "indeterminate",
       "evidence_paths": [
         "root_state.root_shell_available"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -208,12 +268,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed_absent",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "su_invocation_tested",
+      "direction": "indeterminate",
       "evidence_paths": [
         "root_state.su_invocation_tested"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "low",
+      "materiality": "low",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed_absent",
         "before_status": "not_collected",
@@ -230,12 +320,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "root_management_artifact",
+      "direction": "indeterminate",
       "evidence_paths": [
         "root_state.root_management_artifact_observed"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -252,12 +372,42 @@
         "status": "observed_absent",
         "value": false
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "observed_absent"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "both_sides_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_binary_visibility",
+      "direction": "context_change",
       "evidence_paths": [
         "magisk_state.binary_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "observer_or_target_context_changed",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "observed_absent",
@@ -274,12 +424,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_daemon_visibility",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.daemon_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -296,12 +476,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_process_visibility",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.process_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -318,12 +528,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "zygisk_visibility",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.zygisk_visibility"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -340,12 +580,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_version_name",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.version_name"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info",
+      "materiality": "informational",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -362,12 +632,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_version_code",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.version_code"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info",
+      "materiality": "informational",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -384,12 +684,42 @@
         "status": "not_collected",
         "value": null
       },
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "dimension": "magisk_module_context",
+      "direction": "indeterminate",
       "evidence_paths": [
         "magisk_state.module_context"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "info",
+      "materiality": "informational",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "not_collected",
@@ -495,21 +825,55 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "9ae9dd5283b5dbb1a980c09d34d3da3699c88586a53c53974dc808c2fe5b2752",
-  "diff_id": "atldiff-9ae9dd5283b5dbb1a980c09d34d3da36",
+  "content_digest": "73c9c6eae55b05c9ed036c6fac7a3477c28c02f3de3d9d8ac2712a03ec0b2843",
+  "diff_id": "atldiff-73c9c6eae55b05c9ed036c6fac7a3477",
   "missing_signals": [],
   "new_signals": [
     {
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "root_shell_availability",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "root_state.root_shell_available"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "moderate",
       "observed_values": {
         "after": true,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/ROOT_PROBE"
@@ -521,13 +885,47 @@
       "after_status": "observed_absent",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed_absent",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "su_invocation_tested",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "root_state.su_invocation_tested"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed_absent; this alone does not establish a target-state change.",
+      "materiality": "low",
       "observed_values": {
         "after": false,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/ROOT_PROBE"
@@ -539,13 +937,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "root_management_artifact",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "root_state.root_management_artifact_observed"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "moderate",
       "observed_values": {
         "after": true,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/ROOT_PROBE"
@@ -557,13 +989,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "magisk_daemon_visibility",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.daemon_visibility"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "moderate",
       "observed_values": {
         "after": true,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/PS"
@@ -575,13 +1041,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "magisk_process_visibility",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.process_visibility"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "moderate",
       "observed_values": {
         "after": true,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/PS"
@@ -593,13 +1093,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "zygisk_visibility",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.zygisk_visibility"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "moderate",
       "observed_values": {
         "after": true,
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/MAGISK"
@@ -611,13 +1145,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "magisk_version_name",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.version_name"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "informational",
       "observed_values": {
         "after": "28.1",
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/MAGISK"
@@ -629,13 +1197,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "magisk_version_code",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.version_code"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "informational",
       "observed_values": {
         "after": "28100",
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/MAGISK"
@@ -647,13 +1249,47 @@
       "after_status": "observed",
       "before_status": "not_collected",
       "classification": "collection_quality_change",
+      "confidence": {
+        "factors": {
+          "comparability": "limited",
+          "comparability_warning_count": 1,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "not_collected"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "one_side_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_warning_reduces_confidence"
+        ]
+      },
       "confidence_impact": "increased",
       "dimension": "magisk_module_context",
+      "direction": "indeterminate",
+      "evidence_paths": [
+        "magisk_state.module_context"
+      ],
       "interpretation": "Collection outcome changed from not_collected to observed; this alone does not establish a target-state change.",
+      "materiality": "informational",
       "observed_values": {
         "after": "androidtrustlab",
         "before": null
       },
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "collection_quality_is_not_target_direction",
+        "confidence_from_explicit_factors"
+      ],
       "source_evidence": {
         "after": [
           "legacy-sections/MAGISK"
@@ -689,7 +1325,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.6.0",
+  "schema_version": "2.7.0",
   "summary": "11 dimensions changed, 16 dimensions unchanged; 9 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

@@ -44,6 +44,7 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
         "trust_diff_v2_4_0.schema.json",
         "trust_diff_v2_5_0.schema.json",
         "trust_diff_v2_6_0.schema.json",
+        "trust_diff_v2_7_0.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
         "trust_report_v3_0_0.schema.json",
@@ -56,7 +57,7 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
 def test_current_report_and_diff_schemas_are_closed_and_required_complete():
     for name in (
         "trust_report_v6_0_0.schema.json",
-        "trust_diff_v2_6_0.schema.json",
+        "trust_diff_v2_7_0.schema.json",
     ):
         schema = load_schema(name)
         assert set(schema["required"]) == set(schema["properties"])

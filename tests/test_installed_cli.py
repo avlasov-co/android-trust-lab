@@ -137,7 +137,11 @@ def test_installed_entry_point_success_flow_matches_manual_goldens(tmp_path):
             "dimension": change["dimension"],
             "before": change["before"]["value"],
             "after": change["after"]["value"],
-            "severity": change["severity"],
+            "transition": change["transition"],
+            "materiality": change["materiality"],
+            "direction": change["direction"],
+            "confidence": change["confidence"],
+            "rationale": change["rationale"],
             "evidence_paths": change["evidence_paths"],
         }
         for change in diff_document["changed_dimensions"]

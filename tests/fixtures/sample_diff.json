@@ -14,12 +14,42 @@
         "status": "observed_absent",
         "value": false
       },
+      "confidence": {
+        "factors": {
+          "comparability": "comparable",
+          "comparability_warning_count": 0,
+          "corroborating_evidence_count": 1,
+          "evidence_statuses": {
+            "after": "observed",
+            "before": "observed_absent"
+          },
+          "field_confidence": {
+            "after": "not_available",
+            "before": "not_available"
+          },
+          "migration_count": 0
+        },
+        "level": "moderate",
+        "rationale": [
+          "both_sides_successfully_observed",
+          "field_confidence_unavailable",
+          "corroborating_evidence_limited",
+          "inputs_compared_without_migration",
+          "comparison_fully_comparable"
+        ]
+      },
       "dimension": "su_binary_visibility",
+      "direction": "indeterminate",
       "evidence_paths": [
         "root_state.su_binary_observed"
       ],
       "interpretation": "Trust-state dimension changed between reports.",
-      "severity": "medium",
+      "materiality": "moderate",
+      "rationale": [
+        "materiality_from_dimension_policy",
+        "no_justified_direction_rule",
+        "confidence_from_explicit_factors"
+      ],
       "transition": {
         "after_status": "observed",
         "before_status": "observed_absent",
@@ -95,8 +125,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "97f83f5ae83109fd8326075da7d14d0475e586ddafccb278713a1836038754cd",
-  "diff_id": "atldiff-97f83f5ae83109fd8326075da7d14d04",
+  "content_digest": "ceee5b5986fb1861a98864b8a22f2a2b97d92f02f7493721d10550c04ec385cb",
+  "diff_id": "atldiff-ceee5b5986fb1861a98864b8a22f2a2b",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -126,7 +156,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.6.0",
+  "schema_version": "2.7.0",
   "summary": "1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

@@ -46,11 +46,11 @@ def evidence_status(value: Any) -> str:
 
     statuses = _nested_statuses(value)
     if not statuses:
-        return EvidenceStatus.OBSERVED
+        return EvidenceStatus.OBSERVED.value
     if len(set(statuses)) == 1:
         return statuses[0]
     if any(evidence_is_available(status) for status in statuses):
-        return EvidenceStatus.OBSERVED
+        return EvidenceStatus.OBSERVED.value
     for status in (
         EvidenceStatus.INACCESSIBLE,
         EvidenceStatus.COMMAND_ERROR,
@@ -58,8 +58,8 @@ def evidence_status(value: Any) -> str:
         EvidenceStatus.NOT_COLLECTED,
     ):
         if status in statuses:
-            return status
-    return EvidenceStatus.NOT_COLLECTED
+            return status.value
+    return EvidenceStatus.NOT_COLLECTED.value
 
 
 def classify_status_transition(

@@ -40,7 +40,7 @@ The v0.1.0 sample dataset includes four generated comparisons:
 - stock AVD adb observer to writable-system AVD adb observer
 - rooted AVD adb observer to Magisk root collector
 
-The generated diffs show that the analyzer separates target-state changes from observer visibility context. In the stock-to-rooted adb comparison, the changed trust dimension is `su_binary_visibility`. The rooted adb-to-root comparison is classified as `same_state_observer_change`; observer UID and privilege are recorded in comparison context rather than reported as target-state changes.
+The generated diffs show that the analyzer separates target-state changes from observer visibility context. In the stock-to-rooted adb comparison, the changed trust dimension is `su_binary_visibility`; its materiality, direction, and evidence confidence are reported separately without a universal score. The rooted adb-to-root comparison is classified as `same_state_observer_change`; observer UID and privilege are recorded in comparison context rather than reported as target-state changes.
 
 The writable-system comparison records mount-integrity changes, including overlay-backed or writable sensitive mount evidence. The Magisk comparison records privileged collector visibility without treating Magisk presence as a bypass, hiding mechanism, or application verdict.
 

@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/diff/2.7.0",
+  "title": "Android Trust Lab Trust Diff v2.7",
+  "description": "Strict trust-state diff with separate materiality, justified direction, and factorized confidence.",
+  "type": "object",
+  "required": ["diff_id", "content_digest", "schema_version", "base_report", "compare_report", "changed_dimensions", "unchanged_dimensions", "new_signals", "missing_signals", "confidence_changes", "summary", "compatibility", "comparison", "provenance"],
+  "properties": {
+    "diff_id": {"type": "string", "pattern": "^atldiff-[a-f0-9]{32}$"},
+    "content_digest": {"$ref": "#/$defs/contentDigest"},
+    "schema_version": {"const": "2.7.0"},
+    "base_report": {"$ref": "#/$defs/reportIdentity"},
+    "compare_report": {"$ref": "#/$defs/reportIdentity"},
+    "changed_dimensions": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/changedDimension"}},
+    "unchanged_dimensions": {"$ref": "#/$defs/signalPaths"},
+    "new_signals": {"$ref": "#/$defs/structuredSignals"},
+    "missing_signals": {"$ref": "#/$defs/structuredSignals"},
+    "confidence_changes": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/confidenceChange"}},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "compatibility": {"$ref": "#/$defs/compatibility"},
+    "comparison": {"$ref": "#/$defs/comparison"},
+    "provenance": {"$ref": "#/$defs/provenance"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
+    "contentDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "reportIdentity": {
+      "type": "object",
+      "required": ["report_id", "content_digest", "schema_version"],
+      "properties": {
+        "report_id": {"type": "string", "pattern": "^atlrep-[a-f0-9]{32}$"},
+        "content_digest": {"$ref": "#/$defs/contentDigest"},
+        "schema_version": {"const": "6.0.0"}
+      },
+      "additionalProperties": false
+    },
+    "signalPath": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$", "maxLength": 512},
+    "signalPaths": {"type": "array", "maxItems": 512, "uniqueItems": true, "items": {"$ref": "#/$defs/signalPath"}},
+    "evidenceStatus": {"enum": ["observed", "observed_absent", "inaccessible", "not_collected", "command_error", "unsupported"]},
+    "transitionClass": {"enum": ["visibility_change", "collection_quality_change", "state_change", "context_change"]},
+    "confidenceImpact": {"enum": ["increased", "decreased", "unchanged", "indeterminate"]},
+    "materiality": {"enum": ["informational", "low", "moderate", "high"]},
+    "direction": {"enum": ["improvement", "regression", "context_change", "visibility_change", "indeterminate"]},
+    "canonicalValue": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "boolean"},
+        {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+        {"type": "string", "maxLength": 65536},
+        {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/canonicalValue"}},
+        {"type": "object", "maxProperties": 4096, "additionalProperties": {"$ref": "#/$defs/canonicalValue"}}
+      ]
+    },
+    "changedDimension": {
+      "type": "object",
+      "required": ["dimension", "before", "after", "transition", "materiality", "direction", "confidence", "rationale", "interpretation", "evidence_paths"],
+      "properties": {
+        "dimension": {"$ref": "#/$defs/signalPath"},
+        "before": {"$ref": "#/$defs/canonicalValue"},
+        "after": {"$ref": "#/$defs/canonicalValue"},
+        "transition": {"$ref": "#/$defs/transition"},
+        "materiality": {"$ref": "#/$defs/materiality"},
+        "direction": {"$ref": "#/$defs/direction"},
+        "confidence": {"$ref": "#/$defs/diffConfidence"},
+        "rationale": {"$ref": "#/$defs/assessmentRationale"},
+        "interpretation": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "evidence_paths": {"$ref": "#/$defs/signalPaths"}
+      },
+      "additionalProperties": false
+    },
+    "transition": {
+      "type": "object",
+      "required": ["before_status", "after_status", "classification", "confidence_impact"],
+      "properties": {
+        "before_status": {"$ref": "#/$defs/evidenceStatus"},
+        "after_status": {"$ref": "#/$defs/evidenceStatus"},
+        "classification": {"$ref": "#/$defs/transitionClass"},
+        "confidence_impact": {"$ref": "#/$defs/confidenceImpact"}
+      },
+      "additionalProperties": false
+    },
+    "evidenceStatuses": {
+      "type": "object",
+      "required": ["before", "after"],
+      "properties": {
+        "before": {"$ref": "#/$defs/evidenceStatus"},
+        "after": {"$ref": "#/$defs/evidenceStatus"}
+      },
+      "additionalProperties": false
+    },
+    "fieldConfidence": {
+      "type": "object",
+      "required": ["before", "after"],
+      "properties": {
+        "before": {"enum": ["high", "medium", "low", "unassessed", "not_available"]},
+        "after": {"enum": ["high", "medium", "low", "unassessed", "not_available"]}
+      },
+      "additionalProperties": false
+    },
+    "confidenceFactors": {
+      "type": "object",
+      "required": ["evidence_statuses", "field_confidence", "corroborating_evidence_count", "migration_count", "comparability", "comparability_warning_count"],
+      "properties": {
+        "evidence_statuses": {"$ref": "#/$defs/evidenceStatuses"},
+        "field_confidence": {"$ref": "#/$defs/fieldConfidence"},
+        "corroborating_evidence_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "migration_count": {"type": "integer", "minimum": 0, "maximum": 10},
+        "comparability": {"enum": ["comparable", "limited", "incomparable"]},
+        "comparability_warning_count": {"type": "integer", "minimum": 0, "maximum": 8}
+      },
+      "additionalProperties": false
+    },
+    "confidenceRationale": {
+      "enum": [
+        "both_sides_successfully_observed", "one_side_successfully_observed", "neither_side_successfully_observed",
+        "field_confidence_applied", "field_confidence_unavailable",
+        "corroborating_evidence_present", "corroborating_evidence_limited",
+        "inputs_compared_without_migration", "input_migration_reduces_confidence",
+        "comparison_fully_comparable", "comparison_warning_reduces_confidence", "comparison_incomparable"
+      ]
+    },
+    "diffConfidence": {
+      "type": "object",
+      "required": ["level", "factors", "rationale"],
+      "properties": {
+        "level": {"enum": ["low", "moderate", "high"]},
+        "factors": {"$ref": "#/$defs/confidenceFactors"},
+        "rationale": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/confidenceRationale"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "assessmentRationale": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "materiality_from_dimension_policy",
+          "observer_or_target_context_changed",
+          "evidence_visibility_changed",
+          "collection_quality_is_not_target_direction",
+          "ordered_dimension_rule_applied",
+          "no_justified_direction_rule",
+          "confidence_from_explicit_factors"
+        ]
+      }
+    },
+    "observedValues": {
+      "type": "object",
+      "required": ["before", "after"],
+      "properties": {
+        "before": {"$ref": "#/$defs/canonicalValue"},
+        "after": {"$ref": "#/$defs/canonicalValue"}
+      },
+      "additionalProperties": false
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "maxItems": 256,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 512}
+    },
+    "sourceEvidence": {
+      "type": "object",
+      "required": ["before", "after"],
+      "properties": {
+        "before": {"$ref": "#/$defs/evidenceRefs"},
+        "after": {"$ref": "#/$defs/evidenceRefs"}
+      },
+      "additionalProperties": false
+    },
+    "structuredSignal": {
+      "type": "object",
+      "required": ["dimension", "before_status", "after_status", "classification", "confidence_impact", "observed_values", "source_evidence", "interpretation", "materiality", "direction", "confidence", "rationale", "evidence_paths"],
+      "properties": {
+        "dimension": {"$ref": "#/$defs/signalPath"},
+        "before_status": {"$ref": "#/$defs/evidenceStatus"},
+        "after_status": {"$ref": "#/$defs/evidenceStatus"},
+        "classification": {"$ref": "#/$defs/transitionClass"},
+        "confidence_impact": {"$ref": "#/$defs/confidenceImpact"},
+        "observed_values": {"$ref": "#/$defs/observedValues"},
+        "source_evidence": {"$ref": "#/$defs/sourceEvidence"},
+        "interpretation": {"type": "string", "minLength": 1, "maxLength": 4096}
+        ,"materiality": {"$ref": "#/$defs/materiality"}
+        ,"direction": {"$ref": "#/$defs/direction"}
+        ,"confidence": {"$ref": "#/$defs/diffConfidence"}
+        ,"rationale": {"$ref": "#/$defs/assessmentRationale"}
+        ,"evidence_paths": {"$ref": "#/$defs/signalPaths"}
+      },
+      "additionalProperties": false
+    },
+    "structuredSignals": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/structuredSignal"}
+    },
+    "confidenceChange": {
+      "type": "object",
+      "required": ["path", "before", "after"],
+      "properties": {
+        "path": {"$ref": "#/$defs/signalPath"},
+        "before": {"$ref": "#/$defs/canonicalValue"},
+        "after": {"$ref": "#/$defs/canonicalValue"}
+      },
+      "additionalProperties": false
+    },
+    "productIdentity": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,63}$"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.dev[0-9]+)?$"}
+      },
+      "additionalProperties": false
+    },
+    "migrationRecord": {
+      "type": "object",
+      "required": ["migration_id", "source_schema_version", "target_schema_version", "implementation"],
+      "properties": {
+        "migration_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,127}$"},
+        "source_schema_version": {"$ref": "#/$defs/semver"},
+        "target_schema_version": {"$ref": "#/$defs/semver"},
+        "implementation": {"$ref": "#/$defs/productIdentity"}
+      },
+      "additionalProperties": false
+    },
+    "compatibilityMigration": {
+      "type": "object",
+      "required": ["migration_id", "source_schema_version", "target_schema_version"],
+      "properties": {
+        "migration_id": {"enum": ["report-v1-to-v2", "report-v2-to-v3", "report-v3-to-v4", "report-v4-to-v5", "report-v5-to-v6"]},
+        "source_schema_version": {"$ref": "#/$defs/semver"},
+        "target_schema_version": {"$ref": "#/$defs/semver"}
+      },
+      "additionalProperties": false
+    },
+    "inputSchemaVersions": {
+      "type": "object",
+      "required": ["base", "compare"],
+      "properties": {
+        "base": {"enum": ["1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"]},
+        "compare": {"enum": ["1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0"]}
+      },
+      "additionalProperties": false
+    },
+    "compatibilityMigrations": {
+      "type": "object",
+      "required": ["base", "compare"],
+      "properties": {
+        "base": {"type": "array", "maxItems": 5, "items": {"$ref": "#/$defs/compatibilityMigration"}},
+        "compare": {"type": "array", "maxItems": 5, "items": {"$ref": "#/$defs/compatibilityMigration"}}
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["input_schema_versions", "migrations", "warnings", "canonical_comparison_schema_version", "migration_mode"],
+      "properties": {
+        "input_schema_versions": {"$ref": "#/$defs/inputSchemaVersions"},
+        "migrations": {"$ref": "#/$defs/compatibilityMigrations"},
+        "warnings": {"type": "array", "maxItems": 2, "uniqueItems": true, "items": {"enum": ["base_input_migrated_temporarily_in_memory", "compare_input_migrated_temporarily_in_memory"]}},
+        "canonical_comparison_schema_version": {"const": "6.0.0"},
+        "migration_mode": {"const": "temporary_in_memory"}
+      },
+      "additionalProperties": false
+    },
+    "comparisonContext": {
+      "type": "object",
+      "required": ["target_pseudonym", "target_class", "state_id", "experiment_id", "protocol", "observer", "observer_privilege", "observer_effective_uid_is_root", "report_schema_version", "environment_context", "measurement_id"],
+      "properties": {
+        "target_pseudonym": {"type": "string", "pattern": "^(?:unknown|target-[a-z0-9][a-z0-9-]{2,127})$"},
+        "target_class": {"enum": ["avd", "physical", "unspecified", "unknown"]},
+        "state_id": {"type": "string", "pattern": "^(?:unknown|state-[a-z0-9][a-z0-9-]{1,127})$"},
+        "experiment_id": {"type": "string", "pattern": "^(?:unknown|redacted-experiment|E[0-9]{2}_[a-z0-9_]+)$"},
+        "protocol": {"enum": ["adb", "app", "host", "root", "unknown"]},
+        "observer": {"enum": ["host", "adb_shell", "unprivileged_app", "root_collector", "unspecified", "unknown"]},
+        "observer_privilege": {"enum": ["app_sandbox", "host", "root", "shell", "unspecified", "unknown"]},
+        "observer_effective_uid_is_root": {"enum": ["true", "false", "unknown"]},
+        "report_schema_version": {"const": "6.0.0"},
+        "environment_context": {"type": "string", "pattern": "^(?:unknown|[a-z][a-z0-9_]{1,63})$"},
+        "measurement_id": {"type": "string", "pattern": "^(?:unknown|atlevent-[a-f0-9]{32})$"}
+      },
+      "additionalProperties": false
+    },
+    "comparisonContexts": {
+      "type": "object",
+      "required": ["base", "compare"],
+      "properties": {
+        "base": {"$ref": "#/$defs/comparisonContext"},
+        "compare": {"$ref": "#/$defs/comparisonContext"}
+      },
+      "additionalProperties": false
+    },
+    "comparisonReason": {
+      "enum": [
+        "target_identity_matches", "target_identity_differs", "target_identity_missing",
+        "target_class_matches", "target_class_differs", "target_class_missing",
+        "state_identity_matches", "state_identity_differs", "state_identity_missing",
+        "experiment_matches", "experiment_differs", "experiment_missing",
+        "protocol_matches", "protocol_differs", "protocol_missing",
+        "observer_matches", "observer_differs", "observer_missing",
+        "observer_privilege_matches", "observer_privilege_differs", "observer_privilege_missing",
+        "observer_effective_uid_matches", "observer_effective_uid_differs", "observer_effective_uid_missing",
+        "report_schema_matches", "report_schema_differs", "report_schema_missing",
+        "environment_context_matches", "environment_context_differs", "environment_context_missing",
+        "measurement_matches", "measurement_differs", "measurement_missing"
+      ]
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["axis", "comparability", "reasons", "warnings", "acknowledgement", "visibility_context_changed", "context"],
+      "properties": {
+        "axis": {"enum": ["same_target_state_change", "same_state_observer_change", "repeat_measurement", "different_target_context", "mixed_change", "incomparable"]},
+        "comparability": {"enum": ["comparable", "limited", "incomparable"]},
+        "reasons": {"type": "array", "minItems": 10, "maxItems": 11, "uniqueItems": true, "items": {"$ref": "#/$defs/comparisonReason"}},
+        "warnings": {"type": "array", "maxItems": 2, "uniqueItems": true, "items": {"enum": ["different_target_context_limits_attribution", "insufficient_metadata_for_comparison", "mixed_state_and_observer_change_acknowledged", "observer_context_changed_visibility_may_differ"]}},
+        "acknowledgement": {"enum": ["allow_mixed", "not_required"]},
+        "visibility_context_changed": {"type": "boolean"},
+        "context": {"$ref": "#/$defs/comparisonContexts"}
+      },
+      "additionalProperties": false
+    },
+    "reportInputProvenance": {
+      "type": "object",
+      "required": ["original_report_id", "original_schema_version", "original_content_digest", "original_document_digest", "common_report", "applied_migrations"],
+      "properties": {
+        "original_report_id": {"type": "string", "maxLength": 65536},
+        "original_schema_version": {"$ref": "#/$defs/semver"},
+        "original_content_digest": {"oneOf": [{"$ref": "#/$defs/contentDigest"}, {"type": "null"}]},
+        "original_document_digest": {"$ref": "#/$defs/contentDigest"},
+        "common_report": {"$ref": "#/$defs/reportIdentity"},
+        "applied_migrations": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/migrationRecord"}}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["common_report_schema_version", "base", "compare"],
+      "properties": {
+        "common_report_schema_version": {"const": "6.0.0"},
+        "base": {"$ref": "#/$defs/reportInputProvenance"},
+        "compare": {"$ref": "#/$defs/reportInputProvenance"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

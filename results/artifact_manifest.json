@@ -3,7 +3,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/manifest.json",
-      "sha256": "a5929dc3ee49891e50941a9f945df4300f6950d92358b87b303d76844b632578",
+      "sha256": "ab29de06a2935b35c30547c8e4254a015cdd301a0189f4d111c3f6d12c1d4c7f",
       "status": "checked",
       "type": "verifiable_dataset_manifest"
     },
@@ -17,7 +17,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "tests/fixtures/sample_diff.json",
-      "sha256": "360f263d6c08f777b8efb25084e9f1fe0dd44d27dc454976d838371500517cb4",
+      "sha256": "355a2a39c3761c9acc3a7bdfb2a10f25ecfc621276acf3e42fd6004292301636",
       "status": "checked",
       "type": "generated_test_diff"
     },
@@ -59,28 +59,28 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/stock_adb_vs_rooted_adb.json",
-      "sha256": "360f263d6c08f777b8efb25084e9f1fe0dd44d27dc454976d838371500517cb4",
+      "sha256": "355a2a39c3761c9acc3a7bdfb2a10f25ecfc621276acf3e42fd6004292301636",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/rooted_adb_vs_rooted_root.json",
-      "sha256": "cde0b156271b8648f6e882d03d4f9e7c61ddd587a7b6d81d55b4df9abb27b787",
+      "sha256": "515083b1731a51ba6e30b84445f341af44aaff9a1eac3121c3b1ce58d754b8ef",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/stock_vs_writable_system.json",
-      "sha256": "0697f88b5fcf8f2166501161fe9265751ac5e2b3adcd5a3bb447855c09c94f74",
+      "sha256": "93175fcec45fa3f472b10d933bee7f9eed4daa78e02abb34797b5a1d81272737",
       "status": "checked",
       "type": "generated_diff"
     },
     {
       "generated_by": "python tools/generate_report.py",
       "path": "datasets/derived/diffs/rooted_adb_vs_magisk_root_collector.json",
-      "sha256": "d73a7b0d65d6419f4368acf04951d45e82ed237c19c8462533854d9034e2d61d",
+      "sha256": "31a01f67e2ba42e4a38f91352f82ca81f4f5e1735b07ad05e6061ac5c3266804",
       "status": "checked",
       "type": "generated_diff"
     },
@@ -94,7 +94,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "58c9b7660fe9dfb2a685d28a2237860a62e84b8cf569f037d5555a438c392466",
+      "sha256": "76bf5072080ce3a992feaee04e06bf7a10f7b4ffb246ddcb343010846851414c",
       "status": "checked",
       "type": "generated_report"
     },

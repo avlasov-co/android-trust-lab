@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
+from .assessment import confidence_assessment, direction_assessment
 from .canonical_json import framed_content_digest
 from .comparison import classify_comparison
 from .compatibility import (
@@ -19,7 +21,7 @@ from .transitions import (
     signal_direction,
     transition_interpretation,
 )
-from .trust_dimensions import severity_for_dimension
+from .trust_dimensions import materiality_for_dimension
 
 # Default dimensions must represent actual measured trust-state fields.
 # App-visible/root-visible dimensions are intentionally not included here until
@@ -57,6 +59,15 @@ DIMENSION_PATHS = {
     "property_consistency": ["properties", "security"],
     "emulator_state": ["emulator_state", "is_emulator"],
 }
+
+VERIFIED_BOOT_DIMENSIONS = frozenset(
+    {
+        "bootloader_lock_state",
+        "verified_boot_state",
+        "vbmeta_state",
+        "verity_mode",
+    }
+)
 
 
 def _comparison_value(value: Any) -> Any:
@@ -136,6 +147,8 @@ def _signal_entry(
     before_raw: Any,
     after_raw: Any,
     transition: dict[str, str],
+    assessment: dict[str, Any],
+    evidence_path: str,
 ) -> dict[str, Any]:
     before_status = transition["before_status"]
     after_status = transition["after_status"]
@@ -155,6 +168,86 @@ def _signal_entry(
             after_status,
             transition["classification"],
         ),
+        "materiality": assessment["materiality"],
+        "direction": assessment["direction"],
+        "confidence": deepcopy(assessment["confidence"]),
+        "rationale": list(assessment["rationale"]),
+        "evidence_paths": [evidence_path],
+    }
+
+
+def _field_confidence(report: dict[str, Any], dimension: str) -> str:
+    if dimension not in VERIFIED_BOOT_DIMENSIONS:
+        return "not_available"
+    confidence = report.get("verified_boot", {}).get("confidence", {})
+    level = confidence.get("level") if isinstance(confidence, dict) else None
+    return (
+        str(level) if level in {"high", "medium", "low", "unassessed"} else "unassessed"
+    )
+
+
+def _corroborating_evidence_count(
+    base: dict[str, Any],
+    compare: dict[str, Any],
+    dimension: str,
+    before_raw: Any,
+    after_raw: Any,
+) -> int:
+    count = len(set(_source_evidence(before_raw)) | set(_source_evidence(after_raw)))
+    if dimension not in VERIFIED_BOOT_DIMENSIONS:
+        return count
+    for report in (base, compare):
+        confidence = report.get("verified_boot", {}).get("confidence", {})
+        if isinstance(confidence, dict):
+            corroborating = confidence.get("corroborating_signal_count")
+            if isinstance(corroborating, int) and not isinstance(corroborating, bool):
+                count = max(count, corroborating)
+    return count
+
+
+def _dimension_assessment(
+    dimension: str,
+    before: Any,
+    after: Any,
+    before_raw: Any,
+    after_raw: Any,
+    transition: dict[str, str],
+    *,
+    base: dict[str, Any],
+    compare: dict[str, Any],
+    compatibility: dict[str, Any],
+    comparison: dict[str, Any],
+) -> dict[str, Any]:
+    direction, direction_rationale = direction_assessment(
+        dimension,
+        before,
+        after,
+        transition_class=transition["classification"],
+    )
+    migration_count = sum(
+        len(compatibility["migrations"][side]) for side in ("base", "compare")
+    )
+    confidence = confidence_assessment(
+        before_status=transition["before_status"],
+        after_status=transition["after_status"],
+        before_field_confidence=_field_confidence(base, dimension),
+        after_field_confidence=_field_confidence(compare, dimension),
+        corroborating_evidence_count=_corroborating_evidence_count(
+            base, compare, dimension, before_raw, after_raw
+        ),
+        migration_count=migration_count,
+        comparability=comparison["comparability"],
+        warning_count=len(comparison["warnings"]),
+    )
+    return {
+        "materiality": materiality_for_dimension(dimension),
+        "direction": direction,
+        "confidence": confidence,
+        "rationale": [
+            "materiality_from_dimension_policy",
+            direction_rationale,
+            "confidence_from_explicit_factors",
+        ],
     }
 
 
@@ -234,13 +327,25 @@ def make_diff(
                 evidence_status(after_raw),
                 comparison_axis=comparison["axis"],
             )
+            assessment = _dimension_assessment(
+                dimension,
+                before,
+                after,
+                before_raw,
+                after_raw,
+                transition,
+                base=base,
+                compare=compare,
+                compatibility=compatibility,
+                comparison=comparison,
+            )
             changed.append(
                 {
                     "dimension": dimension,
                     "before": before,
                     "after": after,
                     "transition": transition,
-                    "severity": severity_for_dimension(dimension),
+                    **assessment,
                     "interpretation": interpretation(dimension),
                     "evidence_paths": [".".join(path)],
                 }
@@ -254,6 +359,8 @@ def make_diff(
                     before_raw,
                     after_raw,
                     transition,
+                    assessment,
+                    ".".join(path),
                 )
                 (new_signals if direction == "new" else missing_signals).append(entry)
         else:
