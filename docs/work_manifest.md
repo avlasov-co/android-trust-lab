@@ -119,8 +119,8 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Unit tests | Gate step 2 | 34 passed |
-| Branch-aware coverage | Gate step 2 | 85% overall; 375 statements and 104 branches |
+| Unit tests | Gate step 2 | 42 passed |
+| Branch-aware coverage | Gate step 2 | 86% overall; 398 statements and 104 branches |
 | Canonical metadata | Gate step 3 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 4 | Pass at `0.3.0.dev0` |
 | Schema and checked-in artifacts | Gate step 5 | 2 schemas, 5 reports, and 5 diffs validated |

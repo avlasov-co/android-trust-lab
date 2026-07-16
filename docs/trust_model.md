@@ -42,7 +42,7 @@ Signals may come from:
 - root collector output
 - host provenance data
 
-## Observer types
+## Supported observer types
 
 | Observer | Description |
 |---|---|
@@ -50,7 +50,9 @@ Signals may come from:
 | adb_shell | Android shell observer through adb |
 | unprivileged_app | Normal app sandbox observer |
 | root_collector | Privileged read-only collector |
-| boot_kernel | Boot/kernel-level evidence, when available |
+
+Boot/kernel-level evidence is a signal source when available; it is not a
+standalone observer ID in the current report schema or analyzer registry.
 
 ## Privilege boundaries
 

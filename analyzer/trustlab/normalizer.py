@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 import hashlib
 
 from .parser import parse_raw_report
+from .observers import observer_spec
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -182,11 +183,12 @@ def build_report(
     raw_artifact: str = "unknown",
     collection_timestamp: str | None = None,
 ) -> Dict[str, Any]:
+    observer = observer_spec(observer_type)
     props = parsed.get("properties", {})
     boot_state_raw = parsed.get("boot_state_raw", {}) or {}
     mounts = parsed.get("mounts", [])
     timestamp = collection_timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    rid_source = f"{experiment_id}:{observer_type}:{timestamp}:{raw_artifact}"
+    rid_source = f"{experiment_id}:{observer.observer_id}:{timestamp}:{raw_artifact}"
     report_id = "atl-" + hashlib.sha256(rid_source.encode()).hexdigest()[:16]
     cmdline = parsed.get("cmdline", "") or boot_state_raw.get("kernel_cmdline", "") or ""
     emulator = detect_emulator(props, target_type)
@@ -211,8 +213,8 @@ def build_report(
             "build_fingerprint": props.get("ro.build.fingerprint", "unknown"),
         },
         "observer": {
-            "observer_type": observer_type,
-            "privilege_level": "root" if observer_type == "root_collector" else ("shell" if observer_type == "adb_shell" else observer_type),
+            "observer_type": observer.observer_id,
+            "privilege_level": observer.privilege_level,
             "collection_method": collection_method,
         },
         "boot_state": {
@@ -233,7 +235,7 @@ def build_report(
             "emulator_target": bool(emulator["is_emulator"]),
             "missing_real_bootloader": target_type != "physical",
             "missing_tee_validation": True,
-            "incomplete_permissions": observer_type not in {"root_collector"},
+            "incomplete_permissions": observer.privilege_level != "root",
             "collection_errors": collection_errors,
         },
         "raw_artifacts": [raw_artifact],

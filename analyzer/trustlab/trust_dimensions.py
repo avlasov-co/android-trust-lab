@@ -1,5 +1,7 @@
 """Canonical trust dimensions and state-class helpers."""
 
+from .observers import OBSERVER_PRIVILEGE
+
 TRUST_DIMENSIONS = [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -33,13 +35,6 @@ STATE_CLASSES = {
     "D": "Magisk collector present",
     "E": "physical device baseline",
     "F": "physical rooted device",
-}
-
-OBSERVER_PRIVILEGE = {
-    "host": "host",
-    "adb_shell": "shell",
-    "unprivileged_app": "app_sandbox",
-    "root_collector": "root",
 }
 
 SEVERITY_BY_DIMENSION = {

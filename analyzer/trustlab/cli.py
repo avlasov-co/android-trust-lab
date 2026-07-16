@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .normalizer import normalize_raw_file
+from .observers import OBSERVER_REGISTRY
 from .diff import make_diff
 from .report_writer import write_json, load_json, diff_to_markdown, report_to_markdown
 from .validators import validate_report, validate_diff
@@ -70,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     normalize.add_argument("--output", required=True)
     normalize.add_argument("--experiment-id", default="unknown")
     normalize.add_argument("--target-type", choices=["avd", "physical", "unknown"], default="unknown")
-    normalize.add_argument("--observer", choices=["host", "adb_shell", "unprivileged_app", "root_collector"], default="adb_shell")
+    normalize.add_argument("--observer", choices=tuple(OBSERVER_REGISTRY), default="adb_shell")
     normalize.add_argument("--collection-method", default="raw_artifact")
     normalize.add_argument("--collection-timestamp", default=None, help="Optional ISO-8601 timestamp for reproducible sample reports")
     normalize.add_argument("--raw-artifact-ref", default=None, help="Optional stable artifact reference stored in raw_artifacts")
