@@ -3,18 +3,97 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from pathlib import Path
 from typing import Any, Dict
+
+from .exceptions import (
+    CollectionError,
+    InvalidJSONError,
+    MissingFileError,
+    OutputWriteError,
+    SchemaValidationError,
+    safe_path_label,
+)
+
+
+def _reject_nonstandard_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant: {value}")
 
 
 def write_json(data: Dict[str, Any], path: str | Path) -> None:
     p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    try:
+        payload = json.dumps(
+            data,
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        ) + "\n"
+    except (TypeError, ValueError) as exc:
+        raise OutputWriteError("could not serialize JSON output") from exc
+
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary_name = tempfile.mkstemp(
+            dir=p.parent,
+            prefix=f".{p.name}.",
+            suffix=".tmp",
+            text=True,
+        )
+    except OSError as exc:
+        raise OutputWriteError(
+            f"could not prepare output: {safe_path_label(p)}"
+        ) from exc
+
+    temporary_path = Path(temporary_name)
+    descriptor_open = True
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            descriptor_open = False
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, p)
+    except (OSError, UnicodeError) as exc:
+        raise OutputWriteError(f"could not write output: {safe_path_label(p)}") from exc
+    finally:
+        if descriptor_open:
+            os.close(fd)
+        try:
+            temporary_path.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError:
+            # Preserve the original write failure; a later verification scan can
+            # identify an undeletable temporary file.
+            pass
 
 
 def load_json(path: str | Path) -> Dict[str, Any]:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    p = Path(path)
+    label = safe_path_label(p)
+    try:
+        text = p.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise MissingFileError(f"input file not found: {label}") from exc
+    except UnicodeDecodeError as exc:
+        raise InvalidJSONError(f"invalid UTF-8 JSON: {label}") from exc
+    except OSError as exc:
+        raise CollectionError(f"could not read input: {label}") from exc
+
+    try:
+        data = json.loads(text, parse_constant=_reject_nonstandard_json_constant)
+    except json.JSONDecodeError as exc:
+        raise InvalidJSONError(
+            f"invalid JSON: {label} (line {exc.lineno}, column {exc.colno})"
+        ) from exc
+    except ValueError as exc:
+        raise InvalidJSONError(f"invalid JSON: {label}") from exc
+    if not isinstance(data, dict):
+        raise SchemaValidationError("JSON document must be an object")
+    return data
 
 
 def _cell(value: Any) -> str:

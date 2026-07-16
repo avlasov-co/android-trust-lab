@@ -21,7 +21,6 @@ sys.path.insert(0, str(ROOT / "analyzer"))
 from trustlab.normalizer import normalize_raw_file
 from trustlab import __version__
 from trustlab.diff import make_diff
-from trustlab.report_writer import write_json
 from trustlab.validators import validate_report, validate_diff
 
 SAMPLES = [

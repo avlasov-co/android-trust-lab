@@ -90,7 +90,9 @@ def make_diff(base: Dict[str, Any], compare: Dict[str, Any]) -> Dict[str, Any]:
         "unchanged_dimensions": unchanged,
         "confidence_changes": confidence_changes,
     })
-    diff_id = "atldiff-" + hashlib.sha256(diff_payload.encode()).hexdigest()[:16]
+    diff_id = "atldiff-" + hashlib.sha256(
+        diff_payload.encode("utf-8", errors="surrogatepass")
+    ).hexdigest()[:16]
     summary = f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged."
 
     return {

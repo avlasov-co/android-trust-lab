@@ -11,7 +11,6 @@ An adb shell or app observer cannot always see privileged state. A root-side col
 Depending on target and permissions, it may see:
 
 - boot properties
-- kernel command line
 - mount state
 - SELinux mode
 - process state
@@ -37,34 +36,34 @@ The module must not modify properties, patch SELinux, remount partitions, mount 
 - `post-fs-data.sh`: intentionally minimal in the MVP
 - `service.sh`: waits for boot completion, writes one report, exits
 - `action.sh`: manual collection entrypoint
-- `uninstall.sh`: removes internal temporary files, preserves exported reports
+- `uninstall.sh`: preserves private report directories; no separate temporary state exists
 
 ## Output paths
 
-Primary path:
+Private per-run path:
 
 ```text
-/data/local/tmp/android-trust-lab/reports/
+/data/adb/android-trust-lab/reports/run_<timestamp>.<random>/
 ```
 
 The module writes two artifact types:
 
 ```text
-raw_<timestamp>.txt
-collector_manifest_<timestamp>.json
+raw.txt
+collector_manifest.json
 ```
 
-The manifest is not a normalized trust report. It records provenance for the raw root-side snapshot. The host analyzer converts `raw_<timestamp>.txt` into `trust_report.schema.json` format.
-
-Optional exported path:
-
-```text
-/sdcard/Android/data/dev.androidtrustlab/files/reports/
-```
+The manifest is not a normalized trust report. It records provenance for the
+raw root-side snapshot. The host analyzer converts `raw.txt` into
+`trust_report.schema.json` format.
 
 ## Permissions
 
-The module runs with Magisk module script privileges. It should still collect defensively and record errors instead of assuming every command exists.
+The module runs with Magisk module script privileges. Output is created beneath
+the root-controlled `/data/adb` tree with `umask 077`, exclusive randomized run
+directories, mode `0700` directories, and mode `0600` artifacts. Symlinked
+output directories are rejected. The collector uses a property allowlist and
+does not capture the kernel command line.
 
 ## Limitations
 

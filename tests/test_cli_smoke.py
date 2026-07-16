@@ -52,7 +52,8 @@ def test_valid_normalize_validate_diff_summarize_flow(tmp_path, capsys):
     assert main(["summarize", str(diff_path)]) == 0
 
     output = capsys.readouterr().out
-    assert f"valid report: {report_path}" in output
-    assert f"valid diff: {diff_path}" in output
+    assert "valid report\n" in output
+    assert "valid diff\n" in output
+    assert str(tmp_path) not in output
     assert "# Trust Diff" in output
     assert "root_presence" in output

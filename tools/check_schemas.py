@@ -33,8 +33,10 @@ def main() -> int:
         Draft202012Validator.check_schema(load_object(path))
 
     manifest = load_object(ROOT / "datasets" / "manifest.json")
-    for sample in manifest.get("samples", []):
-        validate_report(load_json(ROOT / sample["report_path"]))
+    report_paths = [ROOT / sample["report_path"] for sample in manifest.get("samples", [])]
+    report_paths.append(ROOT / "tests" / "fixtures" / "sample_normalized_report.json")
+    for path in report_paths:
+        validate_report(load_json(path))
 
     diff_paths = [ROOT / "tests" / "fixtures" / "sample_diff.json"]
     diff_paths.extend(sorted((ROOT / "results" / "diffs").glob("*.json")))
@@ -43,7 +45,7 @@ def main() -> int:
 
     print(
         f"validated {len(schema_paths)} schemas, "
-        f"{len(manifest.get('samples', []))} reports, and {len(diff_paths)} diffs"
+        f"{len(report_paths)} reports, and {len(diff_paths)} diffs"
     )
     return 0
 

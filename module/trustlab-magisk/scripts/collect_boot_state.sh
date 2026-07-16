@@ -9,7 +9,4 @@ ro.boot.flash.locked=$(getprop ro.boot.flash.locked 2>/dev/null)
 ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state 2>/dev/null)
 ro.boot.veritymode=$(getprop ro.boot.veritymode 2>/dev/null)
 EOF
-printf 'kernel_cmdline='
-cat /proc/cmdline 2>/dev/null || true
-printf '\n'
 exit 0

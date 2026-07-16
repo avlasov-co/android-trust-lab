@@ -6,9 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 import hashlib
+import json
 
 from .parser import parse_raw_report
 from .observers import observer_spec
+from .exceptions import CollectionError, MissingFileError, NormalizationError, safe_path_label
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -28,6 +30,23 @@ PROPERTY_GROUP_PREFIXES = {
 }
 
 SECURITY_PROPERTIES = ["ro.debuggable", "ro.secure", "ro.adb.secure", "sys.boot_completed"]
+REPORTABLE_PROPERTY_KEYS = frozenset(
+    {
+        "ro.boot.flash.locked",
+        "ro.boot.vbmeta.device_state",
+        "ro.boot.verifiedbootstate",
+        "ro.boot.veritymode",
+        "ro.build.fingerprint",
+        "ro.build.version.release",
+        "ro.build.version.sdk",
+        "ro.crypto.state",
+        "ro.crypto.type",
+        "ro.crypto.volume.filenames_mode",
+        "ro.product.device",
+        "ro.product.manufacturer",
+        "ro.product.model",
+    }
+)
 
 
 def unknown_mount(path: str) -> Dict[str, Any]:
@@ -53,7 +72,11 @@ def select_mount(mounts: List[Dict[str, Any]], mount_point: str) -> Dict[str, An
 def normalize_properties(props: Dict[str, str]) -> Dict[str, Any]:
     grouped: Dict[str, Any] = {}
     for group, prefix in PROPERTY_GROUP_PREFIXES.items():
-        grouped[group] = {key: value for key, value in props.items() if key.startswith(prefix)}
+        grouped[group] = {
+            key: value
+            for key, value in props.items()
+            if key.startswith(prefix) and key in REPORTABLE_PROPERTY_KEYS
+        }
     grouped["security"] = {key: props.get(key, "unknown") for key in SECURITY_PROPERTIES}
     grouped["all_count"] = len(props)
     return grouped
@@ -181,6 +204,7 @@ def build_report(
     observer_type: str = "adb_shell",
     collection_method: str = "raw_artifact",
     raw_artifact: str = "unknown",
+    report_id_material: str | None = None,
     collection_timestamp: str | None = None,
 ) -> Dict[str, Any]:
     observer = observer_spec(observer_type)
@@ -188,7 +212,8 @@ def build_report(
     boot_state_raw = parsed.get("boot_state_raw", {}) or {}
     mounts = parsed.get("mounts", [])
     timestamp = collection_timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    rid_source = f"{experiment_id}:{observer.observer_id}:{timestamp}:{raw_artifact}"
+    identifier_material = report_id_material or raw_artifact
+    rid_source = f"{experiment_id}:{observer.observer_id}:{timestamp}:{identifier_material}"
     report_id = "atl-" + hashlib.sha256(rid_source.encode()).hexdigest()[:16]
     cmdline = parsed.get("cmdline", "") or boot_state_raw.get("kernel_cmdline", "") or ""
     emulator = detect_emulator(props, target_type)
@@ -252,8 +277,33 @@ def normalize_raw_file(
     collection_timestamp: str | None = None,
     raw_artifact_ref: str | None = None,
 ) -> Dict[str, Any]:
-    parsed = parse_raw_report(input_path)
-    stable_raw_artifact = raw_artifact_ref if raw_artifact_ref is not None else str(input_path)
+    observer_spec(observer_type)
+    source = Path(input_path)
+    label = safe_path_label(source)
+    try:
+        parsed = parse_raw_report(source)
+    except FileNotFoundError as exc:
+        raise MissingFileError(f"input file not found: {label}") from exc
+    except UnicodeDecodeError as exc:
+        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
+    except OSError as exc:
+        raise CollectionError(f"could not read input artifact: {label}") from exc
+    except (TypeError, ValueError) as exc:
+        raise NormalizationError(f"could not normalize input artifact: {label}") from exc
+    stable_raw_artifact = raw_artifact_ref if raw_artifact_ref is not None else label
+    report_id_material = stable_raw_artifact
+    if raw_artifact_ref is None:
+        canonical_evidence = json.dumps(
+            parsed,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            default=str,
+        )
+        evidence_digest = hashlib.sha256(
+            canonical_evidence.encode("utf-8", errors="surrogatepass")
+        ).hexdigest()
+        report_id_material = f"{label}:sha256:{evidence_digest}"
     return build_report(
         parsed,
         experiment_id=experiment_id,
@@ -261,5 +311,6 @@ def normalize_raw_file(
         observer_type=observer_type,
         collection_method=collection_method,
         raw_artifact=stable_raw_artifact,
+        report_id_material=report_id_material,
         collection_timestamp=collection_timestamp,
     )
