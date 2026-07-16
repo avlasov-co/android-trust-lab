@@ -2,10 +2,17 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
+from jsonschema import Draft202012Validator
+
 from trustlab.report_writer import load_json
 from trustlab.validators import validate_report, validate_diff
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_project_schemas_are_valid_draft_2020_12():
+    for path in (ROOT / "collector" / "schema").glob("*.schema.json"):
+        Draft202012Validator.check_schema(load_json(path))
 
 
 def test_sample_report_schema():
