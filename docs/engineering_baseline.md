@@ -125,6 +125,10 @@ Phase 2 Step 06 resolves baseline defect 3: schemas are packaged as canonical
 `importlib.resources`, wheel and sdist contents are tested, and compatibility
 copies cannot drift without failing verification.
 
+Phase 2 Step 07 resolves baseline defect 4: `jsonschema` is a mandatory runtime
+dependency, Draft 2020-12 schemas are meta-validated, formats are enforced, and
+all validation failures are reported deterministically.
+
 These defects are recorded here rather than encoded as expected Step 01
 behavior. The Step 01 product path remains unchanged apart from a valid CLI
 smoke test.

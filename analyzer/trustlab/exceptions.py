@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 
 def safe_path_label(path: str | Path) -> str:
@@ -33,8 +35,22 @@ class InvalidJSONError(TrustLabError):
     """An input is not syntactically valid UTF-8 JSON."""
 
 
+@dataclass(frozen=True)
+class SchemaIssue:
+    """Structured, value-safe detail for one JSON Schema violation."""
+
+    instance_path: str
+    schema_path: str
+    validator: str
+    message: str
+
+
 class SchemaValidationError(TrustLabError):
     """A JSON value does not conform to the selected project schema."""
+
+    def __init__(self, message: str, *, issues: Iterable[SchemaIssue] = ()) -> None:
+        super().__init__(message)
+        self.issues = tuple(issues)
 
 
 class UnsupportedSchemaVersionError(TrustLabError):

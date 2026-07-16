@@ -30,7 +30,8 @@
       "type": "string"
     },
     "collection_timestamp": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "experiment_id": {
       "type": "string"

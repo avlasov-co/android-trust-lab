@@ -4,6 +4,10 @@ The `trustlab` CLI validates authoritative JSON artifacts before publishing them
 Normalize validates its in-memory report before writing. Diff always validates
 both input reports and the generated diff before writing.
 
+Validation uses Draft 2020-12 with explicit format checking. All detected
+schema errors are reported in deterministic JSON-pointer order; diagnostics
+name violated constraints without echoing sensitive input values.
+
 Successful JSON writes use a temporary file in the destination directory. The
 writer serializes before creating the directory, creates the temporary file with
 mode `0600`, flushes and `fsync`s it, closes it, and uses `os.replace` on the same

@@ -1,11 +1,20 @@
+import copy
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
+import pytest
 from jsonschema import Draft202012Validator
 
+import trustlab.validators as validators
+from trustlab.exceptions import SchemaValidationError
 from trustlab.report_writer import load_json
-from trustlab.validators import load_schema, validate_report, validate_diff
+from trustlab.validators import (
+    check_project_schemas,
+    load_schema,
+    validate_diff,
+    validate_report,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -13,6 +22,115 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_project_schemas_are_valid_draft_2020_12():
     for path in (ROOT / "collector" / "schema").glob("*.schema.json"):
         Draft202012Validator.check_schema(load_json(path))
+
+
+def test_packaged_project_schema_registry_is_meta_schema_valid():
+    assert check_project_schemas() == (
+        "trust_diff.schema.json",
+        "trust_report.schema.json",
+    )
+
+
+def test_invalid_date_time_format_is_rejected():
+    report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    report["collection_timestamp"] = "not-a-date"
+    with pytest.raises(
+        SchemaValidationError,
+        match=r"/collection_timestamp: expected format date-time",
+    ):
+        validate_report(report)
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2026-04-25T15:06:21Z",
+        "2026-04-25t15:06:21z",
+        "2016-12-31T23:59:60Z",
+        "2016-12-31T15:59:60-08:00",
+        "2017-01-01T05:29:60+05:30",
+        "2026-04-25T15:06:21.123456+23:59",
+        "2026-04-25T15:06:21-00:00",
+        "0000-02-29T00:00:00Z",
+    ],
+)
+def test_rfc3339_date_time_boundary_values_are_accepted(timestamp):
+    assert validators._is_rfc3339_date_time(timestamp) is True
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2026-02-30T15:06:21Z",
+        "2026-04-25T24:00:00Z",
+        "2026-04-25T15:60:00Z",
+        "2026-04-25T15:58:60Z",
+        "2026-04-25T15:59:60Z",
+        "2026-04-25T15:06:61Z",
+        "2026-04-25T15:06:21+01:60",
+        "2026-04-25T15:06:21+24:00",
+        "2026-04-25 15:06:21Z",
+        "2026-04-25T15:06:21",
+        "2026-04-25T١٥:٠٦:٢١Z",
+        "0000-02-30T00:00:00Z",
+        "0001-01-01T00:00:60+23:59",
+        "9999-12-31T23:59:60-23:59",
+    ],
+)
+def test_non_rfc3339_date_time_boundary_values_are_rejected(timestamp):
+    assert validators._is_rfc3339_date_time(timestamp) is False
+
+
+def test_multiple_validation_errors_are_complete_and_deterministic():
+    report = load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+    report.pop("target")
+    report["collection_timestamp"] = "not-a-date"
+    report["observer"]["privilege_level"] = "superuser"
+    messages = []
+    issue_snapshots = []
+    for _ in range(2):
+        with pytest.raises(SchemaValidationError) as caught:
+            validate_report(copy.deepcopy(report))
+        messages.append(str(caught.value))
+        issue_snapshots.append(caught.value.issues)
+    assert messages[0] == messages[1]
+    assert "(3 errors)" in messages[0]
+    assert messages[0].index("/: missing required property: target") < messages[0].index(
+        "/collection_timestamp"
+    )
+    assert messages[0].index("/collection_timestamp") < messages[0].index(
+        "/observer/privilege_level"
+    )
+    assert issue_snapshots[0] == issue_snapshots[1]
+    assert [issue.instance_path for issue in issue_snapshots[0]] == [
+        "/",
+        "/collection_timestamp",
+        "/observer/privilege_level",
+    ]
+    assert [issue.validator for issue in issue_snapshots[0]] == [
+        "required",
+        "format",
+        "enum",
+    ]
+    assert all(issue.schema_path.startswith("/") for issue in issue_snapshots[0])
+    assert caught.value.__cause__ is not None
+
+
+def test_malformed_packaged_schema_fails_explicitly(monkeypatch):
+    malformed = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": 7,
+    }
+    monkeypatch.setattr(validators, "load_schema", lambda _name: malformed)
+    with pytest.raises(SchemaValidationError, match="project schema is invalid"):
+        validate_report(
+            load_json(ROOT / "tests/fixtures/sample_normalized_report.json")
+        )
+
+
+def test_missing_packaged_schema_fails_explicitly():
+    with pytest.raises(SchemaValidationError, match="schema resource is missing"):
+        load_schema("not-packaged.schema.json")
 
 
 def test_sample_report_schema():

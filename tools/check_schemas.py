@@ -8,13 +8,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab.report_writer import load_json  # noqa: E402
-from trustlab.validators import validate_diff, validate_report  # noqa: E402
+from trustlab.validators import (  # noqa: E402
+    check_project_schemas,
+    validate_diff,
+    validate_report,
+)
 
 
 def load_object(path: Path) -> dict[str, Any]:
@@ -25,12 +27,7 @@ def load_object(path: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    schema_paths = sorted((ROOT / "collector" / "schema").glob("*.schema.json"))
-    if not schema_paths:
-        raise FileNotFoundError("no project schemas found")
-
-    for path in schema_paths:
-        Draft202012Validator.check_schema(load_object(path))
+    schema_names = check_project_schemas()
 
     manifest = load_object(ROOT / "datasets" / "manifest.json")
     report_paths = [ROOT / sample["report_path"] for sample in manifest.get("samples", [])]
@@ -44,7 +41,7 @@ def main() -> int:
         validate_diff(load_json(path))
 
     print(
-        f"validated {len(schema_paths)} schemas, "
+        f"validated {len(schema_names)} schemas, "
         f"{len(report_paths)} reports, and {len(diff_paths)} diffs"
     )
     return 0
