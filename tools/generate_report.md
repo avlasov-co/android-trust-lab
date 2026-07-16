@@ -1,6 +1,7 @@
 # Generate Report
 
-Regenerate checked-in sample reports, diffs, result tables, and the dataset manifest:
+Regenerate checked-in sample reports, diffs, result tables, the dataset manifest,
+and the versioned artifact manifest:
 
 ```bash
 python tools/generate_report.py

@@ -9,6 +9,7 @@ reviewers can see that results are derived from checked-in data rather than hand
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
 from trustlab.normalizer import normalize_raw_file
+from trustlab import __version__
 from trustlab.diff import make_diff
 from trustlab.report_writer import write_json
 from trustlab.validators import validate_report, validate_diff
@@ -111,6 +113,22 @@ DIFFS = [
     },
 ]
 
+ARTIFACT_SPECS = [
+    ("datasets/manifest.json", "sample_manifest"),
+    ("datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json", "normalized_sample_report"),
+    ("datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json", "normalized_sample_report"),
+    ("datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json", "normalized_sample_report"),
+    ("datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json", "normalized_sample_report"),
+    ("datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json", "normalized_sample_report"),
+    ("results/diffs/stock_adb_vs_rooted_adb.json", "generated_diff"),
+    ("results/diffs/rooted_adb_vs_rooted_root.json", "generated_diff"),
+    ("results/diffs/stock_vs_writable_system.json", "generated_diff"),
+    ("results/diffs/rooted_adb_vs_magisk_root_collector.json", "generated_diff"),
+    ("results/summary_table.md", "generated_table"),
+    ("results/trust_state_diffs.md", "generated_report"),
+    ("results/figures/trust_dimensions_matrix.md", "generated_matrix"),
+]
+
 
 def load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -118,6 +136,38 @@ def load_json(path: Path) -> Dict[str, Any]:
 
 def stable_json(data: Any) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def artifact_manifest() -> Dict[str, Any]:
+    return {
+        "project": "android-trust-lab",
+        "repository": "https://github.com/avlasov-co/android-trust-lab",
+        "version": __version__,
+        "artifacts": [
+            {
+                "path": relative_path,
+                "type": artifact_type,
+                "generated_by": "python tools/generate_report.py",
+                "sha256": sha256_file(ROOT / relative_path),
+                "status": "checked",
+            }
+            for relative_path, artifact_type in ARTIFACT_SPECS
+        ],
+        "notes": [
+            "Artifact hashes cover checked-in generated outputs only.",
+            "No standalone Magisk zip is stored as a checked-in repository artifact.",
+            "Current sample evidence is synthetic / AVD-limited and does not claim physical-device validation.",
+            "Use the complete repository gate for validation results; this generated manifest does not attest to test execution.",
+        ],
+    }
 
 
 def write_if_changed(path: Path, content: str, *, check: bool, changed: List[str]) -> None:
@@ -335,6 +385,7 @@ def main(argv: List[str] | None = None) -> int:
     write_if_changed(ROOT / "results/summary_table.md", summary_table(reports), check=args.check, changed=changed)
     write_if_changed(ROOT / "results/trust_state_diffs.md", diff_markdown(diff_entries), check=args.check, changed=changed)
     write_if_changed(ROOT / "results/figures/trust_dimensions_matrix.md", matrix_markdown(reports_by_exp), check=args.check, changed=changed)
+    write_json_if_changed(ROOT / "results/artifact_manifest.json", artifact_manifest(), check=args.check, changed=changed)
 
     if args.check and changed:
         print("Generated artifacts are stale:", file=sys.stderr)

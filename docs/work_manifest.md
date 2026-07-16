@@ -102,11 +102,11 @@ repository gate:
 PYTHON_BIN=python3 bash scripts/check.sh
 ```
 
-The command performs Python compilation, tests with branch coverage, explicit
-JSON Schema and artifact validation, generated-output freshness checks, Magisk
-package safety checks, and shell syntax checks. It sets `PYTHONPATH=analyzer` so
-local tests run from source. If development dependencies are missing, install
-them first:
+The command performs Python compilation, tests with branch coverage, canonical
+metadata and version checks, explicit JSON Schema and artifact validation,
+generated-output freshness checks, Magisk package safety checks, and shell
+syntax checks. It sets `PYTHONPATH=analyzer` so local tests run from source. If
+development dependencies are missing, install them first:
 
 ```bash
 python -m pip install -e "analyzer[dev]"
@@ -119,12 +119,14 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Unit tests | Gate step 2 | 23 passed |
-| Branch-aware coverage | Gate step 2 | 85% overall; 373 statements and 104 branches |
-| Schema and checked-in artifacts | Gate step 3 | 2 schemas, 5 reports, and 5 diffs validated |
-| Generated report freshness | Gate step 4 | Pass; generated artifacts are up to date |
-| Magisk package safety | Gate step 5 | Pass |
-| Shell syntax | Gate step 6 | Pass for 11 Magisk scripts and both repository Bash scripts |
+| Unit tests | Gate step 2 | 34 passed |
+| Branch-aware coverage | Gate step 2 | 85% overall; 375 statements and 104 branches |
+| Canonical metadata | Gate step 3 | Pass, including CFF 1.2 structure |
+| Project version | Gate step 4 | Pass at `0.3.0.dev0` |
+| Schema and checked-in artifacts | Gate step 5 | 2 schemas, 5 reports, and 5 diffs validated |
+| Generated report freshness | Gate step 6 | Pass; generated artifacts are up to date |
+| Magisk package safety | Gate step 7 | Pass |
+| Shell syntax | Gate step 8 | Pass for 11 Magisk scripts and both repository Bash scripts |
 
 Run `bash scripts/check.sh` or the compatible `bash scripts/verify_release.sh`
 from an activated environment containing `analyzer[dev]`.
