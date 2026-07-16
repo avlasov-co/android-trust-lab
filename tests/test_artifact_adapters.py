@@ -637,7 +637,7 @@ def test_app_manifest_normalizes_using_declared_observer_context():
     assert report["root_state"]["su_present"]["status"] == "not_collected"
     assert report["root_state"]["su_present"]["value"] is None
     assert report["emulator_state"]["is_emulator"]["status"] == "not_collected"
-    assert report["selinux"]["mode"]["status"] == "inaccessible"
+    assert report["selinux"]["policy_mode"]["status"] == "inaccessible"
     assert report["provenance"]["command_results"][1]["status"] == "inaccessible"
 
 

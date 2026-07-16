@@ -20,7 +20,10 @@ DIMENSION_PATHS = {
     "verified_boot_state": ["verified_boot", "verified_boot_state"],
     "vbmeta_state": ["verified_boot", "vbmeta_device_state"],
     "verity_mode": ["verified_boot", "verity_mode"],
-    "selinux_mode": ["selinux", "mode"],
+    "selinux_mode": ["selinux", "policy_mode"],
+    "selinux_current_context": ["selinux", "current_context"],
+    "selinux_denial_collection": ["selinux", "denial_collection"],
+    "selected_process_visibility": ["process_state", "selected_processes"],
     "mount_integrity": ["mounts", "integrity_summary"],
     "system_mount_resolution": ["mounts", "system_resolution"],
     "dynamic_partition_state": ["mounts", "dynamic_partitions"],
@@ -36,8 +39,17 @@ DIMENSION_PATHS = {
 def _comparison_value(value: Any) -> Any:
     if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
         return {"status": value["status"], "value": value["value"]}
+    if (
+        isinstance(value, dict)
+        and {"status", "reason", "evidence_refs"} <= value.keys()
+    ):
+        return {"status": value["status"]}
     if isinstance(value, dict):
-        return {key: _comparison_value(item) for key, item in value.items()}
+        return {
+            key: _comparison_value(item)
+            for key, item in value.items()
+            if key != "evidence_refs"
+        }
     if isinstance(value, list):
         return [_comparison_value(item) for item in value]
     return value
@@ -58,10 +70,11 @@ def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, 
     validate_report(report)
     common = migrate_report_to_current(report)
     applied_count = {
-        "1.0.0": 3,
-        "2.0.0": 2,
-        "3.0.0": 1,
-        "4.0.0": 0,
+        "1.0.0": 4,
+        "2.0.0": 3,
+        "3.0.0": 2,
+        "4.0.0": 1,
+        "5.0.0": 0,
     }.get(original_version, 0)
     migrations = (
         common["provenance"]["migration_history"][-applied_count:]
@@ -77,7 +90,7 @@ def _report_for_diff(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, 
         "original_report_id": original_id,
         "original_schema_version": original_version,
         "original_content_digest": report.get("content_digest")
-        if original_version in {"3.0.0", "4.0.0"}
+        if original_version in {"3.0.0", "4.0.0", "5.0.0"}
         else None,
         "original_document_digest": legacy_report_digest(encode_legacy_report(report)),
         "common_report": common_identity,
@@ -95,6 +108,9 @@ def interpretation(dimension: str) -> str:
         "dynamic_partition_state": "Dynamic-partition evidence changed. This records layout evidence, not an integrity verdict.",
         "apex_mount_set": "The observed APEX package mount set changed. Review capture completeness and package mount records.",
         "selinux_mode": "SELinux mode changed. This affects runtime MAC boundary interpretation.",
+        "selinux_current_context": "Observer SELinux context visibility changed. This is scoped evidence, not complete policy inspection.",
+        "selinux_denial_collection": "SELinux denial collection status changed; compare collection scope before interpreting absence.",
+        "selected_process_visibility": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
         "verified_boot_state": "Verified boot property evidence changed. Emulator evidence remains limited for hardware-backed conclusions.",
         "vbmeta_state": "vbmeta device-state evidence changed. Interpret according to target class and observer.",
         "verity_mode": "dm-verity-related property evidence changed.",

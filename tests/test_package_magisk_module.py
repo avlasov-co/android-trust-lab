@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from trustlab.normalizer import normalize_raw_file
+from trustlab.validators import validate_report
+
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
     "package_magisk_module", ROOT / "tools" / "package_magisk_module.py"
@@ -161,9 +164,11 @@ def test_process_collector_does_not_publish_command_arguments(tmp_path):
     fake_ps.write_text(
         "#!/bin/sh\n"
         'if [ "$1" = "-AZ" ]; then\n'
-        "  printf '%s\\n' 'u:r:init:s0 root 1 0 init PRIVATE_COMMAND_TOKEN'\n"
+        "  printf '%s\\n' 'u:r:init:s0 root 1 0 init'\n"
+        "  printf '%s\\n' 'u:r:shell:s0 root 9 1 init PRIVATE_COMMAND_TOKEN'\n"
         "else\n"
-        "  printf '%s\\n' 'root 1 0 init PRIVATE_COMMAND_TOKEN'\n"
+        "  printf '%s\\n' 'root 1 0 init'\n"
+        "  printf '%s\\n' 'root 9 1 init PRIVATE_COMMAND_TOKEN'\n"
         "fi\n",
         encoding="utf-8",
     )
@@ -179,6 +184,56 @@ def test_process_collector_does_not_publish_command_arguments(tmp_path):
     )
     assert "u:r:init:s0 init" in result.stdout
     assert "PRIVATE_COMMAND_TOKEN" not in result.stdout
+
+
+def test_security_collectors_emit_safe_classifiable_failure_markers(tmp_path):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    commands = {
+        "getenforce": "printf '%s\\n' 'getenforce: Permission denied' >&2\nexit 1\n",
+        "id": "printf '%s\\n' 'id: not found' >&2\nexit 127\n",
+        "ps": "printf '%s\\n' 'ps: not found' >&2\nexit 127\n",
+    }
+    for name, body in commands.items():
+        executable = fake_bin / name
+        executable.write_text(f"#!/bin/sh\n{body}", encoding="utf-8")
+        executable.chmod(0o755)
+    environment = os.environ.copy()
+    environment["PATH"] = f"{fake_bin}{os.pathsep}{environment['PATH']}"
+
+    selinux = subprocess.run(
+        ["sh", ROOT / "module/trustlab-magisk/scripts/collect_selinux.sh"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    processes = subprocess.run(
+        ["sh", ROOT / "module/trustlab-magisk/scripts/collect_process_state.sh"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "Permission denied" not in selinux.stdout
+    assert "not found" not in selinux.stdout
+    assert "not found" not in processes.stdout
+    assert "trustlab: inaccessible" in selinux.stdout
+    assert "trustlab: unsupported" in selinux.stdout
+    assert "trustlab: unsupported" in processes.stdout
+
+    raw = tmp_path / "collector-failures.txt"
+    raw.write_text(selinux.stdout + processes.stdout, encoding="utf-8")
+    report = normalize_raw_file(
+        raw,
+        collection_timestamp="2026-07-16T20:00:00Z",
+        raw_artifact_ref="tests/generated/collector-failures.txt",
+    )
+
+    assert report["selinux"]["policy_mode"]["status"] == "inaccessible"
+    assert report["selinux"]["current_context"]["status"] == "unsupported"
+    assert report["process_state"]["capture_status"] == "unsupported"
+    validate_report(report)
 
 
 def test_module_safety_rejects_symlinks_without_reading_target(tmp_path):

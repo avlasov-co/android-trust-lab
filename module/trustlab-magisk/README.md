@@ -65,3 +65,11 @@ on the host with `trustlab normalize --manifest collector_manifest.json --output
 report.json`. The analyzer parses the exact verified bytes and retains the
 manifest digest, full manifest record, and probe outcomes in the normalized
 report.
+
+The raw snapshot keeps `getenforce` separate from the collector's own `id -Z`
+context. Its `PS_SELECTED` section contains only exact project-selected names
+and sanitized process contexts when available. It never publishes PIDs, users,
+or command arguments, and an unlisted name in this filtered section is not proof
+that the process does not exist.
+Command failures use fixed non-sensitive markers so inaccessible, unsupported,
+and failed collection remain distinct from a genuinely empty successful section.

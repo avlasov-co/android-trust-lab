@@ -4,7 +4,7 @@ The `trustlab` CLI validates authoritative JSON artifacts before publishing them
 Normalize validates its in-memory report before writing. Diff always validates
 both input reports and the generated diff before writing.
 `migrate-report` accepts any readable report version, validates every registered
-migration step to current report v4, and publishes a separate output without
+migration step to current report v5, and publishes a separate output without
 replacing the historical source. Current v3 input is validated and copied.
 `validate-collection-manifest` validates the strict portable manifest contract.
 Normalize with `--manifest` verifies every observed artifact binding before it

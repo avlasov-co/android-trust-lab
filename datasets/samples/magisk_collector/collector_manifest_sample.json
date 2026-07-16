@@ -27,9 +27,7 @@
     "transport": "on_device",
     "execution_context": "magisk_module"
   },
-  "warnings": [
-    "Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture."
-  ],
+  "warnings": [],
   "redaction_policy": {
     "policy_id": "atl_portable_v1",
     "redaction_state": "applied",
@@ -50,7 +48,7 @@
       "timed_out": false,
       "sensitivity": "sensitive",
       "redaction_state": "redacted",
-      "detail": "Consolidated read-only raw observation."
+      "detail": null
     },
     {
       "logical_name": "command_results",
@@ -64,7 +62,7 @@
       "timed_out": false,
       "sensitivity": "internal",
       "redaction_state": "withheld",
-      "detail": "The legacy fixture did not retain per-command results."
+      "detail": null
     }
   ]
 }

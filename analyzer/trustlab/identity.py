@@ -13,7 +13,7 @@ from typing import Any
 from .canonical_json import CanonicalJSONError, framed_content_digest
 from .exceptions import CollectionError, SchemaValidationError
 
-REPORT_SCHEMA_VERSION = "4.0.0"
+REPORT_SCHEMA_VERSION = "5.0.0"
 REDACTION_STATES = frozenset(
     {"not_required", "redacted", "verified", "withheld", "unknown"}
 )
@@ -189,7 +189,7 @@ def report_content_projection(report: dict[str, Any]) -> dict[str, Any]:
 
     source_version = report["provenance"]["source_schema_version"]
     migrated_v2_source = source_version == "2.0.0" or (
-        source_version == "3.0.0"
+        source_version in {"3.0.0", "4.0.0"}
         and "org.androidtrustlab.migration-v3" in report["extensions"]
     )
     raw_artifacts = (

@@ -1,0 +1,3 @@
+LABEL PID USER NAME
+u:r:init:s0 1 root init
+u:r:zygote:s0 101 root zygote

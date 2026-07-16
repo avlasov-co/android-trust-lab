@@ -59,13 +59,24 @@ uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
 records a pseudonymous target, and marks missing per-command results as
 `not_collected`. The host analyzer verifies the binding before parsing and
 converts `raw.txt` into the current content-addressed
-`trust_report_v4_0_0.schema.json` format.
+`trust_report_v5_0_0.schema.json` format.
 
 The mount collector records complete `/proc/self/mountinfo`, `/proc/mounts`, and
 common `mount` output in separate sections. The analyzer prefers mountinfo but
 retains every fallback outcome. Collection is not filtered to a small path list,
 because doing so would discard mount topology, system-as-root context, dynamic
 partition sources, APEX package mounts, and namespace propagation fields.
+
+SELinux mode and the collector's own `id -Z` context are emitted in separate
+sections. Filesystem labels are not mixed with current-process evidence. Process
+collection emits only the seven project-selected exact names and a context when
+available; it never emits PIDs, users, raw rows, or command arguments. Because
+that list is filtered, the analyzer treats an unlisted name as `not_collected`
+rather than proving it absent.
+Failures are emitted only as fixed `trustlab: inaccessible`, `trustlab:
+unsupported`, or `trustlab: command error` markers. Exact exit codes remain
+unavailable, but a failed command cannot be mistaken for a successful empty
+section and raw device diagnostics are not published.
 
 The pseudonymous target is a randomly generated 64-bit token stored once as
 `/data/adb/android-trust-lab/target_pseudonym` with mode `0600`. Reusing that

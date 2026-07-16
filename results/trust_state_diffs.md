@@ -4,7 +4,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E01 stock AVD ADB observer vs E02 rooted AVD ADB observer
 
-1 dimensions changed, 13 dimensions unchanged.
+1 dimensions changed, 16 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -12,7 +12,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E02 rooted AVD ADB observer vs E02 rooted AVD root observer
 
-1 dimensions changed, 13 dimensions unchanged.
+1 dimensions changed, 16 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E01 stock AVD vs E03 writable-system AVD
 
-2 dimensions changed, 12 dimensions unchanged.
+2 dimensions changed, 15 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
@@ -29,9 +29,10 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ## E02 rooted ADB observer vs E05 Magisk root collector fixture
 
-2 dimensions changed, 12 dimensions unchanged.
+3 dimensions changed, 14 dimensions unchanged.
 
 | Dimension | Severity | Before | After | Interpretation |
 |---|---|---|---|---|
+| selected_process_visibility | medium | `{'name': 'init', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:init:s0'}}, {'name': 'adbd', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:adbd:s0'}}, {'name': 'zygote', 'visibility': {'status': 'not_collected', 'value': None}, 'context': {'status': 'not_collected', 'value': None}}, {'name': 'zygote64', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:zygote:s0'}}, {'name': 'system_server', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:system_server:s0'}}, {'name': 'magisk', 'visibility': {'status': 'not_collected', 'value': None}, 'context': {'status': 'not_collected', 'value': None}}, {'name': 'magiskd', 'visibility': {'status': 'not_collected', 'value': None}, 'context': {'status': 'not_collected', 'value': None}}` | `{'name': 'init', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:init:s0'}}, {'name': 'adbd', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:adbd:s0'}}, {'name': 'zygote', 'visibility': {'status': 'not_collected', 'value': None}, 'context': {'status': 'not_collected', 'value': None}}, {'name': 'zygote64', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:zygote:s0'}}, {'name': 'system_server', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:system_server:s0'}}, {'name': 'magisk', 'visibility': {'status': 'not_collected', 'value': None}, 'context': {'status': 'not_collected', 'value': None}}, {'name': 'magiskd', 'visibility': {'status': 'observed', 'value': True}, 'context': {'status': 'observed', 'value': 'u:r:magisk:s0'}}` | Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence. |
 | magisk_presence | medium | `{"status": "observed_absent", "value": false}` | `{"status": "observed", "value": true}` | Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it. |
 | observer_privilege | info | `shell` | `root` | Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation. |

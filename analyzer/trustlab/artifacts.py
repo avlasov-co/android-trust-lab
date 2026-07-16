@@ -49,6 +49,16 @@ from .parser import (
     parse_raw_text,
     validate_parser_text,
 )
+from .security_evidence import (
+    ParsedContext,
+    ParsedProcessSet,
+    ProcessScope,
+    is_selected_process_capture,
+    parse_selinux_context,
+)
+from .security_evidence import (
+    parse_processes as parse_process_evidence,
+)
 from .validators import load_schema
 
 
@@ -131,6 +141,26 @@ def _empty_processes() -> ParsedProcesses:
     }
 
 
+def _empty_context() -> ParsedContext:
+    return {
+        "parse_status": "empty",
+        "value": None,
+        "evidence_refs": [],
+        "warnings": [],
+    }
+
+
+def _empty_process_evidence() -> ParsedProcessSet:
+    return {
+        "format": "unknown",
+        "scope": "unknown",
+        "parse_status": "empty",
+        "observations": [],
+        "malformed_line_count": 0,
+        "warnings": [],
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class EvidenceFragments:
     """Constrained syntactic fragments consumed by the normalizer."""
@@ -145,10 +175,12 @@ class EvidenceFragments:
     mount_selection_reason: str = "no mount capture was usable"
     identity: ParsedIdentity = field(default_factory=_unknown_identity)
     selinux_mode: str = "unknown"
+    selinux_context: ParsedContext = field(default_factory=_empty_context)
     cmdline: str = ""
     su_paths: tuple[str, ...] = ()
     magisk_text: str = ""
     processes: ParsedProcesses = field(default_factory=_empty_processes)
+    process_evidence: ParsedProcessSet = field(default_factory=_empty_process_evidence)
 
 
 @dataclass(frozen=True, slots=True)
@@ -353,6 +385,10 @@ _CAPTURE_SEMANTICS = {
     "id": "identity",
     "selinux_mode": "selinux",
     "getenforce": "selinux",
+    "selinux_context": "selinux_context",
+    "collector_context": "selinux_context",
+    "app_context": "selinux_context",
+    "selinux_denials": "selinux_denials",
     "kernel_cmdline": "cmdline",
     "su_paths": "su_paths",
     "magisk": "magisk",
@@ -376,6 +412,9 @@ _ALLOWED_CAPTURE_NAMES = {
             "id",
             "selinux_mode",
             "getenforce",
+            "selinux_context",
+            "app_context",
+            "selinux_denials",
             "su_paths",
             "magisk",
             "processes",
@@ -525,6 +564,7 @@ def _infer_legacy_capture_status(
         "inaccessible": CaptureStatus.INACCESSIBLE,
         "timeout": CaptureStatus.TIMEOUT,
         "command_error": CaptureStatus.COMMAND_ERROR,
+        "unsupported": CaptureStatus.UNSUPPORTED,
     }[diagnostic]
     return (
         replace(
@@ -569,6 +609,16 @@ def _observed_capture_syntax_is_valid(
         return parse_id(capture.stdout)["uid"] != "unknown"
     if semantic == "selinux":
         return parse_getenforce(capture.stdout) != "unknown"
+    if semantic == "selinux_context":
+        return (
+            parse_selinux_context(
+                capture.stdout,
+                evidence_path=capture.source_ref,
+            )["parse_status"]
+            == "parsed"
+        )
+    if semantic == "selinux_denials":
+        return bool(capture.stdout.strip())
     if semantic == "magisk":
         lines = [
             line.strip().lower() for line in capture.stdout.splitlines() if line.strip()
@@ -586,24 +636,17 @@ def _observed_capture_syntax_is_valid(
             )
         )
     if semantic == "processes":
-        known_processes = {
-            "init",
-            "adbd",
-            "zygote",
-            "zygote64",
-            "system_server",
-            "magisk",
-            "magiskd",
-        }
-        process_lines = [
-            line.split() for line in capture.stdout.splitlines() if line.strip()
-        ]
-        return bool(process_lines) and all(
-            len(parts) >= 2
-            and parts[-1].lower().rsplit("/", 1)[-1] in known_processes
-            and any(part.isdigit() for part in parts[:-1])
-            for parts in process_lines
+        scope: ProcessScope = (
+            "selected"
+            if is_selected_process_capture(capture.name, capture.source_ref)
+            else "complete"
         )
+        process_result = parse_process_evidence(
+            capture.stdout,
+            scope=scope,
+            evidence_path=capture.source_ref,
+        )
+        return process_result["parse_status"] in {"complete", "partial"}
     if semantic == "cmdline":
         return bool(capture.stdout.strip())
     if semantic == "su_paths":
@@ -622,7 +665,17 @@ def _capture_syntax_is_valid(
     if capture.status is CaptureStatus.EMPTY:
         if not reject_diagnostics:
             return True
-        return semantic in {"su_paths", "magisk", "processes"} or semantic is None
+        return (
+            semantic
+            in {
+                "su_paths",
+                "magisk",
+                "processes",
+                "selinux_context",
+                "selinux_denials",
+            }
+            or semantic is None
+        )
     if capture.status is not CaptureStatus.OBSERVED:
         return False
     if not reject_diagnostics and _is_legacy_negative_sentinel(capture, semantic):
@@ -844,10 +897,41 @@ def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFrag
         for capture in captures
     ):
         selinux_text = "inaccessible"
+    context_text = _first_observed(
+        captures,
+        "selinux_context",
+        "collector_context",
+        "app_context",
+    )
     cmdline_text = _first_observed(captures, "kernel_cmdline")
     su_text = _first_observed(captures, "su_paths")
     magisk_text = _first_observed(captures, "magisk")
-    process_text = _first_observed(captures, "processes", "ps_selected")
+    process_capture = next(
+        (
+            capture
+            for capture in captures
+            if capture.name in {"processes", "ps_selected"}
+            and capture.status in {CaptureStatus.OBSERVED, CaptureStatus.EMPTY}
+        ),
+        None,
+    )
+    process_text = process_capture.stdout if process_capture is not None else ""
+    process_scope: ProcessScope = (
+        "selected"
+        if process_capture is not None
+        and is_selected_process_capture(
+            process_capture.name,
+            process_capture.source_ref,
+        )
+        else "complete"
+        if process_capture is not None
+        else "unknown"
+    )
+    process_evidence = parse_process_evidence(
+        process_text,
+        scope=process_scope,
+        evidence_path=process_capture.source_ref if process_capture else "unknown",
+    )
     return EvidenceFragments(
         properties=parse_getprop(properties_text),
         boot_state=parse_key_values(boot_text),
@@ -857,10 +941,24 @@ def _fragments_from_captures(captures: Sequence[CommandCapture]) -> EvidenceFrag
         mount_selection_reason=mount_selection_reason,
         identity=parse_id(identity_text),
         selinux_mode=parse_getenforce(selinux_text),
+        selinux_context=parse_selinux_context(
+            context_text,
+            evidence_path=next(
+                (
+                    capture.source_ref
+                    for capture in captures
+                    if capture.name
+                    in {"selinux_context", "collector_context", "app_context"}
+                    and capture.status is CaptureStatus.OBSERVED
+                ),
+                "unknown",
+            ),
+        ),
         cmdline=cmdline_text,
         su_paths=tuple(parse_paths(su_text)),
         magisk_text=magisk_text,
         processes=parse_processes(process_text),
+        process_evidence=process_evidence,
     )
 
 
@@ -882,10 +980,12 @@ class LegacySectionedTextAdapter:
             "mounts": ("MOUNT", "MOUNTS"),
             "identity": ("ID",),
             "selinux_mode": ("GETENFORCE", "SELINUX"),
+            "selinux_context": ("SELINUX_CONTEXT", "SELINUX_CONTEXTS"),
+            "selinux_denials": ("SELINUX_DENIALS",),
             "kernel_cmdline": ("CMDLINE",),
             "su_paths": ("SU_PATHS",),
             "magisk": ("MAGISK",),
-            "processes": ("PS", "PROCESSES"),
+            "processes": ("PS", "PROCESSES", "PS_SELECTED"),
         }
         for capture_name, section_names in aliases.items():
             selected_section = next(
@@ -927,6 +1027,11 @@ class LegacySectionedTextAdapter:
             for capture in captures
             if _legacy_capture_has_usable_fragments(capture)
             or _CAPTURE_SEMANTICS.get(capture.name) == "mounts"
+            # The portable process model must retain a parser outcome even when
+            # a legacy ps layout is unsupported.  The structured parser only
+            # emits selected names, sanitized contexts, and source references;
+            # it never carries the raw rows into the report.
+            or _CAPTURE_SEMANTICS.get(capture.name) == "processes"
             or (
                 capture.name in {"selinux_mode", "getenforce"}
                 and capture.status is CaptureStatus.INACCESSIBLE
@@ -1075,11 +1180,15 @@ class ManifestAdapter:
             isinstance(item, str) for item in warnings_value
         ):
             raise NormalizationError("manifest warnings must be an array of strings")
+        portable_source_warnings = tuple(
+            f"source artifact warning {index + 1} withheld"
+            for index, _warning in enumerate(warnings_value)
+        )
         return ArtifactParseResult(
             input_kind=self.input_kind,
             metadata=metadata,
             captures=captures,
-            warnings=_bounded_warnings(parser_warnings, warnings_value),
+            warnings=_bounded_warnings(parser_warnings, portable_source_warnings),
             errors=errors,
             fragments=_fragments_from_captures(captures),
             parsed_capture_names=parsed_names,

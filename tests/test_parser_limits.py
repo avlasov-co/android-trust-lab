@@ -132,9 +132,9 @@ Enforcing
 === SELINUX ===
 Permissive
 === PS ===
-root 1 init
+init
 === PROCESSES ===
-root 2 magiskd
+magiskd
 """
     )
 

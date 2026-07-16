@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-    "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-    "schema_version": "4.0.0"
+    "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+    "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+    "schema_version": "5.0.0"
   },
   "changed_dimensions": [
     {
@@ -81,50 +81,53 @@
     }
   ],
   "compare_report": {
-    "content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
-    "report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
-    "schema_version": "4.0.0"
+    "content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
+    "report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
+    "schema_version": "5.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "ec4564161ac336fc2fb546c3ff4fbb2027db8ed6f1ffed8e457dc1355acf77b0",
-  "diff_id": "atldiff-ec4564161ac336fc2fb546c3ff4fbb20",
+  "content_digest": "563fe9b5eeaece42be2ec3ab2d17e535fda55977e52034dbe18241377e460a21",
+  "diff_id": "atldiff-563fe9b5eeaece42be2ec3ab2d17e535",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-        "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-        "schema_version": "4.0.0"
+        "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+        "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-      "original_document_digest": "9287524969a96bb659a89519ccce9d4257631c75ddb04a589db040ae513bba73",
-      "original_report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+      "original_document_digest": "3832a9cb6949e7ad521f3bf81778a9b1fb8810ab0a0f4e3149781fa997e24490",
+      "original_report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+      "original_schema_version": "5.0.0"
     },
-    "common_report_schema_version": "4.0.0",
+    "common_report_schema_version": "5.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
-        "report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
-        "schema_version": "4.0.0"
+        "content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
+        "report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
-      "original_document_digest": "5ba4eb693a6c3e396eb6d876153ba2874bbc74efbec31a21b367a9ebe32280a9",
-      "original_report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
+      "original_document_digest": "d52b80ba22ad20839fa460e7f7715138d7a1d8876800dbf5827d8428ca23b7d7",
+      "original_report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
+      "original_schema_version": "5.0.0"
     }
   },
-  "schema_version": "2.1.0",
-  "summary": "2 dimensions changed, 12 dimensions unchanged.",
+  "schema_version": "2.2.0",
+  "summary": "2 dimensions changed, 15 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
     "vbmeta_state",
     "verity_mode",
     "selinux_mode",
+    "selinux_current_context",
+    "selinux_denial_collection",
+    "selected_process_visibility",
     "system_mount_resolution",
     "apex_mount_set",
     "root_presence",

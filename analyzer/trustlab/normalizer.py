@@ -45,6 +45,8 @@ from .parser import KNOWN_SECTION_NAMES, MAX_RAW_TEXT_BYTES
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import report_v3_from_v2_shape
 from .report_v4 import report_v4_from_v3_shape
+from .report_v5 import report_v5_from_v4_shape
+from .security_evidence import SELECTED_PROCESS_NAMES
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -135,6 +137,226 @@ def normalize_selinux(mode: str) -> dict[str, Any]:
         "mode": normalized,
         "policy_visible": normalized not in {"unknown", "inaccessible"},
         "denials_collected": False,
+    }
+
+
+def _capture_for(
+    captures: Sequence[CommandCapture], *names: str
+) -> CommandCapture | None:
+    candidates = [capture for capture in captures if capture.name in names]
+    return next(
+        (
+            capture
+            for capture in candidates
+            if capture.status is not CaptureStatus.NOT_COLLECTED
+        ),
+        candidates[0] if candidates else None,
+    )
+
+
+def _portable_capture_status(capture: CommandCapture | None) -> str:
+    if capture is None or capture.status is CaptureStatus.NOT_COLLECTED:
+        return "not_collected"
+    return {
+        CaptureStatus.OBSERVED: "observed",
+        CaptureStatus.EMPTY: "observed",
+        CaptureStatus.INACCESSIBLE: "inaccessible",
+        CaptureStatus.COMMAND_ERROR: "command_error",
+        CaptureStatus.TIMEOUT: "command_error",
+        CaptureStatus.UNSUPPORTED: "unsupported",
+        CaptureStatus.ERROR: "command_error",
+        CaptureStatus.NOT_COLLECTED: "not_collected",
+    }[capture.status]
+
+
+def _unavailable_evidence(status: str, reason: str) -> dict[str, Any]:
+    return {"status": status, "value": None, "reason": reason}
+
+
+def _capture_reason(status: str) -> str:
+    return {
+        "not_collected": "the capture was not collected",
+        "inaccessible": "the observer could not access the capture",
+        "command_error": "the capture command did not complete successfully",
+        "unsupported": "the capture is unsupported for this observer",
+    }.get(status, "the capture did not contain supported evidence")
+
+
+def structured_selinux_state(
+    parsed: ArtifactParseResult, *, observer_type: str
+) -> dict[str, Any]:
+    mode_capture = _capture_for(parsed.captures, "selinux_mode", "getenforce")
+    mode_status = _portable_capture_status(mode_capture)
+    mode = parsed.fragments.selinux_mode
+    if mode_status == "observed" and mode in {"enforcing", "permissive", "disabled"}:
+        policy_mode = {
+            "status": "observed",
+            "value": mode,
+            "reason": None,
+            "evidence_refs": [mode_capture.source_ref] if mode_capture else [],
+        }
+    else:
+        if mode_status == "observed":
+            mode_status = "command_error"
+        policy_mode = {
+            **_unavailable_evidence(mode_status, _capture_reason(mode_status)),
+            "evidence_refs": [],
+        }
+
+    context_capture = _capture_for(
+        parsed.captures,
+        "selinux_context",
+        "collector_context",
+        "app_context",
+    )
+    context_status = _portable_capture_status(context_capture)
+    context = parsed.fragments.selinux_context
+    if context_status == "observed" and context["parse_status"] == "parsed":
+        current_context = {
+            "status": "observed",
+            "value": context["value"],
+            "reason": None,
+            "evidence_refs": [context_capture.source_ref] if context_capture else [],
+        }
+    elif (
+        context_capture is not None
+        and context_capture.status is CaptureStatus.EMPTY
+        and context["parse_status"] == "empty"
+    ):
+        context_status = "observed_absent"
+        current_context = {
+            **_unavailable_evidence(
+                context_status,
+                "the context capture completed without a current context",
+            ),
+            "evidence_refs": [],
+        }
+    else:
+        if context_status == "observed":
+            context_status = "command_error"
+        current_context = {
+            **_unavailable_evidence(context_status, _capture_reason(context_status)),
+            "evidence_refs": [],
+        }
+
+    denial_capture = _capture_for(parsed.captures, "selinux_denials")
+    denial_status = _portable_capture_status(denial_capture)
+    if denial_status == "observed":
+        denial_collection = {
+            "status": "observed",
+            "reason": None,
+            "evidence_refs": [denial_capture.source_ref] if denial_capture else [],
+        }
+    else:
+        denial_collection = {
+            "status": denial_status,
+            "reason": _capture_reason(denial_status),
+            "evidence_refs": [],
+        }
+    limitations = ["complete_policy_not_inspected"]
+    if denial_status != "observed":
+        limitations.append("denials_not_collected")
+    if context_status != "observed":
+        limitations.append("current_context_not_observed")
+    return {
+        "source_observer": observer_type,
+        "policy_mode": policy_mode,
+        "current_context": current_context,
+        "denial_collection": denial_collection,
+        "limitations": limitations,
+    }
+
+
+def structured_process_state(
+    parsed: ArtifactParseResult, *, observer_type: str
+) -> dict[str, Any]:
+    capture = _capture_for(parsed.captures, "processes", "ps_selected")
+    capture_status = _portable_capture_status(capture)
+    evidence = parsed.fragments.process_evidence
+    scope = evidence["scope"]
+    if observer_type == "unprivileged_app" and capture is not None:
+        scope = "app_sandbox"
+    observed = {item["name"]: item for item in evidence["observations"]}
+    absence_capable = (
+        capture_status == "observed"
+        and scope == "complete"
+        and evidence["parse_status"] == "complete"
+    )
+    selected_processes = []
+    for name in SELECTED_PROCESS_NAMES:
+        item = observed.get(name)
+        if item is not None:
+            visibility = {"status": "observed", "value": True, "reason": None}
+            contexts = item["contexts"]
+            if len(contexts) == 1:
+                context = {
+                    "status": "observed",
+                    "value": contexts[0],
+                    "reason": None,
+                }
+            elif len(contexts) > 1:
+                context = _unavailable_evidence(
+                    "unsupported",
+                    "multiple sanitized contexts were observed for this process",
+                )
+            else:
+                context = _unavailable_evidence(
+                    "not_collected", "a process context was not included"
+                )
+            refs = [capture.source_ref] if capture is not None else []
+        elif absence_capable:
+            visibility = {
+                "status": "observed_absent",
+                "value": False,
+                "reason": "the exact name was absent from a complete process table",
+            }
+            context = _unavailable_evidence(
+                "observed_absent", "the process was observed absent"
+            )
+            refs = []
+        else:
+            status = capture_status if capture_status != "observed" else "not_collected"
+            reason = (
+                _capture_reason(status)
+                if status != "not_collected" or capture_status != "observed"
+                else "the capture scope cannot prove process absence"
+            )
+            visibility = _unavailable_evidence(status, reason)
+            context = _unavailable_evidence(status, reason)
+            refs = []
+        selected_processes.append(
+            {
+                "name": name,
+                "visibility": visibility,
+                "context": context,
+                "evidence_refs": refs,
+            }
+        )
+
+    limitations = ["observer_scoped_visibility"]
+    if scope == "selected":
+        limitations.append("selected_filter_not_exhaustive")
+    if scope == "app_sandbox":
+        limitations.append("app_sandbox_visibility")
+    if evidence["parse_status"] == "partial":
+        limitations.append("partial_process_table")
+    if evidence["parse_status"] == "unsupported":
+        limitations.append("unsupported_ps_format")
+    if any(not item["contexts"] for item in evidence["observations"]):
+        limitations.append("process_contexts_not_collected")
+    return {
+        "source_observer": observer_type,
+        "capture_status": capture_status,
+        "source_format": evidence["format"],
+        "scope": scope,
+        "completeness": evidence["parse_status"]
+        if capture_status == "observed"
+        else "unknown",
+        "evidence_refs": (
+            [capture.source_ref] if capture_status == "observed" and capture else []
+        ),
+        "selected_processes": selected_processes,
+        "limitations": limitations,
     }
 
 
@@ -527,6 +749,14 @@ def build_report(
         selected_source=fragments.mount_selected_source,
         selection_reason=fragments.mount_selection_reason,
     )
+    modern_selinux = structured_selinux_state(
+        parsed,
+        observer_type=observer.observer_id,
+    )
+    modern_processes = structured_process_state(
+        parsed,
+        observer_type=observer.observer_id,
+    )
 
     legacy_shape = {
         "report_id": "atl-" + "0" * 16,
@@ -594,7 +824,12 @@ def build_report(
         source_schema_version="raw",
         generator_name=generator_name,
     )
-    report = report_v4_from_v3_shape(report_v3, modern_mounts=modern_mounts)
+    report_v4 = report_v4_from_v3_shape(report_v3, modern_mounts=modern_mounts)
+    report = report_v5_from_v4_shape(
+        report_v4,
+        structured_selinux=modern_selinux,
+        structured_processes=modern_processes,
+    )
     report["provenance"]["command_results"] = [
         _capture_command_result(capture) for capture in parsed.captures
     ]
@@ -644,7 +879,13 @@ def _capture_command_result(capture: CommandCapture) -> dict[str, Any]:
         CaptureStatus.UNSUPPORTED: "unsupported",
         CaptureStatus.ERROR: "command_error",
     }[capture.status]
-    detail = capture.stderr.strip() or None
+    detail = {
+        CaptureStatus.INACCESSIBLE: "capture was inaccessible",
+        CaptureStatus.COMMAND_ERROR: "capture command failed",
+        CaptureStatus.TIMEOUT: "capture command timed out",
+        CaptureStatus.UNSUPPORTED: "capture is unsupported",
+        CaptureStatus.ERROR: "capture failed",
+    }.get(capture.status)
     return {
         "command_id": capture.name,
         "status": status,
@@ -991,8 +1232,14 @@ def normalize_collection_payload(
 ) -> dict[str, Any]:
     """Normalize exact bytes through their complete collection-manifest binding."""
 
-    raw_entry = _manifest_raw_report_entry(manifest)
     manifest_data = manifest.to_dict()
+    # Typed dataclasses can be instantiated directly by API callers.  Recheck
+    # the complete portable contract here so arbitrary warning/detail text
+    # cannot bypass CollectionManifest.from_dict and enter a report.
+    from .validators import validate_collection_manifest
+
+    validate_collection_manifest(manifest_data)
+    raw_entry = _manifest_raw_report_entry(manifest)
     manifest_digest = hashlib.sha256(
         _canonical_manifest_payload(manifest_data)
     ).hexdigest()

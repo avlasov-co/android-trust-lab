@@ -81,8 +81,8 @@ ALLOWED_GETPROP_LINES = {
 }
 
 ALLOWED_PROCESS_QUERY_LINES = {
-    "CONTEXT_OUTPUT=$(ps -AZ 2>/dev/null)",
-    "BASIC_OUTPUT=$(ps 2>/dev/null)",
+    "CONTEXT_OUTPUT=$(ps -AZ 2>&1)",
+    "BASIC_OUTPUT=$(ps 2>&1)",
 }
 
 COLLECTOR_VERSION_RE = re.compile(

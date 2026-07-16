@@ -25,7 +25,7 @@
       "timed_out": false,
       "sensitivity": "sensitive",
       "redaction_state": "withheld",
-      "detail": "The command was not run."
+      "detail": null
     }
   ]
 }

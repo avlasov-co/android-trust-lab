@@ -9,6 +9,7 @@ import pytest
 
 import trustlab.compatibility as compatibility_module
 import trustlab.report_v4 as report_v4_module
+import trustlab.report_v5 as report_v5_module
 from trustlab import cli
 from trustlab.exceptions import SchemaValidationError, UnsupportedSchemaVersionError
 from trustlab.identity import finalize_report_identity
@@ -18,6 +19,7 @@ from trustlab.migrations import (
     migrate_report_v1_to_v2,
     migrate_report_v2_to_v3,
     migrate_report_v3_to_v4,
+    migrate_report_v4_to_v5,
 )
 from trustlab.normalizer import normalize_raw_file
 from trustlab.report_writer import load_json, write_json
@@ -211,7 +213,7 @@ def test_migration_provenance_is_fail_closed_and_source_bound():
 
     missing_source = migrate_report_to_current(load_json(V1_REPORT))
     del missing_source["extensions"]["org.androidtrustlab.migration-v4"]
-    with pytest.raises(SchemaValidationError, match="canonical v3 source extension"):
+    with pytest.raises(SchemaValidationError, match="deterministic migration"):
         validate_report(missing_source)
 
 
@@ -260,7 +262,7 @@ def test_migrate_report_cli_publishes_separate_current_output(tmp_path):
     source = tmp_path / "v1.json"
     source.write_bytes(V1_REPORT.read_bytes())
     before = source.read_bytes()
-    output = tmp_path / "v4.json"
+    output = tmp_path / "v5.json"
 
     assert (
         cli.main(
@@ -276,10 +278,15 @@ def test_migrate_report_cli_publishes_separate_current_output(tmp_path):
     )
     assert source.read_bytes() == before
     migrated = load_json(output)
-    assert migrated["schema_version"] == "4.0.0"
+    assert migrated["schema_version"] == "5.0.0"
     assert [
         record["migration_id"] for record in migrated["provenance"]["migration_history"]
-    ] == ["report-v1-to-v2", "report-v2-to-v3", "report-v3-to-v4"]
+    ] == [
+        "report-v1-to-v2",
+        "report-v2-to-v3",
+        "report-v3-to-v4",
+        "report-v4-to-v5",
+    ]
     validate_report(migrated)
 
 
@@ -316,6 +323,25 @@ def test_explicit_v3_to_v4_migration_is_deterministic_without_invented_mounts():
     validate_report(first)
 
 
+def test_explicit_v4_to_v5_migration_is_deterministic_without_invented_processes():
+    v4 = migrate_report_v3_to_v4(migrate_report_v2_to_v3(load_json(V2_REPORT)))
+
+    first = migrate_report_v4_to_v5(v4)
+    second = migrate_report_v4_to_v5(copy.deepcopy(v4))
+
+    assert first == second
+    assert first["schema_version"] == "5.0.0"
+    assert first["process_state"]["capture_status"] == "not_collected"
+    assert all(
+        item["visibility"]["status"] == "not_collected"
+        for item in first["process_state"]["selected_processes"]
+    )
+    assert first["provenance"]["migration_history"][-1]["migration_id"] == (
+        "report-v4-to-v5"
+    )
+    validate_report(first)
+
+
 def test_persisted_v4_migration_remains_valid_after_analyzer_version_changes(
     monkeypatch,
 ):
@@ -333,6 +359,24 @@ def test_persisted_v4_migration_remains_valid_after_analyzer_version_changes(
     )
 
 
+def test_persisted_v5_migration_remains_valid_after_analyzer_version_changes(
+    monkeypatch,
+):
+    v4 = migrate_report_v3_to_v4(migrate_report_v2_to_v3(load_json(V2_REPORT)))
+    migrated = migrate_report_v4_to_v5(v4)
+    declared_version = migrated["provenance"]["migration_history"][-1][
+        "implementation"
+    ]["version"]
+
+    monkeypatch.setattr(report_v5_module, "__version__", "99.0.0")
+
+    validate_report(migrated)
+    assert (
+        migrated["provenance"]["migration_history"][-1]["implementation"]["version"]
+        == declared_version
+    )
+
+
 def test_v3_to_v4_migration_rejects_reserved_extension_collision():
     v2 = load_json(V2_REPORT)
     v2["extensions"]["org.androidtrustlab.migration-v4"] = {"caller": "must survive"}
@@ -342,6 +386,18 @@ def test_v3_to_v4_migration_rejects_reserved_extension_collision():
 
     with pytest.raises(SchemaValidationError, match="reserved v4 extension key"):
         migrate_report_v3_to_v4(v3)
+
+
+def test_v4_to_v5_migration_rejects_reserved_extension_collision():
+    v2 = load_json(V2_REPORT)
+    v2["extensions"]["org.androidtrustlab.migration-v5"] = {"caller": "must survive"}
+    validate_report(v2)
+    v3 = migrate_report_v2_to_v3(v2)
+    v4 = migrate_report_v3_to_v4(v3)
+    validate_report(v4)
+
+    with pytest.raises(SchemaValidationError, match="reserved v5 extension key"):
+        migrate_report_v4_to_v5(v4)
 
 
 def test_v2_to_v3_validation_binds_migrated_evidence_and_structured_source():

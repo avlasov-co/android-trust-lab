@@ -1,8 +1,8 @@
 {
   "base_report": {
-    "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-    "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-    "schema_version": "4.0.0"
+    "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+    "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+    "schema_version": "5.0.0"
   },
   "changed_dimensions": [
     {
@@ -23,50 +23,53 @@
     }
   ],
   "compare_report": {
-    "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-    "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-    "schema_version": "4.0.0"
+    "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+    "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+    "schema_version": "5.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "f69185b571ae047feeabec1295e47711b0cd311766556ec535bebc693c04d369",
-  "diff_id": "atldiff-f69185b571ae047feeabec1295e47711",
+  "content_digest": "ecbf6d302bc3b421e84b1249d4fcd8fe43809519ee602d0008e56c48ffbea59d",
+  "diff_id": "atldiff-ecbf6d302bc3b421e84b1249d4fcd8fe",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-        "report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-        "schema_version": "4.0.0"
+        "content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+        "report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "162c12f9c9e685edea800f63a99a4fa320ce2a82e16762bebee933c46fe52947",
-      "original_document_digest": "9287524969a96bb659a89519ccce9d4257631c75ddb04a589db040ae513bba73",
-      "original_report_id": "atlrep-1ed630b75466ce093cc5d00f6721c0f5",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "657e52ea7d51c9ab57737ea4061c874fcdd7b42e459b9a4447fe4dd39dbc485e",
+      "original_document_digest": "3832a9cb6949e7ad521f3bf81778a9b1fb8810ab0a0f4e3149781fa997e24490",
+      "original_report_id": "atlrep-85b0809ce2ee856b84ea9b19a5e960cd",
+      "original_schema_version": "5.0.0"
     },
-    "common_report_schema_version": "4.0.0",
+    "common_report_schema_version": "5.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-        "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-        "schema_version": "4.0.0"
+        "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+        "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-      "original_document_digest": "867444ef28902fc53a582a5058742365402d0a7db5835eb4a1f55d2fca541cc7",
-      "original_report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+      "original_document_digest": "21381731f17f172e3ccbcbaa10011ce6d8f675b6eff9e0cbfa33b136eb204fc9",
+      "original_report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+      "original_schema_version": "5.0.0"
     }
   },
-  "schema_version": "2.1.0",
-  "summary": "1 dimensions changed, 13 dimensions unchanged.",
+  "schema_version": "2.2.0",
+  "summary": "1 dimensions changed, 16 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
     "vbmeta_state",
     "verity_mode",
     "selinux_mode",
+    "selinux_current_context",
+    "selinux_denial_collection",
+    "selected_process_visibility",
     "mount_integrity",
     "system_mount_resolution",
     "dynamic_partition_state",

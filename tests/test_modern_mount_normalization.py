@@ -52,7 +52,7 @@ def test_system_as_root_is_resolved_without_fabricating_system_mount(
     report = normalize_mountinfo(tmp_path, "system_as_root_mountinfo.txt")
     mounts = report["mounts"]
 
-    assert report["schema_version"] == "4.0.0"
+    assert report["schema_version"] == "5.0.0"
     assert mounts["system_resolution"] == {
         "state": "system_as_root",
         "system_root": "/",

@@ -1,10 +1,176 @@
 {
   "base_report": {
-    "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-    "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-    "schema_version": "4.0.0"
+    "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+    "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+    "schema_version": "5.0.0"
   },
   "changed_dimensions": [
+    {
+      "after": [
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:init:s0"
+          },
+          "name": "init",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:adbd:s0"
+          },
+          "name": "adbd",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "not_collected",
+            "value": null
+          },
+          "name": "zygote",
+          "visibility": {
+            "status": "not_collected",
+            "value": null
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:zygote:s0"
+          },
+          "name": "zygote64",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:system_server:s0"
+          },
+          "name": "system_server",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "not_collected",
+            "value": null
+          },
+          "name": "magisk",
+          "visibility": {
+            "status": "not_collected",
+            "value": null
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:magisk:s0"
+          },
+          "name": "magiskd",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        }
+      ],
+      "before": [
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:init:s0"
+          },
+          "name": "init",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:adbd:s0"
+          },
+          "name": "adbd",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "not_collected",
+            "value": null
+          },
+          "name": "zygote",
+          "visibility": {
+            "status": "not_collected",
+            "value": null
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:zygote:s0"
+          },
+          "name": "zygote64",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "observed",
+            "value": "u:r:system_server:s0"
+          },
+          "name": "system_server",
+          "visibility": {
+            "status": "observed",
+            "value": true
+          }
+        },
+        {
+          "context": {
+            "status": "not_collected",
+            "value": null
+          },
+          "name": "magisk",
+          "visibility": {
+            "status": "not_collected",
+            "value": null
+          }
+        },
+        {
+          "context": {
+            "status": "not_collected",
+            "value": null
+          },
+          "name": "magiskd",
+          "visibility": {
+            "status": "not_collected",
+            "value": null
+          }
+        }
+      ],
+      "dimension": "selected_process_visibility",
+      "evidence_paths": [
+        "process_state.selected_processes"
+      ],
+      "interpretation": "Selected process visibility or sanitized contexts changed. Inconclusive scoped evidence is distinct from observed absence.",
+      "severity": "medium"
+    },
     {
       "after": {
         "status": "observed",
@@ -33,50 +199,52 @@
     }
   ],
   "compare_report": {
-    "content_digest": "af6ae8ad96dbf5789abd729c9b8fb3f1f0bce1adb6ca4ad3d95129dbb6ce01ba",
-    "report_id": "atlrep-fcf53c194dcbec2e4feef8baf24255d0",
-    "schema_version": "4.0.0"
+    "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
+    "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
+    "schema_version": "5.0.0"
   },
   "confidence_changes": [],
-  "content_digest": "82a23fc37d34dcb98ffa3402a218375d1c84cd26bbc26a05c8af377fed2199da",
-  "diff_id": "atldiff-82a23fc37d34dcb98ffa3402a218375d",
+  "content_digest": "24c2ad01a72abebf368eefa3c963e05dd0bfd8714a90e76f8b5d8c2bf8bd31c7",
+  "diff_id": "atldiff-24c2ad01a72abebf368eefa3c963e05d",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
     "base": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-        "report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-        "schema_version": "4.0.0"
+        "content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+        "report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "77442afea33c13a250fc3eb5e15efeb7b8062143e62b48985b82186a39eb2587",
-      "original_document_digest": "867444ef28902fc53a582a5058742365402d0a7db5835eb4a1f55d2fca541cc7",
-      "original_report_id": "atlrep-4e232b5a2ded23f516e52df944efdbca",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "43c7db9ebb673b8714264305b7780e841b53e4b861ff60668e855177f1b2ba34",
+      "original_document_digest": "21381731f17f172e3ccbcbaa10011ce6d8f675b6eff9e0cbfa33b136eb204fc9",
+      "original_report_id": "atlrep-b0e12dd61fb1a7d7682ab829004cbd37",
+      "original_schema_version": "5.0.0"
     },
-    "common_report_schema_version": "4.0.0",
+    "common_report_schema_version": "5.0.0",
     "compare": {
       "applied_migrations": [],
       "common_report": {
-        "content_digest": "af6ae8ad96dbf5789abd729c9b8fb3f1f0bce1adb6ca4ad3d95129dbb6ce01ba",
-        "report_id": "atlrep-fcf53c194dcbec2e4feef8baf24255d0",
-        "schema_version": "4.0.0"
+        "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
+        "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
+        "schema_version": "5.0.0"
       },
-      "original_content_digest": "af6ae8ad96dbf5789abd729c9b8fb3f1f0bce1adb6ca4ad3d95129dbb6ce01ba",
-      "original_document_digest": "6faa031951579c3948c067f9733849b882075a8859dcebdeb6ba7167a2acd581",
-      "original_report_id": "atlrep-fcf53c194dcbec2e4feef8baf24255d0",
-      "original_schema_version": "4.0.0"
+      "original_content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
+      "original_document_digest": "0b725073f6f3af67dfe36cb48d90f44d7e3f16e1417c707d2b5afdb7e29bbcad",
+      "original_report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
+      "original_schema_version": "5.0.0"
     }
   },
-  "schema_version": "2.1.0",
-  "summary": "2 dimensions changed, 12 dimensions unchanged.",
+  "schema_version": "2.2.0",
+  "summary": "3 dimensions changed, 14 dimensions unchanged.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
     "vbmeta_state",
     "verity_mode",
     "selinux_mode",
+    "selinux_current_context",
+    "selinux_denial_collection",
     "mount_integrity",
     "system_mount_resolution",
     "dynamic_partition_state",

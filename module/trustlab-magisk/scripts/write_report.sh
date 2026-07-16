@@ -143,11 +143,11 @@ if ! {
   printf '  "completion_status": "partial",\n'
   printf '  "tool_versions": {"android_shell": "toybox", "trustlab_magisk": "%s"},\n' "$COLLECTOR_VERSION"
   printf '  "environment": {"platform": "android", "transport": "on_device", "execution_context": "magisk_module"},\n'
-  printf '  "warnings": ["Individual command exit codes are not retained in the consolidated raw artifact."],\n'
+  printf '  "warnings": [],\n'
   printf '  "redaction_policy": {"policy_id": "atl_portable_v1", "redaction_state": "applied", "direct_identifiers_removed": true, "serials_removed": true, "secrets_removed": true},\n'
   printf '  "artifacts": [\n'
-  printf '    {"logical_name": "raw_report", "relative_path": "raw.txt", "media_type": "text/plain", "byte_size": %s, "sha256": "%s", "probe_id": "magisk.readonly_snapshot", "status": "observed", "exit_code": 0, "timed_out": false, "sensitivity": "sensitive", "redaction_state": "redacted", "detail": "Consolidated read-only raw observation."},\n' "$RAW_SIZE" "$RAW_SHA256"
-  printf '    {"logical_name": "command_results", "relative_path": null, "media_type": "application/json", "byte_size": null, "sha256": null, "probe_id": "magisk.command_results", "status": "not_collected", "exit_code": null, "timed_out": false, "sensitivity": "internal", "redaction_state": "withheld", "detail": "Per-command results were not retained."}\n'
+  printf '    {"logical_name": "raw_report", "relative_path": "raw.txt", "media_type": "text/plain", "byte_size": %s, "sha256": "%s", "probe_id": "magisk.readonly_snapshot", "status": "observed", "exit_code": 0, "timed_out": false, "sensitivity": "sensitive", "redaction_state": "redacted", "detail": null},\n' "$RAW_SIZE" "$RAW_SHA256"
+  printf '    {"logical_name": "command_results", "relative_path": null, "media_type": "application/json", "byte_size": null, "sha256": null, "probe_id": "magisk.command_results", "status": "not_collected", "exit_code": null, "timed_out": false, "sensitivity": "internal", "redaction_state": "withheld", "detail": null}\n'
   printf '  ]\n'
   printf '}\n'
 } > "$TMP"; then

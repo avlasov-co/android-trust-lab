@@ -21,9 +21,9 @@
       "value": "_a"
     }
   },
-  "collection_event_id": "atlevent-5b84cbd5d65d430d71aa1c72ed50a8c6",
+  "collection_event_id": "atlevent-be63ab47d48e6042e8e0b29ae63ff718",
   "collection_timestamp": "2026-04-25T15:50:00Z",
-  "content_digest": "af6ae8ad96dbf5789abd729c9b8fb3f1f0bce1adb6ca4ad3d95129dbb6ce01ba",
+  "content_digest": "6b8c19d8364fe49cfa6f619b725b7a86cd6a968263a3d1157b36f0d8b3527feb",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -80,6 +80,16 @@
           "status": "observed"
         },
         {
+          "name": "selinux_context",
+          "source_ref": "legacy-sections/SELINUX_CONTEXT",
+          "status": "not_collected"
+        },
+        {
+          "name": "selinux_denials",
+          "source_ref": "legacy-sections/SELINUX_DENIALS",
+          "status": "not_collected"
+        },
+        {
           "name": "kernel_cmdline",
           "source_ref": "legacy-sections/CMDLINE",
           "status": "observed"
@@ -109,13 +119,13 @@
       ]
     },
     "org.androidtrustlab.collection": {
-      "canonical_manifest_sha256": "71ab54224911190815bf91f2192615b3c9a7da6e77a595b151ed6634ac3c9b77",
+      "canonical_manifest_sha256": "9d3568b285462f903e95d8d8dbafa5dfd6ff2103accb9cf29ccc1cedc3a0d8ec",
       "canonicalization": "atl-canonical-json-v1",
       "manifest": {
         "artifacts": [
           {
             "byte_size": 1751,
-            "detail": "Consolidated read-only raw observation.",
+            "detail": null,
             "exit_code": 0,
             "logical_name": "raw_report",
             "media_type": "text/plain",
@@ -129,7 +139,7 @@
           },
           {
             "byte_size": null,
-            "detail": "The legacy fixture did not retain per-command results.",
+            "detail": null,
             "exit_code": null,
             "logical_name": "command_results",
             "media_type": "application/json",
@@ -177,17 +187,14 @@
           "android_shell": "toybox",
           "trustlab_magisk": "0.3.0-dev0"
         },
-        "warnings": [
-          "Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture."
-        ]
+        "warnings": []
       }
     }
   },
   "limitations": {
     "collection_errors": [
       "collection manifest completion status: partial",
-      "collection warning: Synthetic AVD-limited fixture; individual command exit codes are not represented by this legacy fixture.",
-      "probe magisk.command_results: not_collected: The legacy fixture did not retain per-command results."
+      "probe magisk.command_results: not_collected"
     ],
     "emulator_target": true,
     "incomplete_permissions": false,
@@ -654,41 +661,128 @@
     "privilege_level": "root"
   },
   "process_state": {
-    "adbd_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "init_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "magisk_processes_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "process_contexts_available": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "raw_line_count": {
-      "reason": null,
-      "status": "observed",
-      "value": 5
-    },
-    "system_server_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "zygote_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    }
+    "capture_status": "observed",
+    "completeness": "complete",
+    "evidence_refs": [
+      "legacy-sections/PS"
+    ],
+    "limitations": [
+      "observer_scoped_visibility",
+      "selected_filter_not_exhaustive"
+    ],
+    "scope": "selected",
+    "selected_processes": [
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:init:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "init",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:adbd:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "adbd",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "zygote",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:zygote:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "zygote64",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:system_server:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "system_server",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magisk",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:magisk:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "magiskd",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      }
+    ],
+    "source_format": "selected",
+    "source_observer": "root_collector"
   },
   "properties": {
     "all_count": {
@@ -744,14 +838,14 @@
     "command_results": [
       {
         "command_id": "magisk.readonly_snapshot",
-        "detail": "Consolidated read-only raw observation.",
+        "detail": null,
         "exit_code": 0,
         "status": "observed",
         "timed_out": false
       },
       {
         "command_id": "magisk.command_results",
-        "detail": "The legacy fixture did not retain per-command results.",
+        "detail": null,
         "exit_code": null,
         "status": "not_collected",
         "timed_out": false
@@ -782,7 +876,7 @@
       "status": "observed"
     }
   ],
-  "report_id": "atlrep-fcf53c194dcbec2e4feef8baf24255d0",
+  "report_id": "atlrep-9aeee553ca63e53b687eec080c037588",
   "root_state": {
     "gid": {
       "reason": null,
@@ -812,23 +906,33 @@
       "value": "0"
     }
   },
-  "schema_version": "4.0.0",
+  "schema_version": "5.0.0",
   "selinux": {
-    "denials_collected": {
-      "reason": "SELinux denials were not collected",
+    "current_context": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
       "status": "not_collected",
       "value": null
     },
-    "mode": {
+    "denial_collection": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
+      "status": "not_collected"
+    },
+    "limitations": [
+      "complete_policy_not_inspected",
+      "denials_not_collected",
+      "current_context_not_observed"
+    ],
+    "policy_mode": {
+      "evidence_refs": [
+        "legacy-sections/GETENFORCE"
+      ],
       "reason": null,
       "status": "observed",
       "value": "enforcing"
     },
-    "policy_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    }
+    "source_observer": "root_collector"
   },
   "target": {
     "android_version": {

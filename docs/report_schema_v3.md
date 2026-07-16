@@ -1,7 +1,7 @@
 # Report Schema v3
 
 Report schema `3.0.0` is a frozen readable compatibility contract. Its canonical
-resource is `trust_report_v3_0_0.schema.json`; report `4.0.0` is the sole current
+resource is `trust_report_v3_0_0.schema.json`; report `5.0.0` is the sole current
 writer.
 
 V3 introduced structured raw-artifact references, `content_digest`,
@@ -27,5 +27,6 @@ host-specific paths or noncanonical strings. `report-v3-to-v4` then preserves
 the exact canonical v3 source and marks the richer v4 mount fields unavailable;
 it does not infer topology from v3 summaries.
 
-See [Report Schema v4](report_schema_v4.md) for the current mount model and
+See [Report Schema v4](report_schema_v4.md) for the mount model,
+[Report Schema v5](report_schema_v5.md) for the current contract, and
 [Content provenance and identity](content_identity.md) for canonical framing.

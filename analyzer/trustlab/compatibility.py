@@ -44,12 +44,12 @@ class SchemaSupport:
 SCHEMA_SUPPORT: Final[Mapping[SchemaFamily, SchemaSupport]] = MappingProxyType(
     {
         SchemaFamily.REPORT: SchemaSupport(
-            current_write_version="4.0.0",
-            readable_versions=frozenset({"1.0.0", "2.0.0", "3.0.0", "4.0.0"}),
+            current_write_version="5.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0"}),
         ),
         SchemaFamily.DIFF: SchemaSupport(
-            current_write_version="2.1.0",
-            readable_versions=frozenset({"1.0.0", "2.0.0", "2.1.0"}),
+            current_write_version="2.2.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0", "2.1.0", "2.2.0"}),
         ),
         SchemaFamily.DATASET_MANIFEST: SchemaSupport(
             current_write_version="2.0.0",
@@ -74,9 +74,11 @@ SCHEMA_RESOURCE_REGISTRY: Final[Mapping[tuple[SchemaFamily, str], str]] = (
             (SchemaFamily.REPORT, "2.0.0"): "trust_report_v2_0_0.schema.json",
             (SchemaFamily.REPORT, "3.0.0"): "trust_report_v3_0_0.schema.json",
             (SchemaFamily.REPORT, "4.0.0"): "trust_report_v4_0_0.schema.json",
+            (SchemaFamily.REPORT, "5.0.0"): "trust_report_v5_0_0.schema.json",
             (SchemaFamily.DIFF, "1.0.0"): "trust_diff.schema.json",
             (SchemaFamily.DIFF, "2.0.0"): "trust_diff_v2_0_0.schema.json",
             (SchemaFamily.DIFF, "2.1.0"): "trust_diff_v2_1_0.schema.json",
+            (SchemaFamily.DIFF, "2.2.0"): "trust_diff_v2_2_0.schema.json",
             (SchemaFamily.DATASET_MANIFEST, "1.0.0"): (
                 "dataset_manifest_v1_0_0.schema.json"
             ),

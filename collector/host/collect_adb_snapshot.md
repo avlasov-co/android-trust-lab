@@ -24,8 +24,8 @@ adb shell cat /proc/mounts
 adb shell mount
 adb shell id
 adb shell getenforce
-adb shell pidof init adbd zygote zygote64 system_server magisk magiskd
-adb shell ls -Z / /system /vendor /data 2>/dev/null || true
+adb shell id -Z
+adb shell ps -A -o LABEL,NAME
 ```
 
 ## Rule
@@ -34,6 +34,12 @@ Every collected command must map to a trust dimension. Do not collect unrelated
 command output. In particular, do not collect the kernel command line, broad
 property dumps, or full process command lines. Treat the raw artifact as private
 and redact unique identifiers before it leaves the authorized lab target.
+Project process evidence to the exact selected names `init`, `adbd`, `zygote`,
+`zygote64`, `system_server`, `magisk`, and `magiskd` before publication. Retain
+only the selected name, a sanitized SELinux domain when available, capture
+status, scope, and a relative evidence reference; never publish PIDs, users, or
+command arguments. A filtered process list cannot prove that an unlisted process
+does not exist.
 
 Publish collection provenance with
 `collector/schema/collection_manifest_v1_0_0.schema.json`. Record each command
@@ -63,6 +69,11 @@ Use section markers:
 uid=2000(shell) gid=2000(shell)
 === GETENFORCE ===
 Enforcing
+=== SELINUX_CONTEXT ===
+u:r:shell:s0
+=== PS_SELECTED ===
+u:r:init:s0 init
+u:r:zygote:s0 zygote64
 ```
 
 Keep each mount source separate and retain its command outcome. The analyzer

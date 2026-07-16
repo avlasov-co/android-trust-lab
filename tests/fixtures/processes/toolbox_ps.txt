@@ -1,0 +1,4 @@
+USER PID PPID VSIZE RSS WCHAN PC NAME
+root 1 0 1234 256 0 0 init
+shell 50 1 1234 256 0 0 adbd
+system 75 1 1234 256 0 0 system_server

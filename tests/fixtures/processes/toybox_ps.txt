@@ -1,0 +1,5 @@
+LABEL USER PID PPID VSZ RSS WCHAN ADDR S NAME
+u:r:init:s0 root 1 0 1234 256 0 0 S init
+u:r:su:s0 root 42 1 1234 256 0 0 S magiskd
+u:r:untrusted_app:s0:c123,c456 u0_a123 90 1 1234 256 0 0 S notmagisk
+u:r:zygote:s0 root 100 1 1234 256 0 0 S zygote64

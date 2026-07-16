@@ -1,0 +1,4 @@
+u:r:init:s0 init
+u:r:untrusted_app:s0:c512,c768 zygote-helper
+magisk
+u:r:zygote:s0 zygote

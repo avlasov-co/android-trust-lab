@@ -17,7 +17,7 @@ def test_normalize_fixture():
         observer_type="adb_shell",
     )
     assert report["target"]["target_type"] == "avd"
-    assert report["selinux"]["mode"]["value"] == "enforcing"
+    assert report["selinux"]["policy_mode"]["value"] == "enforcing"
     assert report["root_state"]["su_present"]["status"] == "observed_absent"
     assert report["mounts"]["system_mount"]["classification"] == "read-only"
     assert report["emulator_state"]["is_emulator"]["value"] is True
@@ -117,8 +117,8 @@ def test_missing_probes_do_not_become_affirmative_absence(tmp_path):
         report["properties"]["security"],
         report["root_state"]["su_present"],
         report["magisk_state"]["magisk_binary_present"],
-        report["process_state"]["init_visible"],
-        report["process_state"]["process_contexts_available"],
+        report["process_state"]["selected_processes"][0]["visibility"],
+        report["process_state"]["selected_processes"][0]["context"],
         report["emulator_state"]["is_emulator"],
     )
     assert {item["status"] for item in evidence} == {"not_collected"}

@@ -15,6 +15,9 @@ Canonical dimensions:
 - `vbmeta_state`
 - `verity_mode`
 - `selinux_mode`
+- `selinux_current_context`
+- `selinux_denial_collection`
+- `selected_process_visibility`
 - `mount_integrity`
 - `system_mount_resolution`
 - `dynamic_partition_state`
@@ -78,6 +81,10 @@ Some signals are missing, virtualized, vendor-specific, or observer-dependent. M
 
 - Unknown values stay `unknown`.
 - Missing values are recorded in `limitations.collection_errors` or as `unknown`.
+- Process nonexistence is claimed only from a complete, supported full table;
+  filtered, partial, inaccessible, and app-sandbox views remain inconclusive.
+- Portable process evidence excludes PIDs, users, and command arguments; SELinux
+  contexts exclude per-app MLS/MCS categories.
 - Raw evidence uses portable, non-sensitive logical names where practical.
 - Emulator evidence must carry lower confidence for hardware-backed trust dimensions.
 - A changed signal is not automatically a security failure. It is an observed transition.

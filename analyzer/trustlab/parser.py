@@ -21,6 +21,7 @@ from .mounts import (
 from .mounts import (
     parse_mounts as parse_mounts,
 )
+from .security_evidence import parse_processes as parse_process_evidence
 
 MAX_RAW_TEXT_BYTES = 8 * 1024 * 1024
 MAX_LINE_BYTES = 256 * 1024
@@ -84,10 +85,14 @@ KNOWN_SECTION_NAMES = frozenset(
         "ID",
         "GETENFORCE",
         "SELINUX",
+        "SELINUX_CONTEXT",
+        "SELINUX_CONTEXTS",
+        "SELINUX_DENIALS",
         "CMDLINE",
         "SU_PATHS",
         "MAGISK",
         "PS",
+        "PS_SELECTED",
         "PROCESSES",
         "HOST_OS",
         "ADB_VERSION",
@@ -362,7 +367,7 @@ def parse_getenforce(text: str) -> str:
 
 def classify_shell_diagnostic(
     text: str,
-) -> Literal["inaccessible", "timeout", "command_error"] | None:
+) -> Literal["inaccessible", "timeout", "command_error", "unsupported"] | None:
     """Classify a recognizable shell/command diagnostic without echoing it."""
 
     for raw_line in text.splitlines():
@@ -376,6 +381,12 @@ def classify_shell_diagnostic(
         if line.startswith("/") and not any(character.isspace() for character in line):
             continue
         lowered = line.lower()
+        if lowered == "trustlab: inaccessible":
+            return "inaccessible"
+        if lowered == "trustlab: unsupported":
+            return "unsupported"
+        if lowered == "trustlab: command error":
+            return "command_error"
         if re.search(
             r"(?:^|:\s)(?:permission denied|operation not permitted|access denied)(?:$|\s)",
             lowered,
@@ -420,16 +431,22 @@ def parse_paths(text: str) -> list[str]:
 
 
 def parse_processes(text: str) -> ParsedProcesses:
-    lines = [line for line in text.splitlines() if line.strip()]
-    joined = "\n".join(lines).lower()
+    parsed = parse_process_evidence(
+        text,
+        scope="selected",
+        evidence_path="legacy-sections/PS",
+    )
+    names = {observation["name"] for observation in parsed["observations"]}
     return {
-        "raw_line_count": len(lines),
-        "init_visible": " init" in joined or "\ninit" in joined,
-        "adbd_visible": "adbd" in joined,
-        "zygote_visible": "zygote" in joined,
-        "system_server_visible": "system_server" in joined,
-        "magisk_processes_visible": "magisk" in joined,
-        "process_contexts_available": "u:r:" in joined,
+        "raw_line_count": sum(1 for line in text.splitlines() if line.strip()),
+        "init_visible": "init" in names,
+        "adbd_visible": "adbd" in names,
+        "zygote_visible": bool({"zygote", "zygote64"} & names),
+        "system_server_visible": "system_server" in names,
+        "magisk_processes_visible": bool({"magisk", "magiskd"} & names),
+        "process_contexts_available": any(
+            observation["contexts"] for observation in parsed["observations"]
+        ),
     }
 
 

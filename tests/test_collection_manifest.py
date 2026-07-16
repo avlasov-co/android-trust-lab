@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -266,7 +267,7 @@ def test_partial_failed_timed_out_and_missing_artifacts_remain_distinct():
             "timed_out": True,
             "sensitivity": "sensitive",
             "redaction_state": "withheld",
-            "detail": "Collection timed out.",
+            "detail": None,
         }
     ]
     validate_collection_manifest(failed)
@@ -318,12 +319,12 @@ def test_manifest_semantics_reject_duplicates_privilege_mismatch_and_secret_text
 
     leaked = sample_document()
     leaked["warnings"] = ["token=private-value"]
-    with pytest.raises(SchemaValidationError, match="identifiers or secrets"):
+    with pytest.raises(SchemaValidationError, match="identifiers, or secrets"):
         validate_collection_manifest(leaked)
 
     leaked_tool_value = sample_document()
     leaked_tool_value["tool_versions"]["unsafe"] = "token=private-value"
-    with pytest.raises(SchemaValidationError, match="identifiers or secrets"):
+    with pytest.raises(SchemaValidationError, match="schema validation failed"):
         validate_collection_manifest(leaked_tool_value)
 
     host_path = sample_document()
@@ -335,7 +336,53 @@ def test_manifest_semantics_reject_duplicates_privilege_mismatch_and_secret_text
     redacted_diagnostics["warnings"] = [
         "Device serial was redacted; access token is withheld; Bearer redacted."
     ]
-    validate_collection_manifest(redacted_diagnostics)
+    with pytest.raises(SchemaValidationError, match="structured statuses"):
+        validate_collection_manifest(redacted_diagnostics)
+
+
+@pytest.mark.parametrize("location", ["warning", "detail"])
+def test_manifest_rejects_process_identity_and_command_line_diagnostics(location):
+    document = sample_document()
+    diagnostic = "root 88 com.private.bank"
+    if location == "warning":
+        document["warnings"] = [diagnostic]
+    else:
+        document["artifacts"][0]["detail"] = diagnostic
+
+    with pytest.raises(SchemaValidationError, match="structured statuses"):
+        validate_collection_manifest(document)
+
+
+@pytest.mark.parametrize("location", ["warning", "detail"])
+def test_normalization_revalidates_directly_constructed_manifest_diagnostics(
+    location,
+):
+    manifest = CollectionManifest.from_dict(sample_document())
+    diagnostic = "root 88 com.private.bank"
+    if location == "warning":
+        unsafe = replace(manifest, warnings=(diagnostic,))
+    else:
+        unsafe_artifact = replace(manifest.artifacts[0], detail=diagnostic)
+        unsafe = replace(
+            manifest,
+            artifacts=(unsafe_artifact, *manifest.artifacts[1:]),
+        )
+    payload = (SAMPLE.parent / "raw_sample.txt").read_bytes()
+
+    with pytest.raises(SchemaValidationError, match="structured statuses"):
+        normalize_collection_payload(payload, unsafe, label="raw_sample.txt")
+
+
+def test_normalization_rejects_directly_constructed_free_text_tool_version():
+    manifest = CollectionManifest.from_dict(sample_document())
+    unsafe = replace(
+        manifest,
+        tool_versions={"ps": "sh -c PRIVATE_PAYLOAD"},
+    )
+    payload = (SAMPLE.parent / "raw_sample.txt").read_bytes()
+
+    with pytest.raises(SchemaValidationError, match="schema validation failed"):
+        normalize_collection_payload(payload, unsafe, label="raw_sample.txt")
 
 
 def test_manifest_timestamp_order_handles_every_rfc3339_z_spelling():

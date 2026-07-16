@@ -131,7 +131,7 @@ def make_captured_bundle(tmp_path: Path, origin: str) -> Path:
     collection_artifact = artifacts[collection_id]
     collection = load_json(ROOT / "datasets" / collection_artifact["relative_path"])
     collection["target"]["target_type"] = sample["target_type"]
-    collection["warnings"] = ["Captured-origin verifier contract fixture."]
+    collection["warnings"] = []
     collection_path = bundle / collection_artifact["relative_path"]
     write_json(collection_path, collection)
 

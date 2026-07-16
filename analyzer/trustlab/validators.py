@@ -28,6 +28,7 @@ from .compatibility import (
     supported_schema_versions,
 )
 from .exceptions import (
+    CollectionError,
     SchemaIssue,
     SchemaValidationError,
     UnsupportedSchemaVersionError,
@@ -35,11 +36,14 @@ from .exceptions import (
 from .identity import (
     REPORT_EVIDENCE_FIELDS,
     collection_event_identity,
+    validate_relative_artifact_path,
     validate_report_identities,
 )
 from .migration_codec import encode_legacy_report, legacy_report_digest
 from .report_v3 import migrate_v2_source_reference
 from .report_v4 import report_v4_from_v3_shape
+from .report_v5 import report_v5_from_v4_shape
+from .security_evidence import SELECTED_PROCESS_NAMES, is_selected_process_capture
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.REPORT)
 SUPPORTED_DIFF_SCHEMA_VERSIONS = supported_schema_versions(SchemaFamily.DIFF)
@@ -276,7 +280,7 @@ def validate_report(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.REPORT)
     )
-    if resource_version in {"2.0.0", "3.0.0", "4.0.0"}:
+    if resource_version in {"2.0.0", "3.0.0", "4.0.0", "5.0.0"}:
         _validate_canonical_document(data, artifact_name="report")
     validate_with_schema(
         data,
@@ -290,6 +294,8 @@ def validate_report(data: object) -> None:
         _validate_v3_report_semantics(data)
     elif resource_version == "4.0.0":
         _validate_v4_report_semantics(data)
+    elif resource_version == "5.0.0":
+        _validate_v5_report_semantics(data)
 
 
 def _migration_provenance_error(detail: str) -> SchemaValidationError:
@@ -827,6 +833,523 @@ def _validate_v4_report_semantics(data: object) -> None:
     validate_report_identities(data)
 
 
+def _validate_v5_evidence_refs(refs: list[str]) -> None:
+    for reference in refs:
+        try:
+            validate_relative_artifact_path(reference)
+        except CollectionError as exc:
+            raise SchemaValidationError(
+                "report security evidence reference must be portable"
+            ) from exc
+
+
+def _expected_v5_process_limitations(
+    processes: dict[str, Any], selected: list[dict[str, Any]]
+) -> list[str]:
+    expected = ["observer_scoped_visibility"]
+    optional = (
+        (processes["scope"] == "selected", "selected_filter_not_exhaustive"),
+        (processes["scope"] == "app_sandbox", "app_sandbox_visibility"),
+        (processes["completeness"] == "partial", "partial_process_table"),
+        (processes["completeness"] == "unsupported", "unsupported_ps_format"),
+        (
+            any(
+                item["visibility"]["status"] == "observed"
+                and item["context"]["status"] == "not_collected"
+                for item in selected
+            ),
+            "process_contexts_not_collected",
+        ),
+    )
+    expected.extend(code for required, code in optional if required)
+    return expected
+
+
+def _validate_v5_direct_process_scope(
+    processes: dict[str, Any],
+    selected: list[dict[str, Any]],
+    *,
+    observer_type: str,
+) -> None:
+    app_scope_required = (
+        observer_type == "unprivileged_app"
+        and processes["capture_status"] != "not_collected"
+    )
+    if (app_scope_required and processes["scope"] != "app_sandbox") or (
+        observer_type != "unprivileged_app" and processes["scope"] == "app_sandbox"
+    ):
+        raise SchemaValidationError(
+            "report process scope does not match the observer boundary"
+        )
+    if processes["limitations"] != _expected_v5_process_limitations(
+        processes, selected
+    ):
+        raise SchemaValidationError(
+            "report process limitations do not match its scope and parser outcome"
+        )
+
+
+def _validate_v5_process_capture_shape(processes: dict[str, Any]) -> None:
+    if processes["capture_status"] == "observed":
+        if not processes["evidence_refs"]:
+            raise SchemaValidationError(
+                "observed process capture requires a source evidence reference"
+            )
+        if processes["completeness"] == "unknown":
+            raise SchemaValidationError(
+                "observed process captures require an explicit parser outcome"
+            )
+        expected_formats = (
+            {"unknown"}
+            if processes["completeness"] in {"malformed", "unsupported"}
+            else {
+                "complete": {"toybox", "toolbox"},
+                "selected": {"selected"},
+                "app_sandbox": {"selected", "toybox", "toolbox"},
+                "unknown": {"unknown"},
+            }[processes["scope"]]
+        )
+        if processes["source_format"] not in expected_formats:
+            raise SchemaValidationError(
+                "report process format does not match its declared scope"
+            )
+    elif processes["evidence_refs"]:
+        raise SchemaValidationError(
+            "unobserved process capture cannot retain source evidence references"
+        )
+
+
+def _validate_v5_process_item(
+    item: dict[str, Any], *, absence_capable: bool, all_refs: list[str]
+) -> None:
+    visibility = item["visibility"]
+    context = item["context"]
+    refs = item["evidence_refs"]
+    all_refs.extend(refs)
+    invalid = (
+        (
+            visibility["status"] == "observed_absent" and not absence_capable,
+            "report cannot infer process absence from scoped or partial evidence",
+        ),
+        (
+            context["status"] == "observed" and visibility["status"] != "observed",
+            "report process context requires observed process visibility",
+        ),
+        (
+            visibility["status"] == "observed" and not refs,
+            "observed process visibility requires an evidence reference",
+        ),
+        (
+            visibility["status"] == "observed_absent"
+            and context["status"] != "observed_absent",
+            "observed process absence requires an absent process context",
+        ),
+        (
+            visibility["status"] != "observed" and bool(refs),
+            "unobserved process visibility cannot retain row references",
+        ),
+        (
+            visibility["status"] not in {"observed", "observed_absent"}
+            and context["status"] != visibility["status"],
+            "unavailable process visibility and context statuses must agree",
+        ),
+    )
+    for failed, message in invalid:
+        if failed:
+            raise SchemaValidationError(message)
+
+
+def _validate_v5_process_semantics(
+    processes: dict[str, Any],
+    all_refs: list[str],
+    *,
+    observer_type: str,
+    migrated: bool,
+) -> None:
+    selected = processes["selected_processes"]
+    all_refs.extend(processes["evidence_refs"])
+    if [item["name"] for item in selected] != list(SELECTED_PROCESS_NAMES):
+        raise SchemaValidationError(
+            "report selected process observations must use canonical name order"
+        )
+    if not migrated:
+        _validate_v5_direct_process_scope(
+            processes, selected, observer_type=observer_type
+        )
+    _validate_v5_process_capture_shape(processes)
+    absence_capable = (
+        processes["capture_status"] == "observed"
+        and processes["scope"] == "complete"
+        and processes["completeness"] == "complete"
+    )
+    for item in selected:
+        _validate_v5_process_item(
+            item, absence_capable=absence_capable, all_refs=all_refs
+        )
+    if processes["capture_status"] != "observed" and (
+        processes["completeness"] != "unknown"
+        or any(
+            item["visibility"]["status"] != processes["capture_status"]
+            for item in selected
+        )
+    ):
+        raise SchemaValidationError(
+            "unavailable process captures cannot claim parsed visibility"
+        )
+
+
+def _validate_v5_selinux_semantics(selinux: dict[str, Any], *, migrated: bool) -> None:
+    if not migrated:
+        expected_limitations = ["complete_policy_not_inspected"]
+        if selinux["denial_collection"]["status"] != "observed":
+            expected_limitations.append("denials_not_collected")
+        if selinux["current_context"]["status"] != "observed":
+            expected_limitations.append("current_context_not_observed")
+        if selinux["limitations"] != expected_limitations:
+            raise SchemaValidationError(
+                "report SELinux limitations do not match its evidence statuses"
+            )
+    for field_name in ("policy_mode", "current_context", "denial_collection"):
+        evidence = selinux[field_name]
+        if (
+            not migrated
+            and evidence["status"] == "observed"
+            and not evidence["evidence_refs"]
+        ):
+            raise SchemaValidationError(
+                f"direct observed SELinux {field_name} requires an evidence reference"
+            )
+        if evidence["status"] != "observed" and evidence["evidence_refs"]:
+            raise SchemaValidationError(
+                f"unobserved SELinux {field_name} cannot retain evidence references"
+            )
+
+
+def _v5_adapter_capture(
+    data: dict[str, Any], names: frozenset[str]
+) -> dict[str, Any] | None:
+    adapter = data["extensions"].get("org.androidtrustlab.adapter", {})
+    captures = adapter.get("captures", []) if isinstance(adapter, dict) else []
+    matches = [
+        capture
+        for capture in captures
+        if isinstance(capture, dict) and capture.get("name") in names
+    ]
+    if len(matches) > 1:
+        raise SchemaValidationError(
+            "report security evidence has duplicate semantic adapter captures"
+        )
+    if not matches:
+        return None
+    capture = matches[0]
+    if not isinstance(capture.get("status"), str) or not isinstance(
+        capture.get("source_ref"), str
+    ):
+        raise SchemaValidationError("report security adapter capture is invalid")
+    return capture
+
+
+def _v5_command_status(data: dict[str, Any], names: frozenset[str]) -> str:
+    command_results = data["provenance"]["command_results"]
+    matches = [result for result in command_results if result["command_id"] in names]
+    if len(matches) > 1:
+        raise SchemaValidationError(
+            "report security evidence has duplicate semantic command results"
+        )
+    command_status = matches[0]["status"] if matches else None
+    adapter_capture = _v5_adapter_capture(data, names)
+    adapter_status = None
+    if adapter_capture is not None:
+        raw_status = adapter_capture["status"]
+        adapter_status = {
+            "observed": "observed",
+            "empty": "observed_absent",
+            "not_collected": "not_collected",
+            "inaccessible": "inaccessible",
+            "command_error": "command_error",
+            "timeout": "command_error",
+            "unsupported": "unsupported",
+            "error": "command_error",
+        }.get(raw_status)
+        if adapter_status is None:
+            raise SchemaValidationError(
+                "report security adapter capture status is invalid"
+            )
+    if (
+        command_status is not None
+        and adapter_status is not None
+        and (command_status != adapter_status)
+    ):
+        raise SchemaValidationError(
+            "report command and adapter capture statuses do not agree"
+        )
+    return command_status or adapter_status or "not_collected"
+
+
+def _require_v5_capture(
+    capture: dict[str, Any] | None, *, evidence_name: str, status: str
+) -> dict[str, Any] | None:
+    if status != "not_collected" and capture is None:
+        raise SchemaValidationError(
+            f"report {evidence_name} requires its semantic adapter capture"
+        )
+    return capture
+
+
+def _validate_v5_refs_bind_capture(
+    refs: list[str],
+    capture: dict[str, Any],
+    *,
+    evidence_name: str,
+) -> None:
+    source_ref = capture["source_ref"]
+    if refs != [source_ref]:
+        raise SchemaValidationError(
+            f"report {evidence_name} source reference does not bind its "
+            "semantic adapter capture"
+        )
+
+
+def _validate_v5_security_provenance(data: dict[str, Any]) -> None:
+    adapter = data["extensions"].get("org.androidtrustlab.adapter")
+    if not isinstance(adapter, dict) or not isinstance(adapter.get("captures"), list):
+        raise SchemaValidationError(
+            "direct report security evidence requires adapter capture provenance"
+        )
+    processes = data["process_state"]
+    process_names = frozenset({"processes", "ps_selected"})
+    process_capture = _v5_adapter_capture(data, process_names)
+    process_result = _v5_command_status(data, process_names)
+    expected_process_status = (
+        "observed"
+        if process_result in {"observed", "observed_absent"}
+        else process_result
+    )
+    if processes["capture_status"] != expected_process_status:
+        raise SchemaValidationError(
+            "report process capture status does not match command provenance"
+        )
+    process_capture = _require_v5_capture(
+        process_capture,
+        evidence_name="process evidence",
+        status=processes["capture_status"],
+    )
+    if processes["capture_status"] == "observed" and process_capture is not None:
+        if processes["evidence_refs"] != [process_capture["source_ref"]]:
+            raise SchemaValidationError(
+                "report process capture source reference does not bind its "
+                "semantic adapter capture"
+            )
+        for item in processes["selected_processes"]:
+            if item["visibility"]["status"] == "observed":
+                _validate_v5_refs_bind_capture(
+                    item["evidence_refs"],
+                    process_capture,
+                    evidence_name=f"selected process {item['name']}",
+                )
+        selected_capture = is_selected_process_capture(
+            process_capture["name"],
+            process_capture["source_ref"],
+        )
+        if selected_capture and processes["scope"] not in {
+            "selected",
+            "app_sandbox",
+        }:
+            raise SchemaValidationError(
+                "report filtered process capture cannot claim complete scope"
+            )
+
+    selinux = data["selinux"]
+    mode_names = frozenset({"selinux_mode", "getenforce"})
+    mode_capture = _v5_adapter_capture(data, mode_names)
+    mode_result = _v5_command_status(data, mode_names)
+    allowed_mode_statuses = (
+        {"observed", "command_error"}
+        if mode_result == "observed"
+        else {"command_error"}
+        if mode_result == "observed_absent"
+        else {mode_result}
+    )
+    if selinux["policy_mode"]["status"] not in allowed_mode_statuses:
+        raise SchemaValidationError(
+            "report SELinux mode status does not match command provenance"
+        )
+    mode_capture = _require_v5_capture(
+        mode_capture,
+        evidence_name="SELinux policy-mode evidence",
+        status=selinux["policy_mode"]["status"],
+    )
+    if selinux["policy_mode"]["status"] == "observed" and mode_capture is not None:
+        _validate_v5_refs_bind_capture(
+            selinux["policy_mode"]["evidence_refs"],
+            mode_capture,
+            evidence_name="SELinux policy-mode evidence",
+        )
+
+    context_names = frozenset({"selinux_context", "collector_context", "app_context"})
+    context_capture = _v5_adapter_capture(data, context_names)
+    context_result = _v5_command_status(
+        data,
+        context_names,
+    )
+    allowed_context_statuses = (
+        {"observed", "command_error"}
+        if context_result == "observed"
+        else {context_result}
+    )
+    if selinux["current_context"]["status"] not in allowed_context_statuses:
+        raise SchemaValidationError(
+            "report SELinux context status does not match command provenance"
+        )
+    context_capture = _require_v5_capture(
+        context_capture,
+        evidence_name="SELinux current-context evidence",
+        status=selinux["current_context"]["status"],
+    )
+    if (
+        selinux["current_context"]["status"] == "observed"
+        and context_capture is not None
+    ):
+        _validate_v5_refs_bind_capture(
+            selinux["current_context"]["evidence_refs"],
+            context_capture,
+            evidence_name="SELinux current-context evidence",
+        )
+
+    denial_names = frozenset({"selinux_denials"})
+    denial_capture = _v5_adapter_capture(data, denial_names)
+    denial_result = _v5_command_status(data, denial_names)
+    expected_denial_status = (
+        "observed"
+        if denial_result in {"observed", "observed_absent"}
+        else denial_result
+    )
+    if selinux["denial_collection"]["status"] != expected_denial_status:
+        raise SchemaValidationError(
+            "report SELinux denial status does not match command provenance"
+        )
+    denial_capture = _require_v5_capture(
+        denial_capture,
+        evidence_name="SELinux denial evidence",
+        status=selinux["denial_collection"]["status"],
+    )
+    if (
+        selinux["denial_collection"]["status"] == "observed"
+        and denial_capture is not None
+        and selinux["denial_collection"]["evidence_refs"]
+        != [denial_capture["source_ref"]]
+    ):
+        raise SchemaValidationError(
+            "report SELinux denial source reference does not bind its semantic "
+            "adapter capture"
+        )
+
+
+def _validate_v5_security_semantics(data: dict[str, Any]) -> None:
+    observer_type = data["observer"]["observer_type"]
+    selinux = data["selinux"]
+    processes = data["process_state"]
+    if (
+        selinux["source_observer"] != observer_type
+        or processes["source_observer"] != observer_type
+    ):
+        raise SchemaValidationError(
+            "report security evidence source observer does not match the report"
+        )
+    all_refs = [
+        *selinux["policy_mode"]["evidence_refs"],
+        *selinux["current_context"]["evidence_refs"],
+        *selinux["denial_collection"]["evidence_refs"],
+    ]
+    migrated = data["provenance"]["source_schema_version"] == "4.0.0"
+    _validate_v5_process_semantics(
+        processes,
+        all_refs,
+        observer_type=observer_type,
+        migrated=migrated,
+    )
+    _validate_v5_selinux_semantics(
+        selinux,
+        migrated=migrated,
+    )
+    if not migrated:
+        _validate_v5_security_provenance(data)
+    _validate_v5_evidence_refs(all_refs)
+
+
+def _validate_v5_report_semantics(data: object) -> None:
+    """Validate v5 structured evidence, exact v4 source, and identities."""
+
+    if not isinstance(data, dict):
+        return
+    _validate_v5_security_semantics(data)
+    _validate_v4_mount_semantics(data["mounts"])
+    raw_artifacts = _validate_v3_raw_artifacts(data)
+    source_version = data["provenance"]["source_schema_version"]
+    migration_extension = data["extensions"].get("org.androidtrustlab.migration-v5")
+    if source_version == "raw":
+        if migration_extension is not None:
+            raise _migration_provenance_error(
+                "raw v5 reports must not preserve a v4 migration source"
+            )
+        _validate_v3_migration_provenance(data, raw_artifacts)
+        validate_report_identities(data)
+        return
+    if source_version != "4.0.0":
+        raise _migration_provenance_error("v5 migrations require one exact v4 source")
+    if not isinstance(migration_extension, dict) or set(migration_extension) != {
+        "encoding",
+        "source_report_json",
+        "source_sha256",
+    }:
+        raise _migration_provenance_error(
+            "the exact canonical v4 source extension is required"
+        )
+    encoded_source = migration_extension.get("source_report_json")
+    source_digest = migration_extension.get("source_sha256")
+    if (
+        migration_extension.get("encoding") != "atl-canonical-json-v1"
+        or not isinstance(encoded_source, str)
+        or not isinstance(source_digest, str)
+    ):
+        raise _migration_provenance_error("the canonical v4 source is invalid")
+    try:
+        source = parse_canonical_json(encoded_source.encode("utf-8"))
+    except ValueError as exc:
+        raise _migration_provenance_error(
+            "the preserved v4 source is not canonical JSON"
+        ) from exc
+    if (
+        not isinstance(source, dict)
+        or source.get("schema_version") != "4.0.0"
+        or canonical_json_bytes(source).decode("utf-8") != encoded_source
+        or not secrets.compare_digest(
+            hashlib.sha256(encoded_source.encode("utf-8")).hexdigest(),
+            source_digest,
+        )
+    ):
+        raise _migration_provenance_error(
+            "the preserved v4 source binding does not match"
+        )
+    validate_report(source)
+    migration_history = data["provenance"]["migration_history"]
+    if not migration_history:
+        raise _migration_provenance_error(
+            "the report-v4-to-v5 migration record is required"
+        )
+    declared_version = migration_history[-1]["implementation"]["version"]
+    expected = report_v5_from_v4_shape(
+        source,
+        add_v4_to_v5_migration=True,
+        migration_implementation_version=declared_version,
+    )
+    if data != expected:
+        raise _migration_provenance_error(
+            "the v5 report is not the deterministic migration of its v4 source"
+        )
+    validate_report_identities(data)
+
+
 def _mount_semantic_error(detail: str) -> SchemaValidationError:
     return SchemaValidationError(f"report mount validation failed: {detail}")
 
@@ -1094,7 +1617,7 @@ def validate_diff(data: object) -> None:
         if isinstance(version, str)
         else current_write_version(SchemaFamily.DIFF)
     )
-    if resource_version in {"2.0.0", "2.1.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0"}:
         _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
         data,
@@ -1102,7 +1625,7 @@ def validate_diff(data: object) -> None:
         artifact_name="diff",
         supported_versions=SUPPORTED_DIFF_SCHEMA_VERSIONS,
     )
-    if resource_version in {"2.0.0", "2.1.0"}:
+    if resource_version in {"2.0.0", "2.1.0", "2.2.0"}:
         _validate_v2_diff_semantics(data, schema_version=resource_version)
 
 
@@ -1146,9 +1669,11 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
         original_version = provenance["original_schema_version"]
         original_digest = provenance["original_content_digest"]
         migrations = provenance["applied_migrations"]
-        content_addressed_versions = (
-            {"3.0.0"} if schema_version == "2.0.0" else {"3.0.0", "4.0.0"}
-        )
+        content_addressed_versions = {
+            "2.0.0": {"3.0.0"},
+            "2.1.0": {"3.0.0", "4.0.0"},
+            "2.2.0": {"3.0.0", "4.0.0", "5.0.0"},
+        }[schema_version]
         if (original_version in content_addressed_versions) != (
             original_digest is not None
         ):
@@ -1177,6 +1702,25 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
                 "3.0.0": [("report-v3-to-v4", "3.0.0", "4.0.0")],
                 "4.0.0": [],
             },
+            "2.2.0": {
+                "1.0.0": [
+                    ("report-v1-to-v2", "1.0.0", "2.0.0"),
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                ],
+                "2.0.0": [
+                    ("report-v2-to-v3", "2.0.0", "3.0.0"),
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                ],
+                "3.0.0": [
+                    ("report-v3-to-v4", "3.0.0", "4.0.0"),
+                    ("report-v4-to-v5", "4.0.0", "5.0.0"),
+                ],
+                "4.0.0": [("report-v4-to-v5", "4.0.0", "5.0.0")],
+                "5.0.0": [],
+            },
         }
         expected_steps = expected_steps_by_version[schema_version].get(original_version)
         if expected_steps is None or len(migrations) != len(expected_steps):
@@ -1196,7 +1740,11 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
                 "diff provenance does not use the registered migration chain"
             )
         common_report = provenance["common_report"]
-        current_report_version = "3.0.0" if schema_version == "2.0.0" else "4.0.0"
+        current_report_version = {
+            "2.0.0": "3.0.0",
+            "2.1.0": "4.0.0",
+            "2.2.0": "5.0.0",
+        }[schema_version]
         if original_version == current_report_version and (
             provenance["original_report_id"] != common_report["report_id"]
             or not secrets.compare_digest(
@@ -1288,15 +1836,50 @@ def _validate_manifest_portability(data: dict[str, Any]) -> None:
         ),
         re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"),
     )
-    if any(
-        pattern.search(value)
-        for value in strings
-        for pattern in labeled_sensitive_patterns
-    ) or any(
-        pattern.search(value) for value in free_text for pattern in identifier_patterns
+    process_diagnostic_patterns = (
+        re.compile(
+            r"(?i)\b(?:pid|ppid|uid|cmdline|command[ _-]?line)\b"
+            r"\s*(?:[:=]|\bis\b)?\s*"
+            r"(?!redacted\b|withheld\b|unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(
+            r"(?i)\buser\s*[:=]\s*"
+            r"(?!redacted\b|withheld\b|unknown\b|unavailable\b)\S+"
+        ),
+        re.compile(r"(?i)\bu[0-9]+_[ai][0-9]+\b"),
+        re.compile(r"(?<![0-9])(?:[0-9]{4,})(?![0-9])"),
+        re.compile(
+            r"(?i)(?:^|\s)(?:init|adbd|zygote|zygote64|system_server|"
+            r"magisk|magiskd)(?:\s|$)"
+        ),
+        re.compile(r"(?:^|\s)--[A-Za-z0-9][^\s]*"),
+        re.compile(r"(?:^|\s)(?:\.{0,2}/|[A-Za-z0-9._-]+/)[^\s]+"),
+    )
+    if (
+        any(
+            pattern.search(value)
+            for value in strings
+            for pattern in labeled_sensitive_patterns
+        )
+        or any(
+            pattern.search(value)
+            for value in free_text
+            for pattern in identifier_patterns
+        )
+        or any(
+            pattern.search(value)
+            for value in free_text
+            for pattern in process_diagnostic_patterns
+        )
     ):
         raise _collection_manifest_semantic_error(
-            "portable manifests must not contain identifiers or secrets"
+            "portable manifests must not contain process identities, command lines, "
+            "identifiers, or secrets"
+        )
+    if free_text:
+        raise _collection_manifest_semantic_error(
+            "portable diagnostics must use structured statuses; warnings must be "
+            "empty and artifact details must be null"
         )
 
 

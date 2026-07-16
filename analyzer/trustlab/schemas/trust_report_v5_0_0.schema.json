@@ -1,0 +1,1916 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/report/5.0.0",
+  "title": "Android Trust Lab Trust Report v5",
+  "description": "Content-addressed normalized trust evidence with source-preserving Android mount topology.",
+  "type": "object",
+  "required": [
+    "report_id",
+    "collection_event_id",
+    "content_digest",
+    "schema_version",
+    "collection_timestamp",
+    "experiment_id",
+    "target",
+    "observer",
+    "boot_state",
+    "verified_boot",
+    "selinux",
+    "mounts",
+    "properties",
+    "root_state",
+    "magisk_state",
+    "process_state",
+    "emulator_state",
+    "provenance",
+    "limitations",
+    "raw_artifacts",
+    "extensions"
+  ],
+  "properties": {
+    "report_id": {
+      "$ref": "#/$defs/reportId"
+    },
+    "collection_event_id": {
+      "$ref": "#/$defs/collectionEventId"
+    },
+    "content_digest": {
+      "$ref": "#/$defs/contentDigest"
+    },
+    "schema_version": {
+      "const": "5.0.0"
+    },
+    "collection_timestamp": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "experiment_id": {
+      "$ref": "#/$defs/experimentId"
+    },
+    "target": {
+      "$ref": "#/$defs/targetMetadata"
+    },
+    "observer": {
+      "$ref": "#/$defs/observerMetadata"
+    },
+    "boot_state": {
+      "$ref": "#/$defs/bootState"
+    },
+    "verified_boot": {
+      "$ref": "#/$defs/verifiedBoot"
+    },
+    "selinux": {
+      "$ref": "#/$defs/selinuxState"
+    },
+    "mounts": {
+      "$ref": "#/$defs/mountState"
+    },
+    "properties": {
+      "$ref": "#/$defs/propertyState"
+    },
+    "root_state": {
+      "$ref": "#/$defs/rootState"
+    },
+    "magisk_state": {
+      "$ref": "#/$defs/magiskState"
+    },
+    "process_state": {
+      "$ref": "#/$defs/processState"
+    },
+    "emulator_state": {
+      "$ref": "#/$defs/emulatorState"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "limitations": {
+      "$ref": "#/$defs/limitations"
+    },
+    "raw_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/rawArtifactReference"
+      }
+    },
+    "extensions": {
+      "description": "Namespaced project extensions; keys use reverse-DNS spelling.",
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z0-9][a-z0-9-]*)+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/extensionObject"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "reportId": {
+      "type": "string",
+      "pattern": "^atlrep-[a-f0-9]{32}$"
+    },
+    "collectionEventId": {
+      "type": "string",
+      "pattern": "^atlevent-[a-f0-9]{32}$"
+    },
+    "contentDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "experimentId": {
+      "type": "string",
+      "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "productIdentity": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.dev[0-9]+)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rawArtifactReference": {
+      "type": "object",
+      "required": [
+        "logical_id",
+        "relative_path",
+        "sha256",
+        "byte_size",
+        "media_type",
+        "collector_name",
+        "collector_version",
+        "collection_id",
+        "status",
+        "redaction_state"
+      ],
+      "properties": {
+        "logical_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "sha256": {
+          "$ref": "#/$defs/contentDigest"
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.+-]{0,63}/[a-z0-9][a-z0-9.+-]{0,63}$"
+        },
+        "collector_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "collector_version": {
+          "type": "string",
+          "pattern": "^(?:unknown|[0-9]+\\.[0-9]+\\.[0-9]+(?:[-.]?[A-Za-z0-9][A-Za-z0-9.-]*)?)$"
+        },
+        "collection_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "status": {
+          "const": "observed"
+        },
+        "redaction_state": {
+          "enum": [
+            "not_required",
+            "redacted",
+            "verified",
+            "withheld",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceStatus": {
+      "enum": [
+        "observed",
+        "observed_absent",
+        "inaccessible",
+        "not_collected",
+        "command_error",
+        "unsupported"
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "unassessed"
+      ]
+    },
+    "canonicalValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/canonicalValue"
+          }
+        },
+        {
+          "$ref": "#/$defs/extensionObject"
+        }
+      ]
+    },
+    "extensionObject": {
+      "type": "object",
+      "maxProperties": 256,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/canonicalValue"
+      }
+    },
+    "evidenceString": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 4096
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidenceBoolean": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "value": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "const": true
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "observed_absent"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "value": {
+                  "const": false
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "value": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidenceStringList": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 1024,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "array",
+                "minItems": 1
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "observed_absent"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "value": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidenceStringMap": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "value": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "maxProperties": 4096,
+          "propertyNames": {
+            "maxLength": 4096
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 4096
+          }
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "object",
+                "minProperties": 1
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "observed_absent"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "value": {
+                  "type": "object",
+                  "maxProperties": 0
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "value": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidenceInteger": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "value": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "observerMetadata": {
+      "type": "object",
+      "required": [
+        "observer_type",
+        "privilege_level",
+        "collection_method"
+      ],
+      "properties": {
+        "observer_type": {
+          "enum": [
+            "host",
+            "adb_shell",
+            "unprivileged_app",
+            "root_collector"
+          ]
+        },
+        "privilege_level": {
+          "enum": [
+            "host",
+            "shell",
+            "app_sandbox",
+            "root",
+            "unspecified"
+          ]
+        },
+        "collection_method": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "targetMetadata": {
+      "type": "object",
+      "required": [
+        "target_type",
+        "device_codename",
+        "manufacturer",
+        "model",
+        "android_version",
+        "sdk",
+        "build_fingerprint"
+      ],
+      "properties": {
+        "target_type": {
+          "enum": [
+            "avd",
+            "physical",
+            "unspecified"
+          ]
+        },
+        "device_codename": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "manufacturer": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "model": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "android_version": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "sdk": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "build_fingerprint": {
+          "$ref": "#/$defs/evidenceString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bootState": {
+      "type": "object",
+      "required": [
+        "boot_completed",
+        "boot_reason",
+        "slot_suffix",
+        "kernel_cmdline_present"
+      ],
+      "properties": {
+        "boot_completed": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/evidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "0",
+                    "1",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "boot_reason": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "slot_suffix": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "kernel_cmdline_present": {
+          "$ref": "#/$defs/evidenceBoolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verifiedBoot": {
+      "type": "object",
+      "required": [
+        "verified_boot_state",
+        "flash_locked",
+        "vbmeta_device_state",
+        "verity_mode",
+        "raw_properties",
+        "confidence"
+      ],
+      "properties": {
+        "verified_boot_state": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/evidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "green",
+                    "yellow",
+                    "orange",
+                    "red",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "flash_locked": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/evidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "0",
+                    "1",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "vbmeta_device_state": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/evidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "locked",
+                    "unlocked",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "verity_mode": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/evidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "enforcing",
+                    "eio",
+                    "logging",
+                    "disabled",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "raw_properties": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "sourcedEvidenceString": {
+      "type": "object",
+      "required": ["status", "value", "reason", "evidence_refs"],
+      "properties": {
+        "status": {"$ref": "#/$defs/evidenceStatus"},
+        "value": {"type": ["string", "null"], "maxLength": 4096},
+        "reason": {"type": ["string", "null"], "maxLength": 512},
+        "evidence_refs": {"$ref": "#/$defs/evidenceRefs"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {
+            "properties": {
+              "value": {"type": "string", "minLength": 1},
+              "reason": {"type": "null"}
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {"type": "null"},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "statusObservation": {
+      "type": "object",
+      "required": ["status", "reason", "evidence_refs"],
+      "properties": {
+        "status": {"$ref": "#/$defs/evidenceStatus"},
+        "reason": {"type": ["string", "null"], "maxLength": 512},
+        "evidence_refs": {"$ref": "#/$defs/evidenceRefs"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {"properties": {"reason": {"type": "null"}}},
+          "else": {
+            "properties": {"reason": {"type": "string", "minLength": 1}}
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "securityLimitations": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "app_sandbox_visibility",
+          "complete_policy_not_inspected",
+          "current_context_not_observed",
+          "denials_not_collected",
+          "historical_structure_unavailable",
+          "observer_scoped_visibility",
+          "partial_process_table",
+          "process_contexts_not_collected",
+          "selected_filter_not_exhaustive",
+          "unsupported_ps_format"
+        ]
+      }
+    },
+    "selinuxState": {
+      "type": "object",
+      "required": [
+        "source_observer",
+        "policy_mode",
+        "current_context",
+        "denial_collection",
+        "limitations"
+      ],
+      "properties": {
+        "source_observer": {
+          "enum": ["adb_shell", "root_collector", "unprivileged_app", "host"]
+        },
+        "policy_mode": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/sourcedEvidenceString"
+            },
+            {
+              "properties": {
+                "value": {
+                  "enum": [
+                    "enforcing",
+                    "permissive",
+                    "disabled",
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "current_context": {
+          "allOf": [
+            {"$ref": "#/$defs/sourcedEvidenceString"},
+            {
+              "properties": {
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^u:r:[a-z0-9_]+:s[0-9]+(?:-s[0-9]+)?$"
+                    },
+                    {"type": "null"}
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "denial_collection": {"$ref": "#/$defs/statusObservation"},
+        "limitations": {"$ref": "#/$defs/securityLimitations"}
+      },
+      "additionalProperties": false
+    },
+    "mountObservation": {
+      "type": "object",
+      "required": [
+        "status",
+        "mount_point",
+        "fs_type",
+        "options",
+        "classification",
+        "raw",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "mount_point": {
+          "type": "string",
+          "pattern": "^/[A-Za-z0-9._/-]*$",
+          "maxLength": 512
+        },
+        "fs_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        },
+        "options": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[^,\\s]{1,128}$"
+          }
+        },
+        "classification": {
+          "enum": [
+            "read-only",
+            "read-write",
+            "overlay",
+            "tmpfs",
+            "other",
+            null
+          ]
+        },
+        "raw": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 16384
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fs_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "type": "string"
+              },
+              "raw": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "fs_type": {
+                "type": "null"
+              },
+              "options": {
+                "maxItems": 0
+              },
+              "classification": {
+                "type": "null"
+              },
+              "raw": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "mountSourceAttempt": {
+      "type": "object",
+      "required": [
+        "name",
+        "format",
+        "capture_status",
+        "parse_status",
+        "source_ref",
+        "record_count",
+        "malformed_line_count",
+        "warnings"
+      ],
+      "properties": {
+        "name": {
+          "enum": ["mountinfo", "proc_mounts", "mounts"]
+        },
+        "format": {
+          "enum": ["mountinfo", "proc_mounts", "mount", "mixed"]
+        },
+        "capture_status": {
+          "enum": [
+            "observed",
+            "empty",
+            "not_collected",
+            "inaccessible",
+            "command_error",
+            "timeout",
+            "unsupported",
+            "error"
+          ]
+        },
+        "parse_status": {
+          "enum": ["complete", "partial", "malformed", "empty", "not_parsed"]
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "malformed_line_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mountObservationSet": {
+      "type": "object",
+      "required": [
+        "scope",
+        "selected_source",
+        "selected_format",
+        "parse_status",
+        "selection_reason",
+        "attempts",
+        "evidence_paths"
+      ],
+      "properties": {
+        "scope": {
+          "enum": ["observer_self", "unknown"]
+        },
+        "selected_source": {
+          "enum": ["mountinfo", "proc_mounts", "mounts", null]
+        },
+        "selected_format": {
+          "enum": ["mountinfo", "proc_mounts", "mount", "mixed", null]
+        },
+        "parse_status": {
+          "enum": ["complete", "partial", "malformed", "empty", "not_parsed"]
+        },
+        "selection_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/mountSourceAttempt"
+          }
+        },
+        "evidence_paths": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mountPropagation": {
+      "type": "object",
+      "required": [
+        "kind",
+        "shared_id",
+        "master_id",
+        "propagate_from_id",
+        "unbindable"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "private",
+            "shared",
+            "slave",
+            "shared_slave",
+            "unbindable",
+            "unknown"
+          ]
+        },
+        "shared_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "master_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "propagate_from_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "unbindable": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mountRecord": {
+      "type": "object",
+      "required": [
+        "record_index",
+        "source_line",
+        "format",
+        "mount_id",
+        "parent_id",
+        "major_minor",
+        "root",
+        "mount_point",
+        "mount_options",
+        "optional_fields",
+        "fs_type",
+        "source",
+        "super_options",
+        "propagation",
+        "access",
+        "overlay_state",
+        "bind_state",
+        "parse_status",
+        "raw",
+        "evidence_path"
+      ],
+      "properties": {
+        "record_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "source_line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "format": {
+          "enum": ["mountinfo", "proc_mounts", "mount"]
+        },
+        "mount_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "parent_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "major_minor": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9]+:[0-9]+$"
+        },
+        "root": {
+          "type": ["string", "null"],
+          "maxLength": 4096
+        },
+        "mount_point": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "mount_options": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "optional_fields": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "fs_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "super_options": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "propagation": {
+          "$ref": "#/$defs/mountPropagation"
+        },
+        "access": {
+          "enum": ["read_only", "writable", "unknown"]
+        },
+        "overlay_state": {
+          "enum": ["detected", "not_detected", "unknown"]
+        },
+        "bind_state": {
+          "enum": ["detected", "not_detected", "unknown"]
+        },
+        "parse_status": {
+          "enum": ["parsed", "partial"]
+        },
+        "raw": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 262144
+        },
+        "evidence_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "additionalProperties": false
+    },
+    "systemMountResolution": {
+      "type": "object",
+      "required": ["state", "system_root", "record_indices", "reason"],
+      "properties": {
+        "state": {
+          "enum": ["explicit_system", "system_as_root", "ambiguous", "unresolved"]
+        },
+        "system_root": {
+          "enum": ["/system", "/", null]
+        },
+        "record_indices": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "additionalProperties": false
+    },
+    "dynamicPartitionState": {
+      "type": "object",
+      "required": ["state", "record_indices", "sources"],
+      "properties": {
+        "state": {
+          "enum": ["detected", "not_detected", "unknown"]
+        },
+        "record_indices": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          }
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "apexMountSet": {
+      "type": "object",
+      "required": [
+        "packages",
+        "record_indices",
+        "mount_count",
+        "package_count",
+        "read_only_count",
+        "writable_count",
+        "unknown_access_count",
+        "overlay_count",
+        "bind_count"
+      ],
+      "properties": {
+        "packages": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "record_indices": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          }
+        },
+        "mount_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "package_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "read_only_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "writable_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "unknown_access_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "overlay_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "bind_count": {"type": "integer", "minimum": 0, "maximum": 4096}
+      },
+      "additionalProperties": false
+    },
+    "mountIntegrityContext": {
+      "type": "object",
+      "required": [
+        "assessment",
+        "reason",
+        "bind_mounts_detected",
+        "unknown_sensitive_mounts"
+      ],
+      "properties": {
+        "assessment": {
+          "const": "not_assessed"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "bind_mounts_detected": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "unknown_sensitive_mounts": {
+          "type": "array",
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["/system", "/vendor", "/product", "/system_ext", "/odm", "/data", "/apex"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mountState": {
+      "type": "object",
+      "required": [
+        "system_mount",
+        "vendor_mount",
+        "product_mount",
+        "system_ext_mount",
+        "odm_mount",
+        "data_mount",
+        "apex_mount",
+        "integrity_summary",
+        "observation",
+        "records",
+        "system_resolution",
+        "dynamic_partitions",
+        "apex_set",
+        "integrity_context"
+      ],
+      "properties": {
+        "system_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "vendor_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "product_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "system_ext_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "odm_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "data_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "apex_mount": {
+          "$ref": "#/$defs/mountObservation"
+        },
+        "integrity_summary": {
+          "type": "object",
+          "required": [
+            "overlay_detected",
+            "writable_sensitive_mounts"
+          ],
+          "properties": {
+            "overlay_detected": {
+              "$ref": "#/$defs/evidenceBoolean"
+            },
+            "writable_sensitive_mounts": {
+              "$ref": "#/$defs/evidenceStringList"
+            }
+          },
+          "additionalProperties": false
+        },
+        "observation": {
+          "$ref": "#/$defs/mountObservationSet"
+        },
+        "records": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/mountRecord"
+          }
+        },
+        "system_resolution": {
+          "$ref": "#/$defs/systemMountResolution"
+        },
+        "dynamic_partitions": {
+          "$ref": "#/$defs/dynamicPartitionState"
+        },
+        "apex_set": {
+          "$ref": "#/$defs/apexMountSet"
+        },
+        "integrity_context": {
+          "$ref": "#/$defs/mountIntegrityContext"
+        }
+      },
+      "additionalProperties": false
+    },
+    "propertyState": {
+      "type": "object",
+      "required": [
+        "boot",
+        "build",
+        "product",
+        "crypto",
+        "security",
+        "all_count"
+      ],
+      "properties": {
+        "boot": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "build": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "product": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "crypto": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "security": {
+          "$ref": "#/$defs/evidenceStringMap"
+        },
+        "all_count": {
+          "$ref": "#/$defs/evidenceInteger"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rootState": {
+      "type": "object",
+      "required": [
+        "su_present",
+        "uid",
+        "gid",
+        "root_shell_available",
+        "root_paths"
+      ],
+      "properties": {
+        "su_present": {
+          "$ref": "#/$defs/evidenceBoolean"
+        },
+        "uid": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "gid": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "root_shell_available": {
+          "$ref": "#/$defs/evidenceBoolean"
+        },
+        "root_paths": {
+          "$ref": "#/$defs/evidenceStringList"
+        }
+      },
+      "additionalProperties": false
+    },
+    "magiskState": {
+      "type": "object",
+      "required": [
+        "magisk_binary_present",
+        "magisk_version",
+        "magisk_path",
+        "zygisk_visible_indicators",
+        "module_context"
+      ],
+      "properties": {
+        "magisk_binary_present": {
+          "$ref": "#/$defs/evidenceBoolean"
+        },
+        "magisk_version": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "magisk_path": {
+          "$ref": "#/$defs/evidenceString"
+        },
+        "zygisk_visible_indicators": {
+          "$ref": "#/$defs/evidenceStringList"
+        },
+        "module_context": {
+          "$ref": "#/$defs/evidenceString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "selectedProcessObservation": {
+      "type": "object",
+      "required": ["name", "visibility", "context", "evidence_refs"],
+      "properties": {
+        "name": {
+          "enum": [
+            "init",
+            "adbd",
+            "zygote",
+            "zygote64",
+            "system_server",
+            "magisk",
+            "magiskd"
+          ]
+        },
+        "visibility": {"$ref": "#/$defs/evidenceBoolean"},
+        "context": {
+          "allOf": [
+            {"$ref": "#/$defs/evidenceString"},
+            {
+              "properties": {
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^u:r:[a-z0-9_]+:s[0-9]+(?:-s[0-9]+)?$"
+                    },
+                    {"type": "null"}
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "evidence_refs": {"$ref": "#/$defs/evidenceRefs"}
+      },
+      "additionalProperties": false
+    },
+    "processState": {
+      "type": "object",
+      "required": [
+        "source_observer",
+        "capture_status",
+        "source_format",
+        "scope",
+        "completeness",
+        "evidence_refs",
+        "selected_processes",
+        "limitations"
+      ],
+      "properties": {
+        "source_observer": {
+          "enum": ["adb_shell", "root_collector", "unprivileged_app", "host"]
+        },
+        "capture_status": {"$ref": "#/$defs/evidenceStatus"},
+        "source_format": {
+          "enum": ["toybox", "toolbox", "selected", "unknown"]
+        },
+        "scope": {
+          "enum": ["complete", "selected", "app_sandbox", "unknown"]
+        },
+        "completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "malformed",
+            "empty",
+            "unsupported",
+            "unknown"
+          ]
+        },
+        "evidence_refs": {"$ref": "#/$defs/evidenceRefs"},
+        "selected_processes": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/selectedProcessObservation"}
+        },
+        "limitations": {"$ref": "#/$defs/securityLimitations"}
+      },
+      "additionalProperties": false
+    },
+    "emulatorState": {
+      "type": "object",
+      "required": [
+        "is_emulator",
+        "indicators"
+      ],
+      "properties": {
+        "is_emulator": {
+          "$ref": "#/$defs/evidenceBoolean"
+        },
+        "indicators": {
+          "$ref": "#/$defs/evidenceStringList"
+        }
+      },
+      "additionalProperties": false
+    },
+    "commandResult": {
+      "type": "object",
+      "required": [
+        "command_id",
+        "status",
+        "exit_code",
+        "timed_out",
+        "detail"
+      ],
+      "properties": {
+        "command_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "status": {
+          "$ref": "#/$defs/evidenceStatus"
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 255
+        },
+        "timed_out": {
+          "type": "boolean"
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        }
+      },
+      "additionalProperties": false
+    },
+    "migrationRecord": {
+      "type": "object",
+      "required": [
+        "migration_id",
+        "source_schema_version",
+        "target_schema_version",
+        "implementation"
+      ],
+      "properties": {
+        "migration_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{1,127}$"
+        },
+        "source_schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "target_schema_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "implementation": {
+          "$ref": "#/$defs/productIdentity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "source_schema_version",
+        "normalizer",
+        "generator",
+        "migration_history",
+        "command_results"
+      ],
+      "properties": {
+        "source_schema_version": {
+          "enum": [
+            "raw",
+            "4.0.0"
+          ]
+        },
+        "normalizer": {
+          "$ref": "#/$defs/productIdentity"
+        },
+        "generator": {
+          "$ref": "#/$defs/productIdentity"
+        },
+        "migration_history": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/migrationRecord"
+          }
+        },
+        "command_results": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/commandResult"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "limitations": {
+      "type": "object",
+      "required": [
+        "emulator_target",
+        "missing_real_bootloader",
+        "missing_tee_validation",
+        "incomplete_permissions",
+        "collection_errors"
+      ],
+      "properties": {
+        "emulator_target": {
+          "type": "boolean"
+        },
+        "missing_real_bootloader": {
+          "type": "boolean"
+        },
+        "missing_tee_validation": {
+          "type": "boolean"
+        },
+        "incomplete_permissions": {
+          "type": "boolean"
+        },
+        "collection_errors": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

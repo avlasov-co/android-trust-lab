@@ -23,7 +23,7 @@
   },
   "collection_event_id": "atlevent-de5e7e106b075e9bba3467ca0b0e5537",
   "collection_timestamp": "2026-04-25T15:08:21Z",
-  "content_digest": "98048d610352e57202b3831120bf736021479008d22fdd2153b8c5ce9e3bd915",
+  "content_digest": "05725286a63179f75c7f19e2d9d192e34d034d686c2f02327e9729097bc1489c",
   "emulator_state": {
     "indicators": {
       "reason": null,
@@ -78,6 +78,16 @@
           "name": "selinux_mode",
           "source_ref": "legacy-sections/GETENFORCE",
           "status": "observed"
+        },
+        {
+          "name": "selinux_context",
+          "source_ref": "legacy-sections/SELINUX_CONTEXT",
+          "status": "not_collected"
+        },
+        {
+          "name": "selinux_denials",
+          "source_ref": "legacy-sections/SELINUX_DENIALS",
+          "status": "not_collected"
         },
         {
           "name": "kernel_cmdline",
@@ -580,41 +590,126 @@
     "privilege_level": "shell"
   },
   "process_state": {
-    "adbd_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "init_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "magisk_processes_visible": {
-      "reason": "collection completed and the signal was absent",
-      "status": "observed_absent",
-      "value": false
-    },
-    "process_contexts_available": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "raw_line_count": {
-      "reason": null,
-      "status": "observed",
-      "value": 4
-    },
-    "system_server_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    },
-    "zygote_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    }
+    "capture_status": "observed",
+    "completeness": "complete",
+    "evidence_refs": [
+      "legacy-sections/PS"
+    ],
+    "limitations": [
+      "observer_scoped_visibility",
+      "selected_filter_not_exhaustive"
+    ],
+    "scope": "selected",
+    "selected_processes": [
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:init:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "init",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:adbd:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "adbd",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "zygote",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:zygote:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "zygote64",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:system_server:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "system_server",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magisk",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magiskd",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      }
+    ],
+    "source_format": "selected",
+    "source_observer": "adb_shell"
   },
   "properties": {
     "all_count": {
@@ -718,6 +813,20 @@
         "timed_out": false
       },
       {
+        "command_id": "selinux_context",
+        "detail": null,
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      },
+      {
+        "command_id": "selinux_denials",
+        "detail": null,
+        "exit_code": null,
+        "status": "not_collected",
+        "timed_out": false
+      },
+      {
         "command_id": "kernel_cmdline",
         "detail": null,
         "exit_code": null,
@@ -771,7 +880,7 @@
       "status": "observed"
     }
   ],
-  "report_id": "atlrep-33a6909a240eb8076838c0e66935f6b9",
+  "report_id": "atlrep-2a9812783af7f1aa0afba419d026dfb7",
   "root_state": {
     "gid": {
       "reason": null,
@@ -799,23 +908,33 @@
       "value": "2000"
     }
   },
-  "schema_version": "4.0.0",
+  "schema_version": "5.0.0",
   "selinux": {
-    "denials_collected": {
-      "reason": "SELinux denials were not collected",
+    "current_context": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
       "status": "not_collected",
       "value": null
     },
-    "mode": {
+    "denial_collection": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
+      "status": "not_collected"
+    },
+    "limitations": [
+      "complete_policy_not_inspected",
+      "denials_not_collected",
+      "current_context_not_observed"
+    ],
+    "policy_mode": {
+      "evidence_refs": [
+        "legacy-sections/GETENFORCE"
+      ],
       "reason": null,
       "status": "observed",
       "value": "enforcing"
     },
-    "policy_visible": {
-      "reason": null,
-      "status": "observed",
-      "value": true
-    }
+    "source_observer": "adb_shell"
   },
   "target": {
     "android_version": {

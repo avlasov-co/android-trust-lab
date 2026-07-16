@@ -7,9 +7,13 @@ the exact compatibility registry.
 
 Every manifest identifies one collection event, collector and version, observer,
 pseudonymous target, bounded environment metadata, start and end timestamps,
-completion status, tool versions, warnings, redaction policy, and artifact
-entries. Direct identifiers, device serials, credentials, and absolute host paths
-are forbidden.
+completion status, tool versions, a reserved warning list, redaction policy, and
+artifact entries. The portable semantic profile requires `warnings=[]` and every
+artifact `detail` to be null; structured statuses, exit codes, and timeout flags
+carry outcomes without a free-text leakage channel. Direct identifiers, device
+serials, credentials, and absolute host paths are forbidden.
+Tool-version values are compact version tokens (letters, digits, `.`, `_`, `+`,
+and `-`) rather than diagnostic sentences or command lines.
 
 ## Artifact outcomes
 
@@ -51,8 +55,8 @@ refuses to replace either the manifest or bound source evidence. The legacy
 `trustlab normalize --input raw.txt ...` flow remains supported.
 
 Manifest-backed reports retain every artifact outcome in
-`provenance.command_results`. Partial status, warnings, and unavailable probes are
-also surfaced under `limitations.collection_errors`. The complete validated
+`provenance.command_results`. Partial status and unavailable probes are also
+surfaced under `limitations.collection_errors`. The complete validated
 manifest and a SHA-256 digest of its canonical JSON form are retained under the
 strict `org.androidtrustlab.collection` extension, so the report remains bound to
 its collection provenance. Report v4 also carries the raw entry as a structured

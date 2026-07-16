@@ -65,8 +65,8 @@ Every adapter implements the `ArtifactAdapter` protocol and returns an immutable
 - separate warning and error tuples;
 - `EvidenceFragments` containing only constrained syntactic properties, boot
   key/value facts, selected mount records plus every mount-source attempt,
-  identity fields, SELinux text, command line, `su` paths, Magisk text, and
-  process facts.
+  identity fields, separately parsed SELinux mode/current-context facts, `su`
+  paths, Magisk text, and bounded selected-process observations.
 
 Only coherent, syntactically parsed `observed` captures and deliberately empty
 captures contribute parser fragments. Successful statuses require a zero or
@@ -81,6 +81,14 @@ visible in report command-result provenance and never have their stdout
 interpreted as evidence. Adapter kind/version, warnings, errors, and capture
 source references are retained in the namespaced
 `org.androidtrustlab.adapter` report extension.
+Only analyzer-generated warning codes/messages are retained verbatim. Arbitrary
+collector warning strings are replaced with numbered withheld markers so they
+cannot carry PIDs, users, command lines, host paths, or private diagnostics into
+the portable report. Exact collection-manifest diagnostics are a separate,
+digest-bound provenance channel: unsafe PID, Android-user, command-line, path, or
+secret-like values are rejected by the manifest validator before normalization.
+The portable v1 profile closes that channel completely by requiring
+`warnings=[]` and `artifact.detail=null`; structured status fields carry outcomes.
 
 The direct file path uses the same bounded, regular-file, no-follow snapshot
 reader as legacy normalization. Exact source bytes are hashed and any expected
@@ -96,6 +104,12 @@ derives report dimensions such as verified-boot state, mount integrity, root
 state, Magisk state, emulator signals, and limitations. Evidence absence is
 recorded only when the relevant capture completed and observed the absence;
 inaccessible or omitted captures are not converted into negative findings.
+For processes, only a complete supported full table can establish exact-name
+absence. Selected filters, partial tables, and app-sandbox views remain
+nonexhaustive. The parser discards PIDs, users, raw rows, and command arguments,
+and removes MLS/MCS categories from portable process contexts.
 
 Shared contract, fixture, malformed-input, version-selection, determinism, and
-metadata-confusion tests live in `tests/test_artifact_adapters.py`.
+metadata-confusion tests live in `tests/test_artifact_adapters.py`,
+`tests/test_security_evidence.py`, and
+`tests/test_structured_security_evidence.py`.

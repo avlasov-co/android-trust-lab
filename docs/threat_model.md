@@ -32,6 +32,9 @@ standalone observer ID in the current report schema or analyzer registry.
 - incomplete or fallback mount sources that omit topology
 - system-as-root and stacked mounts misread as legacy `/system` layouts
 - SELinux context visibility differences
+- filtered process evidence misread as proof of nonexistence
+- PIDs, users, command arguments, or per-app SELinux categories leaking into
+  portable reports
 - emulator behavior
 - vendor-specific behavior
 - incomplete permissions
@@ -44,6 +47,7 @@ standalone observer ID in the current report schema or analyzer registry.
 - measurement reproducibility
 - experiment integrity
 - report provenance
+- observer-scoped SELinux and process evidence semantics
 
 ## Out of scope
 

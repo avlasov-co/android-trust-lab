@@ -300,7 +300,7 @@ def summary_table(reports: list[dict[str, Any]]) -> str:
                 magisk=presence(
                     evidence_value(report["magisk_state"]["magisk_binary_present"])
                 ),
-                selinux=evidence_value(report["selinux"]["mode"]),
+                selinux=evidence_value(report["selinux"]["policy_mode"]),
                 writable=fmt(evidence_value(mounts["writable_sensitive_mounts"])),
                 overlay=str(evidence_value(mounts["overlay_detected"])).lower(),
                 vb=evidence_value(verified["verified_boot_state"]),
@@ -351,7 +351,7 @@ def dimension_value(report: dict[str, Any], dimension: str) -> str:
     if dimension == "verity_mode":
         return str(evidence_value(report["verified_boot"]["verity_mode"]))
     if dimension == "selinux_mode":
-        return str(evidence_value(report["selinux"]["mode"]))
+        return str(evidence_value(report["selinux"]["policy_mode"]))
     if dimension == "mount_integrity":
         integrity = report["mounts"]["integrity_summary"]
         writable = evidence_value(integrity["writable_sensitive_mounts"])

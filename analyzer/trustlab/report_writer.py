@@ -145,7 +145,38 @@ def diff_to_markdown(diff: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _status(value: Any) -> str:
+    if isinstance(value, dict):
+        status = value.get("status")
+        if isinstance(status, str):
+            return status
+    return "not_collected"
+
+
+def _selected_process_summary(process_state: dict[str, Any]) -> str:
+    summaries = []
+    for item in process_state.get("selected_processes", []):
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name", "unknown")
+        visibility = _status(item.get("visibility"))
+        context = item.get("context")
+        context_value = (
+            "observed_absent"
+            if _status(context) == "observed_absent"
+            else _evidence_value(context)
+        )
+        summaries.append(f"{name}={visibility}/{context_value}")
+    return ", ".join(summaries) or "not_collected"
+
+
 def report_to_markdown(report: dict[str, Any]) -> str:
+    selinux = report.get("selinux", {})
+    process_state = report.get("process_state", {})
+    process_limitations = process_state.get("limitations", [])
+    process_capture = _status(
+        {"status": process_state.get("capture_status", "not_collected")}
+    )
     lines = [
         f"# Trust Report {report.get('report_id', '')}",
         "",
@@ -155,7 +186,12 @@ def report_to_markdown(report: dict[str, Any]) -> str:
         "",
         "## Key dimensions",
         "",
-        f"- SELinux: `{_evidence_value(report.get('selinux', {}).get('mode', 'not_collected'))}`",
+        f"- SELinux mode: `{_evidence_value(selinux.get('policy_mode', selinux.get('mode', 'not_collected')))}`",
+        f"- SELinux current context: `{_evidence_value(selinux.get('current_context', 'not_collected'))}`",
+        f"- SELinux denial collection: `{_status(selinux.get('denial_collection'))}`",
+        f"- Process capture: `{process_capture}` (scope `{process_state.get('scope', 'unknown')}`, completeness `{process_state.get('completeness', 'unknown')}`)",
+        f"- Selected processes (visibility/context): `{_selected_process_summary(process_state)}`",
+        f"- Process limitations: `{', '.join(process_limitations) if process_limitations else 'none'}`",
         f"- Root present: `{_evidence_value(report.get('root_state', {}).get('su_present', 'not_collected'))}`",
         f"- Magisk present: `{_evidence_value(report.get('magisk_state', {}).get('magisk_binary_present', 'not_collected'))}`",
         f"- Emulator: `{_evidence_value(report.get('emulator_state', {}).get('is_emulator', 'not_collected'))}`",
