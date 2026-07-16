@@ -6,7 +6,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .exceptions import (
     CollectionError,
@@ -22,15 +22,18 @@ def _reject_nonstandard_json_constant(value: str) -> None:
     raise ValueError(f"non-standard JSON constant: {value}")
 
 
-def write_json(data: Dict[str, Any], path: str | Path) -> None:
+def write_json(data: dict[str, Any], path: str | Path) -> None:
     p = Path(path)
     try:
-        payload = json.dumps(
-            data,
-            indent=2,
-            ensure_ascii=False,
-            allow_nan=False,
-        ) + "\n"
+        payload = (
+            json.dumps(
+                data,
+                indent=2,
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            + "\n"
+        )
     except (TypeError, ValueError) as exc:
         raise OutputWriteError("could not serialize JSON output") from exc
 
@@ -71,7 +74,7 @@ def write_json(data: Dict[str, Any], path: str | Path) -> None:
             pass
 
 
-def load_json(path: str | Path) -> Dict[str, Any]:
+def load_json(path: str | Path) -> dict[str, Any]:
     p = Path(path)
     label = safe_path_label(p)
     try:
@@ -102,14 +105,23 @@ def _cell(value: Any) -> str:
     return str(value).replace("|", "\\|")
 
 
-def diff_to_markdown(diff: Dict[str, Any]) -> str:
-    lines = [f"# Trust Diff {diff.get('diff_id', '')}", "", diff.get("summary", ""), "", "| Dimension | Severity | Before | After |", "|---|---|---|---|"]
+def diff_to_markdown(diff: dict[str, Any]) -> str:
+    lines = [
+        f"# Trust Diff {diff.get('diff_id', '')}",
+        "",
+        diff.get("summary", ""),
+        "",
+        "| Dimension | Severity | Before | After |",
+        "|---|---|---|---|",
+    ]
     for item in diff.get("changed_dimensions", []):
-        lines.append(f"| {item['dimension']} | {item['severity']} | `{_cell(item['before'])}` | `{_cell(item['after'])}` |")
+        lines.append(
+            f"| {item['dimension']} | {item['severity']} | `{_cell(item['before'])}` | `{_cell(item['after'])}` |"
+        )
     return "\n".join(lines) + "\n"
 
 
-def report_to_markdown(report: Dict[str, Any]) -> str:
+def report_to_markdown(report: dict[str, Any]) -> str:
     lines = [
         f"# Trust Report {report.get('report_id', '')}",
         "",

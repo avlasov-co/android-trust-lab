@@ -55,3 +55,18 @@ Every experiment must include:
 - status
 
 All new report types must follow the JSON schema.
+
+## Local pull-request checks
+
+Install the analyzer development dependencies, then run the same fast gate used
+by pull requests:
+
+```bash
+python -m pip install -e "analyzer[dev]"
+bash scripts/check.sh
+```
+
+The gate checks deterministic formatting, linting, static types, branch-aware
+tests, metadata and schemas, generated artifacts, package safety, shell syntax,
+and ShellCheck. Pre-commit uses the same Ruff and repository-specific checks for
+shorter feedback while editing.

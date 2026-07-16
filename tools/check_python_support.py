@@ -6,11 +6,10 @@ from __future__ import annotations
 import argparse
 import sys
 import tomllib
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import yaml
-
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
@@ -49,7 +48,9 @@ def support_errors(root: Path = ROOT) -> list[str]:
     if advertised_versions != set(SUPPORTED_PYTHON_VERSIONS):
         errors.append("package classifiers advertise an unsupported Python matrix")
 
-    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    workflow = yaml.safe_load(
+        (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    )
     test_job = workflow.get("jobs", {}).get("test", {})
     matrix = test_job.get("strategy", {}).get("matrix", {})
     ci_versions = tuple(str(value) for value in matrix.get("python-version", []))
@@ -57,15 +58,17 @@ def support_errors(root: Path = ROOT) -> list[str]:
         errors.append("CI Python matrix does not match the support policy")
     steps = test_job.get("steps", [])
     setup_steps = [
-        step for step in steps if str(step.get("uses", "")).startswith("actions/setup-python@")
+        step
+        for step in steps
+        if str(step.get("uses", "")).startswith("actions/setup-python@")
     ]
-    if len(setup_steps) != 1 or setup_steps[0].get("with", {}).get(
-        "python-version"
-    ) != "${{ matrix.python-version }}":
-        errors.append("CI setup-python must consume the Python matrix version")
-    if not any(
-        step.get("run") == "bash scripts/check.sh" for step in steps
+    if (
+        len(setup_steps) != 1
+        or setup_steps[0].get("with", {}).get("python-version")
+        != "${{ matrix.python-version }}"
     ):
+        errors.append("CI setup-python must consume the Python matrix version")
+    if not any(step.get("run") == "bash scripts/check.sh" for step in steps):
         errors.append("CI test matrix must run the complete repository gate")
 
     for relative in ("README.md", "analyzer/README.md", "docs/python_support.md"):

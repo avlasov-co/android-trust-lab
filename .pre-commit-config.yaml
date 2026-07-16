@@ -1,0 +1,56 @@
+repos:
+  - repo: local
+    hooks:
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+        entry: trailing-whitespace-fixer --markdown-linebreak-ext=md
+        language: system
+        types: [text]
+      - id: end-of-file-fixer
+        name: enforce final newline
+        entry: end-of-file-fixer
+        language: system
+        types: [text]
+      - id: check-json
+        name: check JSON syntax
+        entry: check-json
+        language: system
+        types: [json]
+      - id: check-yaml
+        name: check YAML syntax
+        entry: check-yaml
+        language: system
+        types: [yaml]
+      - id: ruff-check
+        name: Ruff lint
+        entry: ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Ruff format
+        entry: ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: schema-consistency
+        name: packaged schema consistency
+        entry: python tools/check_schema_consistency.py
+        language: system
+        pass_filenames: false
+        files: ^(analyzer/trustlab/schemas|collector/schema)/
+      - id: detect-secrets
+        name: detect secrets
+        # The generated artifact manifest contains SHA-256 digests, not credentials.
+        entry: detect-secrets-hook --baseline .secrets.baseline --exclude-files ^results/artifact_manifest\.json$
+        language: system
+        types: [text]
+        exclude: ^\.secrets\.baseline$
+      - id: shellcheck-android
+        name: ShellCheck Android scripts
+        entry: shellcheck --shell=sh --external-sources
+        language: system
+        files: ^module/trustlab-magisk/.*\.sh$
+      - id: shellcheck-repository
+        name: ShellCheck repository scripts
+        entry: shellcheck --shell=bash
+        language: system
+        files: ^scripts/.*\.sh$

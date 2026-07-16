@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List
 import hashlib
 import json
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
-from .parser import parse_raw_report
+from .exceptions import (
+    CollectionError,
+    MissingFileError,
+    NormalizationError,
+    safe_path_label,
+)
 from .observers import observer_spec
-from .exceptions import CollectionError, MissingFileError, NormalizationError, safe_path_label
+from .parser import parse_raw_report
 
 SENSITIVE_MOUNTS = {
     "/system": "system_mount",
@@ -29,7 +34,12 @@ PROPERTY_GROUP_PREFIXES = {
     "crypto": "ro.crypto.",
 }
 
-SECURITY_PROPERTIES = ["ro.debuggable", "ro.secure", "ro.adb.secure", "sys.boot_completed"]
+SECURITY_PROPERTIES = [
+    "ro.debuggable",
+    "ro.secure",
+    "ro.adb.secure",
+    "sys.boot_completed",
+]
 REPORTABLE_PROPERTY_KEYS = frozenset(
     {
         "ro.boot.flash.locked",
@@ -49,7 +59,7 @@ REPORTABLE_PROPERTY_KEYS = frozenset(
 )
 
 
-def unknown_mount(path: str) -> Dict[str, Any]:
+def unknown_mount(path: str) -> dict[str, Any]:
     return {
         "mount_point": path,
         "fs_type": "unknown",
@@ -59,31 +69,39 @@ def unknown_mount(path: str) -> Dict[str, Any]:
     }
 
 
-def select_mount(mounts: List[Dict[str, Any]], mount_point: str) -> Dict[str, Any]:
+def select_mount(mounts: list[dict[str, Any]], mount_point: str) -> dict[str, Any]:
     exact = [m for m in mounts if m.get("mount_point") == mount_point]
     if exact:
         return exact[-1]
-    nested = [m for m in mounts if str(m.get("mount_point", "")).startswith(mount_point + "/")]
+    nested = [
+        m for m in mounts if str(m.get("mount_point", "")).startswith(mount_point + "/")
+    ]
     if nested:
         return nested[-1]
     return unknown_mount(mount_point)
 
 
-def normalize_properties(props: Dict[str, str]) -> Dict[str, Any]:
-    grouped: Dict[str, Any] = {}
+def normalize_properties(props: dict[str, str]) -> dict[str, Any]:
+    grouped: dict[str, Any] = {}
     for group, prefix in PROPERTY_GROUP_PREFIXES.items():
         grouped[group] = {
             key: value
             for key, value in props.items()
             if key.startswith(prefix) and key in REPORTABLE_PROPERTY_KEYS
         }
-    grouped["security"] = {key: props.get(key, "unknown") for key in SECURITY_PROPERTIES}
+    grouped["security"] = {
+        key: props.get(key, "unknown") for key in SECURITY_PROPERTIES
+    }
     grouped["all_count"] = len(props)
     return grouped
 
 
-def normalize_selinux(mode: str) -> Dict[str, Any]:
-    normalized = mode if mode in {"enforcing", "permissive", "disabled", "unknown", "inaccessible"} else "unknown"
+def normalize_selinux(mode: str) -> dict[str, Any]:
+    normalized = (
+        mode
+        if mode in {"enforcing", "permissive", "disabled", "unknown", "inaccessible"}
+        else "unknown"
+    )
     return {
         "mode": normalized,
         "policy_visible": normalized not in {"unknown", "inaccessible"},
@@ -91,7 +109,7 @@ def normalize_selinux(mode: str) -> Dict[str, Any]:
     }
 
 
-def detect_emulator(props: Dict[str, str], target_type: str) -> Dict[str, Any]:
+def detect_emulator(props: dict[str, str], target_type: str) -> dict[str, Any]:
     fingerprint = props.get("ro.build.fingerprint", "").lower()
     model = props.get("ro.product.model", "").lower()
     manufacturer = props.get("ro.product.manufacturer", "").lower()
@@ -104,20 +122,32 @@ def detect_emulator(props: Dict[str, str], target_type: str) -> Dict[str, Any]:
         "ro.boot.qemu": props.get("ro.boot.qemu", ""),
     }.items():
         val = str(value).lower()
-        if any(token in val for token in ["generic", "emulator", "sdk_gphone", "goldfish", "ranchu"]) or val == "1":
+        if (
+            any(
+                token in val
+                for token in ["generic", "emulator", "sdk_gphone", "goldfish", "ranchu"]
+            )
+            or val == "1"
+        ):
             indicators.append(key)
     is_emulator = target_type == "avd" or bool(indicators)
     return {"is_emulator": is_emulator, "indicators": sorted(set(indicators))}
 
 
-def normalize_mounts(mounts: List[Dict[str, Any]]) -> Dict[str, Any]:
-    result = {field: select_mount(mounts, path) for path, field in SENSITIVE_MOUNTS.items()}
-    result["overlay_detected"] = any(m.get("classification") == "overlay" for m in mounts)
+def normalize_mounts(mounts: list[dict[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        field: select_mount(mounts, path) for path, field in SENSITIVE_MOUNTS.items()
+    }
+    result["overlay_detected"] = any(
+        m.get("classification") == "overlay" for m in mounts
+    )
     writable = []
     for path, field in SENSITIVE_MOUNTS.items():
         mount = result[field]
         options = set(mount.get("options", []))
-        if path != "/data" and (mount.get("classification") in {"read-write", "overlay"} or "rw" in options):
+        if path != "/data" and (
+            mount.get("classification") in {"read-write", "overlay"} or "rw" in options
+        ):
             writable.append(path)
     result["writable_sensitive_mounts"] = writable
     result["integrity_summary"] = {
@@ -127,7 +157,7 @@ def normalize_mounts(mounts: List[Dict[str, Any]]) -> Dict[str, Any]:
     return result
 
 
-def root_state(parsed: Dict[str, Any]) -> Dict[str, Any]:
+def root_state(parsed: dict[str, Any]) -> dict[str, Any]:
     identity = parsed.get("id", {})
     uid = str(identity.get("uid", "unknown"))
     gid = str(identity.get("gid", "unknown"))
@@ -142,7 +172,7 @@ def root_state(parsed: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def magisk_state(parsed: Dict[str, Any]) -> Dict[str, Any]:
+def magisk_state(parsed: dict[str, Any]) -> dict[str, Any]:
     raw = parsed.get("magisk", "") or ""
     lower = raw.lower()
     present = "magisk" in lower and "not found" not in lower
@@ -160,7 +190,9 @@ def magisk_state(parsed: Dict[str, Any]) -> Dict[str, Any]:
             version = clean.split(":", 1)[-1].strip() if ":" in clean else clean
         if lowered.startswith("magisk_path="):
             path = clean.split("=", 1)[1].strip()
-        elif not lowered.startswith("magisk_data_path=") and ("/magisk" in lowered or clean.endswith("magisk")):
+        elif not lowered.startswith("magisk_data_path=") and (
+            "/magisk" in lowered or clean.endswith("magisk")
+        ):
             path = clean
         if "zygisk" in lowered:
             indicators.append(clean)
@@ -169,15 +201,21 @@ def magisk_state(parsed: Dict[str, Any]) -> Dict[str, Any]:
         "magisk_version": version,
         "magisk_path": path,
         "zygisk_visible_indicators": indicators,
-        "module_context": "androidtrustlab" if "androidtrustlab" in lower else "unknown",
+        "module_context": "androidtrustlab"
+        if "androidtrustlab" in lower
+        else "unknown",
     }
 
 
-def _lookup_with_boot_fallback(props: Dict[str, str], boot_state: Dict[str, str], key: str) -> str:
+def _lookup_with_boot_fallback(
+    props: dict[str, str], boot_state: dict[str, str], key: str
+) -> str:
     return props.get(key) or boot_state.get(key) or "unknown"
 
 
-def verified_boot_state(props: Dict[str, str], target_type: str, boot_state: Dict[str, str] | None = None) -> Dict[str, Any]:
+def verified_boot_state(
+    props: dict[str, str], target_type: str, boot_state: dict[str, str] | None = None
+) -> dict[str, Any]:
     boot_state = boot_state or {}
     raw_keys = [
         "ro.boot.verifiedbootstate",
@@ -197,7 +235,7 @@ def verified_boot_state(props: Dict[str, str], target_type: str, boot_state: Dic
 
 
 def build_report(
-    parsed: Dict[str, Any],
+    parsed: dict[str, Any],
     *,
     experiment_id: str = "unknown",
     target_type: str = "unknown",
@@ -206,16 +244,22 @@ def build_report(
     raw_artifact: str = "unknown",
     report_id_material: str | None = None,
     collection_timestamp: str | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     observer = observer_spec(observer_type)
     props = parsed.get("properties", {})
     boot_state_raw = parsed.get("boot_state_raw", {}) or {}
     mounts = parsed.get("mounts", [])
-    timestamp = collection_timestamp or datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    timestamp = collection_timestamp or datetime.now(UTC).replace(
+        microsecond=0
+    ).isoformat().replace("+00:00", "Z")
     identifier_material = report_id_material or raw_artifact
-    rid_source = f"{experiment_id}:{observer.observer_id}:{timestamp}:{identifier_material}"
+    rid_source = (
+        f"{experiment_id}:{observer.observer_id}:{timestamp}:{identifier_material}"
+    )
     report_id = "atl-" + hashlib.sha256(rid_source.encode()).hexdigest()[:16]
-    cmdline = parsed.get("cmdline", "") or boot_state_raw.get("kernel_cmdline", "") or ""
+    cmdline = (
+        parsed.get("cmdline", "") or boot_state_raw.get("kernel_cmdline", "") or ""
+    )
     emulator = detect_emulator(props, target_type)
     collection_errors = []
     if not props:
@@ -243,9 +287,21 @@ def build_report(
             "collection_method": collection_method,
         },
         "boot_state": {
-            "boot_completed": props.get("sys.boot_completed", boot_state_raw.get("sys.boot_completed", "unknown")),
-            "boot_reason": props.get("ro.boot.bootreason", props.get("sys.boot.reason", boot_state_raw.get("ro.boot.bootreason", "unknown"))),
-            "slot_suffix": props.get("ro.boot.slot_suffix", boot_state_raw.get("ro.boot.slot_suffix", "unknown")),
+            "boot_completed": props.get(
+                "sys.boot_completed",
+                boot_state_raw.get("sys.boot_completed", "unknown"),
+            ),
+            "boot_reason": props.get(
+                "ro.boot.bootreason",
+                props.get(
+                    "sys.boot.reason",
+                    boot_state_raw.get("ro.boot.bootreason", "unknown"),
+                ),
+            ),
+            "slot_suffix": props.get(
+                "ro.boot.slot_suffix",
+                boot_state_raw.get("ro.boot.slot_suffix", "unknown"),
+            ),
             "kernel_cmdline_present": bool(cmdline.strip()),
         },
         "verified_boot": verified_boot_state(props, target_type, boot_state_raw),
@@ -276,7 +332,7 @@ def normalize_raw_file(
     collection_method: str = "raw_artifact",
     collection_timestamp: str | None = None,
     raw_artifact_ref: str | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     observer_spec(observer_type)
     source = Path(input_path)
     label = safe_path_label(source)
@@ -289,7 +345,9 @@ def normalize_raw_file(
     except OSError as exc:
         raise CollectionError(f"could not read input artifact: {label}") from exc
     except (TypeError, ValueError) as exc:
-        raise NormalizationError(f"could not normalize input artifact: {label}") from exc
+        raise NormalizationError(
+            f"could not normalize input artifact: {label}"
+        ) from exc
     stable_raw_artifact = raw_artifact_ref if raw_artifact_ref is not None else label
     report_id_material = stable_raw_artifact
     if raw_artifact_ref is None:

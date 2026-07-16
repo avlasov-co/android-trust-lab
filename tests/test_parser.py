@@ -1,5 +1,6 @@
-from pathlib import Path
 import sys
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
 from trustlab.parser import parse_getprop, parse_id, parse_mounts, parse_raw_report
@@ -24,7 +25,9 @@ def test_parse_mounts():
 
 
 def test_parse_raw_report_fixture():
-    parsed = parse_raw_report(Path(__file__).parent / "fixtures" / "sample_raw_report.txt")
+    parsed = parse_raw_report(
+        Path(__file__).parent / "fixtures" / "sample_raw_report.txt"
+    )
     assert parsed["properties"]["ro.secure"] == "1"
     assert parsed["selinux_mode"] == "enforcing"
 

@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 SECTION_RE = re.compile(r"^===\s*([A-Z0-9_ -]+)\s*===\s*$")
 GETPROP_RE = re.compile(r"^\[([^\]]+)\]:\s*\[(.*)\]\s*$")
 ID_RE = re.compile(r"uid=(\d+)\(([^)]*)\)\s+gid=(\d+)\(([^)]*)\)")
 
 
-def split_sections(text: str) -> Dict[str, str]:
-    sections: Dict[str, List[str]] = {"UNSECTIONED": []}
+def split_sections(text: str) -> dict[str, str]:
+    sections: dict[str, list[str]] = {"UNSECTIONED": []}
     current = "UNSECTIONED"
     for line in text.splitlines():
         match = SECTION_RE.match(line.strip())
@@ -21,11 +21,15 @@ def split_sections(text: str) -> Dict[str, str]:
             sections.setdefault(current, [])
         else:
             sections.setdefault(current, []).append(line)
-    return {key: "\n".join(value).strip() for key, value in sections.items() if "\n".join(value).strip()}
+    return {
+        key: "\n".join(value).strip()
+        for key, value in sections.items()
+        if "\n".join(value).strip()
+    }
 
 
-def parse_getprop(text: str) -> Dict[str, str]:
-    props: Dict[str, str] = {}
+def parse_getprop(text: str) -> dict[str, str]:
+    props: dict[str, str] = {}
     for line in text.splitlines():
         match = GETPROP_RE.match(line.strip())
         if match:
@@ -33,9 +37,8 @@ def parse_getprop(text: str) -> Dict[str, str]:
     return props
 
 
-
-def parse_key_values(text: str) -> Dict[str, str]:
-    values: Dict[str, str] = {}
+def parse_key_values(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
     for line in text.splitlines():
         line = line.strip()
         if not line or "=" not in line:
@@ -45,10 +48,16 @@ def parse_key_values(text: str) -> Dict[str, str]:
     return values
 
 
-def parse_id(text: str) -> Dict[str, str]:
+def parse_id(text: str) -> dict[str, str]:
     match = ID_RE.search(text.strip())
     if not match:
-        return {"uid": "unknown", "user": "unknown", "gid": "unknown", "group": "unknown", "raw": text.strip()}
+        return {
+            "uid": "unknown",
+            "user": "unknown",
+            "gid": "unknown",
+            "group": "unknown",
+            "raw": text.strip(),
+        }
     return {
         "uid": match.group(1),
         "user": match.group(2),
@@ -67,14 +76,20 @@ def parse_getenforce(text: str) -> str:
     return "unknown"
 
 
-def parse_mount_line(line: str) -> Dict[str, Any]:
+def parse_mount_line(line: str) -> dict[str, Any]:
     raw = line.strip()
     if not raw:
-        return {"raw": raw, "mount_point": "unknown", "fs_type": "unknown", "options": [], "classification": "unknown"}
+        return {
+            "raw": raw,
+            "mount_point": "unknown",
+            "fs_type": "unknown",
+            "options": [],
+            "classification": "unknown",
+        }
 
     mount_point = "unknown"
     fs_type = "unknown"
-    options: List[str] = []
+    options: list[str] = []
 
     # Common Android/Linux format: device on /path type ext4 (ro,seclabel,...)
     m = re.search(r"\s+on\s+(\S+)\s+type\s+(\S+)\s+\(([^)]*)\)", raw)
@@ -100,7 +115,7 @@ def parse_mount_line(line: str) -> Dict[str, Any]:
     }
 
 
-def classify_mount(fs_type: str, options: List[str]) -> str:
+def classify_mount(fs_type: str, options: list[str]) -> str:
     opts = set(options)
     if fs_type == "overlay":
         return "overlay"
@@ -115,11 +130,11 @@ def classify_mount(fs_type: str, options: List[str]) -> str:
     return "unknown"
 
 
-def parse_mounts(text: str) -> List[Dict[str, Any]]:
+def parse_mounts(text: str) -> list[dict[str, Any]]:
     return [parse_mount_line(line) for line in text.splitlines() if line.strip()]
 
 
-def parse_paths(text: str) -> List[str]:
+def parse_paths(text: str) -> list[str]:
     values = []
     for line in text.splitlines():
         line = line.strip()
@@ -128,7 +143,7 @@ def parse_paths(text: str) -> List[str]:
     return values
 
 
-def parse_processes(text: str) -> Dict[str, Any]:
+def parse_processes(text: str) -> dict[str, Any]:
     lines = [line for line in text.splitlines() if line.strip()]
     joined = "\n".join(lines).lower()
     return {
@@ -142,18 +157,24 @@ def parse_processes(text: str) -> Dict[str, Any]:
     }
 
 
-def parse_raw_report(path: str | Path) -> Dict[str, Any]:
+def parse_raw_report(path: str | Path) -> dict[str, Any]:
     text = Path(path).read_text(encoding="utf-8")
     sections = split_sections(text)
     return {
         "sections": sections,
-        "properties": parse_getprop(sections.get("GETPROP", "") or sections.get("PROPS", "")),
+        "properties": parse_getprop(
+            sections.get("GETPROP", "") or sections.get("PROPS", "")
+        ),
         "boot_state_raw": parse_key_values(sections.get("BOOT_STATE", "")),
         "mounts": parse_mounts(sections.get("MOUNT", "") or sections.get("MOUNTS", "")),
         "id": parse_id(sections.get("ID", "")),
-        "selinux_mode": parse_getenforce(sections.get("GETENFORCE", "") or sections.get("SELINUX", "")),
+        "selinux_mode": parse_getenforce(
+            sections.get("GETENFORCE", "") or sections.get("SELINUX", "")
+        ),
         "cmdline": sections.get("CMDLINE", ""),
         "su_paths": parse_paths(sections.get("SU_PATHS", "")),
         "magisk": sections.get("MAGISK", ""),
-        "processes": parse_processes(sections.get("PS", "") or sections.get("PROCESSES", "")),
+        "processes": parse_processes(
+            sections.get("PS", "") or sections.get("PROCESSES", "")
+        ),
     }

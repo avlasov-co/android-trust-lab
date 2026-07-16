@@ -34,4 +34,3 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 |---|---|---|---|---|
 | magisk_presence | medium | `False` | `True` | Magisk-related visibility changed between reports. The project records visibility and does not hide or modify it. |
 | observer_privilege | info | `shell` | `root` | Observer privilege changed, so visibility differences may be caused by privilege boundary rather than target mutation. |
-

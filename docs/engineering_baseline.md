@@ -78,13 +78,9 @@ This is an observed baseline, not a Phase 1 coverage threshold.
 
 `tools/generate_report.py` is the canonical generator for five normalized
 sample reports, `datasets/manifest.json`, four result diffs, the sample diff
-fixture, and three Markdown result views. Use `--check` in verification and CI;
-run without `--check` only after intentionally changing a generator input.
-Review every regenerated file before committing it.
-
-`results/artifact_manifest.json` is not currently produced or freshness-checked
-by that generator. Its stale validation/version fields are a named provenance
-defect for the versioning work rather than evidence of a completed check.
+fixture, three Markdown result views, and `results/artifact_manifest.json`. Use
+`--check` in verification and CI; run without `--check` only after intentionally
+changing a generator input. Review every regenerated file before committing it.
 
 ## Evidence classifications
 
@@ -132,6 +128,10 @@ all validation failures are reported deterministically.
 Phase 2 Step 08 establishes Python 3.11 as the minimum and tests the complete
 3.11, 3.12, 3.13, and 3.14 support matrix in CI. A consistency checker binds
 package metadata, classifiers, documentation, and the workflow matrix.
+
+Phase 2 Step 09 establishes deterministic Ruff formatting and linting, strict
+typing for analyzer and tool code, branch-aware pytest/coverage configuration,
+pre-commit hygiene, line-ending policy, and ShellCheck as repository gates.
 
 These defects are recorded here rather than encoded as expected Step 01
 behavior. The Step 01 product path remains unchanged apart from a valid CLI

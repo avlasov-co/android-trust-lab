@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import json
 import subprocess
-from pathlib import Path
-from typing import Any, Iterable
-
 import tomllib
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 import yaml
 from jsonschema import Draft7Validator, FormatChecker
@@ -94,7 +94,9 @@ def validate_citation(citation: dict[str, Any]) -> None:
     if errors:
         error = errors[0]
         location = "/" + "/".join(map(str, error.path)) if error.path else "/"
-        raise ValueError(f"CITATION.cff fails the CFF 1.2 schema at {location}: {error.message}")
+        raise ValueError(
+            f"CITATION.cff fails the CFF 1.2 schema at {location}: {error.message}"
+        )
 
     required_values = {
         "cff-version": "1.2.0",
@@ -112,7 +114,11 @@ def validate_citation(citation: dict[str, Any]) -> None:
     if not isinstance(authors, list) or not authors:
         raise ValueError("CITATION.cff must contain at least one author")
     for author in authors:
-        if not isinstance(author, dict) or not author.get("family-names") or not author.get("given-names"):
+        if (
+            not isinstance(author, dict)
+            or not author.get("family-names")
+            or not author.get("given-names")
+        ):
             raise ValueError("each CFF author must have family-names and given-names")
 
     preferred = citation.get("preferred-citation")
@@ -125,7 +131,9 @@ def validate_citation(citation: dict[str, Any]) -> None:
 
 
 def main(paths: Iterable[Path] | None = None) -> int:
-    stale_paths = retired_slug_occurrences(paths if paths is not None else tracked_text_paths())
+    stale_paths = retired_slug_occurrences(
+        paths if paths is not None else tracked_text_paths()
+    )
     if stale_paths:
         rendered_paths = []
         for path in stale_paths:
@@ -136,7 +144,9 @@ def main(paths: Iterable[Path] | None = None) -> int:
         rendered = ", ".join(rendered_paths)
         raise ValueError(f"retired repository slug found in tracked text: {rendered}")
 
-    pyproject = tomllib.loads((ROOT / "analyzer" / "pyproject.toml").read_text(encoding="utf-8"))
+    pyproject = tomllib.loads(
+        (ROOT / "analyzer" / "pyproject.toml").read_text(encoding="utf-8")
+    )
     project = pyproject["project"]
     if project["name"] != CANONICAL_IDENTIFIERS["distribution"]:
         raise ValueError("Python distribution name is not canonical")
@@ -148,7 +158,11 @@ def main(paths: Iterable[Path] | None = None) -> int:
         raise ValueError("Python import package is missing")
 
     module_fields = {}
-    for line in (ROOT / "module/trustlab-magisk/module.prop").read_text(encoding="utf-8").splitlines():
+    for line in (
+        (ROOT / "module/trustlab-magisk/module.prop")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ):
         if "=" in line:
             key, value = line.split("=", 1)
             module_fields[key] = value
@@ -158,7 +172,9 @@ def main(paths: Iterable[Path] | None = None) -> int:
     validate_citation(load_mapping(ROOT / "CITATION.cff"))
 
     for filename, expected_id in SCHEMA_IDS.items():
-        schema = json.loads((ROOT / "collector/schema" / filename).read_text(encoding="utf-8"))
+        schema = json.loads(
+            (ROOT / "collector/schema" / filename).read_text(encoding="utf-8")
+        )
         if schema.get("$id") != expected_id:
             raise ValueError(f"{filename} $id is not canonical")
 

@@ -1,11 +1,11 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
-from trustlab.normalizer import normalize_raw_file
-from trustlab.normalizer import normalize_properties
+from trustlab.normalizer import normalize_properties, normalize_raw_file
 
 
 def test_normalize_fixture():
@@ -22,10 +22,13 @@ def test_normalize_fixture():
     assert report["emulator_state"]["is_emulator"] is True
 
 
-
 def test_normalize_magisk_sample():
     report = normalize_raw_file(
-        Path(__file__).resolve().parents[1] / "datasets" / "samples" / "magisk_collector" / "raw_sample.txt",
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "samples"
+        / "magisk_collector"
+        / "raw_sample.txt",
         experiment_id="E05_magisk_collector",
         target_type="avd",
         observer_type="root_collector",
@@ -40,7 +43,11 @@ def test_normalize_magisk_sample():
 
 def test_normalize_writable_system_sample():
     report = normalize_raw_file(
-        Path(__file__).resolve().parents[1] / "datasets" / "samples" / "writable_system_avd" / "raw_sample.txt",
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "samples"
+        / "writable_system_avd"
+        / "raw_sample.txt",
         experiment_id="E03_writable_system_avd",
         target_type="avd",
         observer_type="adb_shell",
@@ -54,6 +61,7 @@ def test_normalize_writable_system_sample():
 
 def test_fixture_normalized_report_matches_current_normalizer():
     import json
+
     fixture_dir = Path(__file__).parent / "fixtures"
     report = normalize_raw_file(
         fixture_dir / "sample_raw_report.txt",
@@ -64,7 +72,9 @@ def test_fixture_normalized_report_matches_current_normalizer():
         collection_timestamp="2026-04-25T15:06:21Z",
         raw_artifact_ref="tests/fixtures/sample_raw_report.txt",
     )
-    expected = json.loads((fixture_dir / "sample_normalized_report.json").read_text(encoding="utf-8"))
+    expected = json.loads(
+        (fixture_dir / "sample_normalized_report.json").read_text(encoding="utf-8")
+    )
     assert report == expected
 
 
@@ -91,7 +101,9 @@ def test_default_provenance_distinguishes_same_named_artifacts(tmp_path):
     first.parent.mkdir()
     second.parent.mkdir()
     first.write_text(source, encoding="utf-8")
-    second.write_text(source.replace("[ro.secure]: [1]", "[ro.secure]: [0]"), encoding="utf-8")
+    second.write_text(
+        source.replace("[ro.secure]: [1]", "[ro.secure]: [0]"), encoding="utf-8"
+    )
 
     first_report = normalize_raw_file(
         first, collection_timestamp="2026-04-25T15:06:21Z"
@@ -100,7 +112,9 @@ def test_default_provenance_distinguishes_same_named_artifacts(tmp_path):
         second, collection_timestamp="2026-04-25T15:06:21Z"
     )
 
-    assert first_report["raw_artifacts"] == second_report["raw_artifacts"] == ["raw.txt"]
+    assert (
+        first_report["raw_artifacts"] == second_report["raw_artifacts"] == ["raw.txt"]
+    )
     assert first_report["report_id"] != second_report["report_id"]
     assert str(tmp_path) not in str(first_report)
     assert str(tmp_path) not in str(second_report)

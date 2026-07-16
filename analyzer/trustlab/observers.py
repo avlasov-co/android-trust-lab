@@ -43,8 +43,7 @@ OBSERVER_REGISTRY = {
 }
 
 OBSERVER_PRIVILEGE = {
-    observer_id: spec.privilege_level
-    for observer_id, spec in OBSERVER_REGISTRY.items()
+    observer_id: spec.privilege_level for observer_id, spec in OBSERVER_REGISTRY.items()
 }
 
 

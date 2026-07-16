@@ -13,17 +13,38 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, TypedDict, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
 
-from trustlab.normalizer import normalize_raw_file
 from trustlab import __version__
 from trustlab.diff import make_diff
-from trustlab.validators import validate_report, validate_diff
+from trustlab.normalizer import normalize_raw_file
+from trustlab.validators import validate_diff, validate_report
 
-SAMPLES = [
+
+class SampleSpec(TypedDict):
+    sample_id: str
+    experiment_id: str
+    target_type: str
+    observer_type: str
+    collection_method: str
+    timestamp: str
+    raw: str
+    report: str
+    limitations: list[str]
+
+
+class DiffSpec(TypedDict):
+    name: str
+    title: str
+    base: str
+    compare: str
+    output: str
+
+
+SAMPLES: list[SampleSpec] = [
     {
         "sample_id": "stock-avd-adb-sample",
         "experiment_id": "E01_stock_avd",
@@ -33,7 +54,11 @@ SAMPLES = [
         "timestamp": "2026-04-25T15:06:21Z",
         "raw": "datasets/samples/stock_avd/raw_sample.txt",
         "report": "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
-        "limitations": ["synthetic sample", "emulator target", "no hardware-backed boot conclusion"],
+        "limitations": [
+            "synthetic sample",
+            "emulator target",
+            "no hardware-backed boot conclusion",
+        ],
     },
     {
         "sample_id": "rooted-avd-adb-sample",
@@ -44,7 +69,11 @@ SAMPLES = [
         "timestamp": "2026-04-25T15:07:21Z",
         "raw": "datasets/samples/rooted_avd/raw_adb_sample.txt",
         "report": "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
-        "limitations": ["synthetic rooted ADB-visible sample", "emulator target", "no hardware-backed boot conclusion"],
+        "limitations": [
+            "synthetic rooted ADB-visible sample",
+            "emulator target",
+            "no hardware-backed boot conclusion",
+        ],
     },
     {
         "sample_id": "rooted-avd-root-sample",
@@ -55,7 +84,11 @@ SAMPLES = [
         "timestamp": "2026-04-25T15:07:51Z",
         "raw": "datasets/samples/rooted_avd/raw_root_sample.txt",
         "report": "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
-        "limitations": ["synthetic rooted root-observer sample", "emulator target", "no hardware-backed boot conclusion"],
+        "limitations": [
+            "synthetic rooted root-observer sample",
+            "emulator target",
+            "no hardware-backed boot conclusion",
+        ],
     },
     {
         "sample_id": "writable-system-avd-adb-sample",
@@ -66,7 +99,12 @@ SAMPLES = [
         "timestamp": "2026-04-25T15:08:21Z",
         "raw": "datasets/samples/writable_system_avd/raw_sample.txt",
         "report": "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
-        "limitations": ["synthetic writable-system sample", "emulator target", "overlay evidence only", "no hardware-backed boot conclusion"],
+        "limitations": [
+            "synthetic writable-system sample",
+            "emulator target",
+            "overlay evidence only",
+            "no hardware-backed boot conclusion",
+        ],
     },
     {
         "sample_id": "magisk-collector-root-sample",
@@ -77,11 +115,15 @@ SAMPLES = [
         "timestamp": "2026-04-25T15:50:00Z",
         "raw": "datasets/samples/magisk_collector/raw_sample.txt",
         "report": "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
-        "limitations": ["synthetic Magisk collector sample", "emulator target", "no hardware-backed boot conclusion"],
+        "limitations": [
+            "synthetic Magisk collector sample",
+            "emulator target",
+            "no hardware-backed boot conclusion",
+        ],
     },
 ]
 
-DIFFS = [
+DIFFS: list[DiffSpec] = [
     {
         "name": "stock_adb_vs_rooted_adb",
         "title": "E01 stock AVD ADB observer vs E02 rooted AVD ADB observer",
@@ -114,11 +156,26 @@ DIFFS = [
 
 ARTIFACT_SPECS = [
     ("datasets/manifest.json", "sample_manifest"),
-    ("datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json", "normalized_sample_report"),
-    ("datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json", "normalized_sample_report"),
-    ("datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json", "normalized_sample_report"),
-    ("datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json", "normalized_sample_report"),
-    ("datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json", "normalized_sample_report"),
+    (
+        "datasets/samples/stock_avd/E01_stock_avd__observer-adb__sample.json",
+        "normalized_sample_report",
+    ),
+    (
+        "datasets/samples/rooted_avd/E02_rooted_avd__observer-adb__sample.json",
+        "normalized_sample_report",
+    ),
+    (
+        "datasets/samples/rooted_avd/E02_rooted_avd__observer-root__sample.json",
+        "normalized_sample_report",
+    ),
+    (
+        "datasets/samples/writable_system_avd/E03_writable_system_avd__observer-adb__sample.json",
+        "normalized_sample_report",
+    ),
+    (
+        "datasets/samples/magisk_collector/E05_magisk_collector__observer-root__sample.json",
+        "normalized_sample_report",
+    ),
     ("results/diffs/stock_adb_vs_rooted_adb.json", "generated_diff"),
     ("results/diffs/rooted_adb_vs_rooted_root.json", "generated_diff"),
     ("results/diffs/stock_vs_writable_system.json", "generated_diff"),
@@ -129,8 +186,11 @@ ARTIFACT_SPECS = [
 ]
 
 
-def load_json(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+def load_json(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"expected a JSON object in {path}")
+    return value
 
 
 def stable_json(data: Any) -> str:
@@ -145,7 +205,7 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def artifact_manifest() -> Dict[str, Any]:
+def artifact_manifest() -> dict[str, Any]:
     return {
         "project": "android-trust-lab",
         "repository": "https://github.com/avlasov-co/android-trust-lab",
@@ -169,7 +229,9 @@ def artifact_manifest() -> Dict[str, Any]:
     }
 
 
-def write_if_changed(path: Path, content: str, *, check: bool, changed: List[str]) -> None:
+def write_if_changed(
+    path: Path, content: str, *, check: bool, changed: list[str]
+) -> None:
     old = path.read_text(encoding="utf-8") if path.exists() else None
     if old != content:
         changed.append(str(path.relative_to(ROOT)))
@@ -178,7 +240,9 @@ def write_if_changed(path: Path, content: str, *, check: bool, changed: List[str
             path.write_text(content, encoding="utf-8")
 
 
-def write_json_if_changed(path: Path, data: Any, *, check: bool, changed: List[str]) -> None:
+def write_json_if_changed(
+    path: Path, data: Any, *, check: bool, changed: list[str]
+) -> None:
     write_if_changed(path, stable_json(data), check=check, changed=changed)
 
 
@@ -194,7 +258,7 @@ def fmt(value: Any) -> str:
     return str(value)
 
 
-def sample_report(sample: Dict[str, str]) -> Dict[str, Any]:
+def sample_report(sample: SampleSpec) -> dict[str, Any]:
     report = normalize_raw_file(
         ROOT / sample["raw"],
         experiment_id=sample["experiment_id"],
@@ -208,7 +272,7 @@ def sample_report(sample: Dict[str, str]) -> Dict[str, Any]:
     return report
 
 
-def manifest(samples: List[Dict[str, str]]) -> Dict[str, Any]:
+def manifest(samples: list[SampleSpec]) -> dict[str, Any]:
     return {
         "schema_version": "1.0.0",
         "samples": [
@@ -228,7 +292,7 @@ def manifest(samples: List[Dict[str, str]]) -> Dict[str, Any]:
     }
 
 
-def summary_table(reports: List[Dict[str, Any]]) -> str:
+def summary_table(reports: list[dict[str, Any]]) -> str:
     lines = [
         "# Summary Table",
         "",
@@ -259,7 +323,7 @@ def summary_table(reports: List[Dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def diff_markdown(diff_entries: List[Tuple[Dict[str, str], Dict[str, Any]]]) -> str:
+def diff_markdown(diff_entries: list[tuple[DiffSpec, dict[str, Any]]]) -> str:
     lines = [
         "# Trust State Diffs",
         "",
@@ -280,22 +344,24 @@ def diff_markdown(diff_entries: List[Tuple[Dict[str, str], Dict[str, Any]]]) -> 
                 f"| {item['dimension']} | {item['severity']} | `{fmt(item['before'])}` | `{fmt(item['after'])}` | {item['interpretation']} |"
             )
         if not diff["changed_dimensions"]:
-            lines.append("| none | info | `unchanged` | `unchanged` | No measured default dimension changed. |")
+            lines.append(
+                "| none | info | `unchanged` | `unchanged` | No measured default dimension changed. |"
+            )
         lines.append("")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip() + "\n"
 
 
-def dimension_value(report: Dict[str, Any], dimension: str) -> str:
+def dimension_value(report: dict[str, Any], dimension: str) -> str:
     if dimension == "bootloader_lock_state":
-        return report["verified_boot"]["flash_locked"]
+        return cast(str, report["verified_boot"]["flash_locked"])
     if dimension == "verified_boot_state":
-        return report["verified_boot"]["verified_boot_state"]
+        return cast(str, report["verified_boot"]["verified_boot_state"])
     if dimension == "vbmeta_state":
-        return report["verified_boot"]["vbmeta_device_state"]
+        return cast(str, report["verified_boot"]["vbmeta_device_state"])
     if dimension == "verity_mode":
-        return report["verified_boot"]["verity_mode"]
+        return cast(str, report["verified_boot"]["verity_mode"])
     if dimension == "selinux_mode":
-        return report["selinux"]["mode"]
+        return cast(str, report["selinux"]["mode"])
     if dimension == "mount_integrity":
         writable = report["mounts"]["writable_sensitive_mounts"]
         overlay = report["mounts"]["overlay_detected"]
@@ -307,11 +373,11 @@ def dimension_value(report: Dict[str, Any], dimension: str) -> str:
     if dimension == "property_consistency":
         return fmt(report["properties"]["security"])
     if dimension == "observer_privilege":
-        return report["observer"]["privilege_level"]
+        return cast(str, report["observer"]["privilege_level"])
     return "unknown"
 
 
-def matrix_markdown(reports_by_exp: Dict[str, Dict[str, Any]]) -> str:
+def matrix_markdown(reports_by_exp: dict[str, dict[str, Any]]) -> str:
     classes = [
         ("Class A stock virtual", "E01_stock_avd"),
         ("Class B rooted virtual", "E02_rooted_avd"),
@@ -351,14 +417,18 @@ def matrix_markdown(reports_by_exp: Dict[str, Dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate sample reports and results.")
-    parser.add_argument("--check", action="store_true", help="Fail if generated artifacts differ from checked-in files")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Fail if generated artifacts differ from checked-in files",
+    )
     args = parser.parse_args(argv)
 
-    changed: List[str] = []
-    reports: List[Dict[str, Any]] = []
-    reports_by_exp: Dict[str, Dict[str, Any]] = {}
+    changed: list[str] = []
+    reports: list[dict[str, Any]] = []
+    reports_by_exp: dict[str, dict[str, Any]] = {}
 
     for sample in SAMPLES:
         report = sample_report(sample)
@@ -366,25 +436,59 @@ def main(argv: List[str] | None = None) -> int:
         reports_by_exp.setdefault(sample["experiment_id"], report)
         if sample["observer_type"] == "adb_shell":
             reports_by_exp[sample["experiment_id"]] = report
-        write_json_if_changed(ROOT / sample["report"], report, check=args.check, changed=changed)
+        write_json_if_changed(
+            ROOT / sample["report"], report, check=args.check, changed=changed
+        )
 
-    write_json_if_changed(ROOT / "datasets/manifest.json", manifest(SAMPLES), check=args.check, changed=changed)
+    write_json_if_changed(
+        ROOT / "datasets/manifest.json",
+        manifest(SAMPLES),
+        check=args.check,
+        changed=changed,
+    )
 
-    diff_entries: List[Tuple[Dict[str, str], Dict[str, Any]]] = []
+    diff_entries: list[tuple[DiffSpec, dict[str, Any]]] = []
     for meta in DIFFS:
         base = load_json(ROOT / meta["base"])
         compare = load_json(ROOT / meta["compare"])
         diff = make_diff(base, compare)
         validate_diff(diff)
         diff_entries.append((meta, diff))
-        write_json_if_changed(ROOT / meta["output"], diff, check=args.check, changed=changed)
+        write_json_if_changed(
+            ROOT / meta["output"], diff, check=args.check, changed=changed
+        )
         if meta["name"] == "stock_adb_vs_rooted_adb":
-            write_json_if_changed(ROOT / "tests/fixtures/sample_diff.json", diff, check=args.check, changed=changed)
+            write_json_if_changed(
+                ROOT / "tests/fixtures/sample_diff.json",
+                diff,
+                check=args.check,
+                changed=changed,
+            )
 
-    write_if_changed(ROOT / "results/summary_table.md", summary_table(reports), check=args.check, changed=changed)
-    write_if_changed(ROOT / "results/trust_state_diffs.md", diff_markdown(diff_entries), check=args.check, changed=changed)
-    write_if_changed(ROOT / "results/figures/trust_dimensions_matrix.md", matrix_markdown(reports_by_exp), check=args.check, changed=changed)
-    write_json_if_changed(ROOT / "results/artifact_manifest.json", artifact_manifest(), check=args.check, changed=changed)
+    write_if_changed(
+        ROOT / "results/summary_table.md",
+        summary_table(reports),
+        check=args.check,
+        changed=changed,
+    )
+    write_if_changed(
+        ROOT / "results/trust_state_diffs.md",
+        diff_markdown(diff_entries),
+        check=args.check,
+        changed=changed,
+    )
+    write_if_changed(
+        ROOT / "results/figures/trust_dimensions_matrix.md",
+        matrix_markdown(reports_by_exp),
+        check=args.check,
+        changed=changed,
+    )
+    write_json_if_changed(
+        ROOT / "results/artifact_manifest.json",
+        artifact_manifest(),
+        check=args.check,
+        changed=changed,
+    )
 
     if args.check and changed:
         print("Generated artifacts are stale:", file=sys.stderr)

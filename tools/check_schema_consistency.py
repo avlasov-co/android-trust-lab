@@ -4,9 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
-
 
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_DIR = ROOT / "analyzer" / "trustlab" / "schemas"
@@ -44,7 +43,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args(argv)
     check_schema_directories(CANONICAL_DIR, COMPATIBILITY_DIR)
-    print(f"schema resources are consistent: {len(schema_names(CANONICAL_DIR))} schemas")
+    print(
+        f"schema resources are consistent: {len(schema_names(CANONICAL_DIR))} schemas"
+    )
     return 0
 
 

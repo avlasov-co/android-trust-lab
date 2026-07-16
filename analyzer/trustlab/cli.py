@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
-from .normalizer import normalize_raw_file
-from .observers import OBSERVER_REGISTRY
 from .diff import make_diff
-from .report_writer import write_json, load_json, diff_to_markdown, report_to_markdown
-from .validators import validate_report, validate_diff
 from .exceptions import (
     CollectionError,
     InvalidJSONError,
@@ -21,6 +19,10 @@ from .exceptions import (
     TrustLabError,
     UnsupportedSchemaVersionError,
 )
+from .normalizer import normalize_raw_file
+from .observers import OBSERVER_REGISTRY
+from .report_writer import diff_to_markdown, load_json, report_to_markdown, write_json
+from .validators import validate_diff, validate_report
 
 EXIT_INTERNAL_ERROR = 1
 EXIT_USAGE_ERROR = 2
@@ -133,7 +135,9 @@ def cmd_summarize(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="trustlab", description="Android Trust Lab analyzer")
+    parser = argparse.ArgumentParser(
+        prog="trustlab", description="Android Trust Lab analyzer"
+    )
     parser.add_argument(
         "--debug",
         action="store_true",
@@ -141,15 +145,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(required=True)
 
-    normalize = sub.add_parser("normalize", help="Normalize raw artifact into trust report JSON")
+    normalize = sub.add_parser(
+        "normalize", help="Normalize raw artifact into trust report JSON"
+    )
     normalize.add_argument("--input", required=True)
     normalize.add_argument("--output", required=True)
     normalize.add_argument("--experiment-id", default="unknown")
-    normalize.add_argument("--target-type", choices=["avd", "physical", "unknown"], default="unknown")
-    normalize.add_argument("--observer", choices=tuple(OBSERVER_REGISTRY), default="adb_shell")
+    normalize.add_argument(
+        "--target-type", choices=["avd", "physical", "unknown"], default="unknown"
+    )
+    normalize.add_argument(
+        "--observer", choices=tuple(OBSERVER_REGISTRY), default="adb_shell"
+    )
     normalize.add_argument("--collection-method", default="raw_artifact")
-    normalize.add_argument("--collection-timestamp", default=None, help="Optional ISO-8601 timestamp for reproducible sample reports")
-    normalize.add_argument("--raw-artifact-ref", default=None, help="Optional stable artifact reference; defaults to the input basename")
+    normalize.add_argument(
+        "--collection-timestamp",
+        default=None,
+        help="Optional ISO-8601 timestamp for reproducible sample reports",
+    )
+    normalize.add_argument(
+        "--raw-artifact-ref",
+        default=None,
+        help="Optional stable artifact reference; defaults to the input basename",
+    )
     normalize.add_argument(
         "--no-validate",
         action="store_false",
@@ -184,7 +202,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        return args.func(args)
+        handler = cast(Callable[[argparse.Namespace], int], args.func)
+        return handler(args)
     except TrustLabError as exc:
         if args.debug:
             raise

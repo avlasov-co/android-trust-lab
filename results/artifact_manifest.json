@@ -80,7 +80,7 @@
     {
       "generated_by": "python tools/generate_report.py",
       "path": "results/trust_state_diffs.md",
-      "sha256": "792cdb33dac91a275ddbb27765d0c31cdd764f547ab2fd4ea925d8d3f2bf397b",
+      "sha256": "976c9d68da31257c1021d1e8c6eab79202a5145c906f19aa2721a079826ac2b1",
       "status": "checked",
       "type": "generated_report"
     },

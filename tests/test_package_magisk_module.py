@@ -1,13 +1,15 @@
-from pathlib import Path
 import importlib.util
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("package_magisk_module", ROOT / "tools" / "package_magisk_module.py")
+SPEC = importlib.util.spec_from_file_location(
+    "package_magisk_module", ROOT / "tools" / "package_magisk_module.py"
+)
 package_magisk_module = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(package_magisk_module)
@@ -118,7 +120,7 @@ def test_process_collector_does_not_publish_command_arguments(tmp_path):
     fake_ps = fake_bin / "ps"
     fake_ps.write_text(
         "#!/bin/sh\n"
-        "if [ \"$1\" = \"-AZ\" ]; then\n"
+        'if [ "$1" = "-AZ" ]; then\n'
         "  printf '%s\\n' 'u:r:init:s0 root 1 0 init PRIVATE_COMMAND_TOKEN'\n"
         "else\n"
         "  printf '%s\\n' 'root 1 0 init PRIVATE_COMMAND_TOKEN'\n"
@@ -166,6 +168,7 @@ def test_package_zip_contains_module_root_files(tmp_path):
     package_magisk_module.write_zip(out, ROOT / "module" / "trustlab-magisk")
 
     import zipfile
+
     with zipfile.ZipFile(out) as archive:
         names = set(archive.namelist())
     assert "module.prop" in names

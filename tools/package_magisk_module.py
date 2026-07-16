@@ -8,11 +8,11 @@ modification package instead of a measurement artifact.
 
 from __future__ import annotations
 
-import sys
 import re
+import sys
 import zipfile
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import Iterable, List, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_DIR = ROOT / "module" / "trustlab-magisk"
@@ -70,13 +70,13 @@ COLLECTED_PROPERTY_ALLOWLIST = {
 
 ALLOWED_GETPROP_LINES = {
     'VALUE=$(getprop "$KEY" 2>/dev/null)',
-    'sys.boot_completed=$(getprop sys.boot_completed 2>/dev/null)',
-    'ro.boot.bootreason=$(getprop ro.boot.bootreason 2>/dev/null)',
-    'ro.boot.slot_suffix=$(getprop ro.boot.slot_suffix 2>/dev/null)',
-    'ro.boot.verifiedbootstate=$(getprop ro.boot.verifiedbootstate 2>/dev/null)',
-    'ro.boot.flash.locked=$(getprop ro.boot.flash.locked 2>/dev/null)',
-    'ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state 2>/dev/null)',
-    'ro.boot.veritymode=$(getprop ro.boot.veritymode 2>/dev/null)',
+    "sys.boot_completed=$(getprop sys.boot_completed 2>/dev/null)",
+    "ro.boot.bootreason=$(getprop ro.boot.bootreason 2>/dev/null)",
+    "ro.boot.slot_suffix=$(getprop ro.boot.slot_suffix 2>/dev/null)",
+    "ro.boot.verifiedbootstate=$(getprop ro.boot.verifiedbootstate 2>/dev/null)",
+    "ro.boot.flash.locked=$(getprop ro.boot.flash.locked 2>/dev/null)",
+    "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state 2>/dev/null)",
+    "ro.boot.veritymode=$(getprop ro.boot.veritymode 2>/dev/null)",
     'while [ "$(getprop sys.boot_completed 2>/dev/null)" != "1" ] && [ "$count" -lt 120 ]; do',
 }
 
@@ -89,7 +89,9 @@ ALLOWED_PROCESS_QUERY_LINES = {
 def iter_module_files(module_dir: Path = MODULE_DIR) -> Iterable[Path]:
     for path in sorted(module_dir.rglob("*")):
         if path.is_symlink():
-            raise ValueError(f"module symlink is not allowed: {relative_posix(path, module_dir)}")
+            raise ValueError(
+                f"module symlink is not allowed: {relative_posix(path, module_dir)}"
+            )
         if path.is_file():
             yield path
 
@@ -98,8 +100,8 @@ def relative_posix(path: Path, module_dir: Path = MODULE_DIR) -> str:
     return path.relative_to(module_dir).as_posix()
 
 
-def validate_required_files(module_dir: Path = MODULE_DIR) -> List[str]:
-    errors: List[str] = []
+def validate_required_files(module_dir: Path = MODULE_DIR) -> list[str]:
+    errors: list[str] = []
     for rel in REQUIRED_FILES:
         path = module_dir / rel
         if not path.is_file():
@@ -107,14 +109,16 @@ def validate_required_files(module_dir: Path = MODULE_DIR) -> List[str]:
     return errors
 
 
-def validate_no_mutating_payloads(module_dir: Path = MODULE_DIR) -> List[str]:
-    errors: List[str] = []
+def validate_no_mutating_payloads(module_dir: Path = MODULE_DIR) -> list[str]:
+    errors: list[str] = []
     for path in sorted(module_dir.rglob("*")):
         rel = relative_posix(path, module_dir)
         if path.is_symlink():
             errors.append(f"module symlink is not allowed: {rel}")
             continue
-        if rel in FORBIDDEN_EXACT or any(rel.startswith(prefix) for prefix in FORBIDDEN_DIR_PREFIXES):
+        if rel in FORBIDDEN_EXACT or any(
+            rel.startswith(prefix) for prefix in FORBIDDEN_DIR_PREFIXES
+        ):
             errors.append(f"forbidden module payload path: {rel}")
         if path.is_file() and path.suffix == ".zip":
             errors.append(f"embedded zip is not allowed inside module: {rel}")
@@ -129,26 +133,30 @@ def active_shell_lines(text: str) -> set[str]:
     }
 
 
-def validate_private_collection(module_dir: Path = MODULE_DIR) -> List[str]:
-    errors: List[str] = []
+def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
+    errors: list[str] = []
     write_path = module_dir / "scripts/write_report.sh"
     boot_path = module_dir / "scripts/collect_boot_state.sh"
     props_path = module_dir / "scripts/collect_props.sh"
-    if not all(path.is_file() and not path.is_symlink() for path in (write_path, boot_path, props_path)):
+    if not all(
+        path.is_file() and not path.is_symlink()
+        for path in (write_path, boot_path, props_path)
+    ):
         return errors
     write_report = write_path.read_text(encoding="utf-8")
-    collect_boot = boot_path.read_text(encoding="utf-8")
     collect_props = props_path.read_text(encoding="utf-8")
 
     active_write_lines = active_shell_lines(write_report)
-    required_write_guards = (
+    required_write_guards: tuple[tuple[Callable[[], bool], str], ...] = (
         (lambda: "umask 077" in active_write_lines, "collector must set umask 077"),
         (
             lambda: 'BASE_DIR="/data/adb/android-trust-lab"' in active_write_lines,
             "collector output must be under /data/adb",
         ),
         (
-            lambda: any(line.startswith("RUN_DIR=$(mktemp -d ") for line in active_write_lines),
+            lambda: any(
+                line.startswith("RUN_DIR=$(mktemp -d ") for line in active_write_lines
+            ),
             "collector must create an exclusive randomized run directory",
         ),
         (
@@ -156,7 +164,10 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> List[str]:
             "collector must constrain the randomized run path",
         ),
         (
-            lambda: any('chmod 0700 "$BASE_DIR" "$OUT_DIR"' in line for line in active_write_lines),
+            lambda: any(
+                'chmod 0700 "$BASE_DIR" "$OUT_DIR"' in line
+                for line in active_write_lines
+            ),
             "collector directories must be mode 0700",
         ),
         (
@@ -172,7 +183,7 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> List[str]:
             "collector must reject symlinked output directories",
         ),
         (
-            lambda: 'RUN_ID=${RUN_DIR##*/}' in active_write_lines,
+            lambda: "RUN_ID=${RUN_DIR##*/}" in active_write_lines,
             "collector manifest IDs must include the exclusive run identifier",
         ),
     )
@@ -204,7 +215,9 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> List[str]:
         if line.strip().startswith(("ro.", "sys."))
     }
     if declared_properties != COLLECTED_PROPERTY_ALLOWLIST:
-        errors.append("collector property keys must exactly match the privacy allowlist")
+        errors.append(
+            "collector property keys must exactly match the privacy allowlist"
+        )
     getprop_lines = {line for line in active_script_lines if "getprop" in line}
     if not getprop_lines.issubset(ALLOWED_GETPROP_LINES):
         errors.append("collector must query only individual allowlisted properties")
@@ -217,7 +230,6 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> List[str]:
         errors.append("collector must not publish raw process command lines")
 
     return errors
-
 
 
 def validate_module(module_dir: Path = MODULE_DIR) -> None:
@@ -273,7 +285,9 @@ def parse_args(argv: Sequence[str] | None = None) -> tuple[Path, Path, bool]:
             output = Path(args[index + 1])
             index += 2
         elif arg in {"-h", "--help"}:
-            print("usage: package_magisk_module.py [--check-only] [--module-dir PATH] [--output PATH]")
+            print(
+                "usage: package_magisk_module.py [--check-only] [--module-dir PATH] [--output PATH]"
+            )
             raise SystemExit(0)
         else:
             raise SystemExit(f"unknown argument: {arg}")
@@ -289,6 +303,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         print("Magisk module safety checks passed")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

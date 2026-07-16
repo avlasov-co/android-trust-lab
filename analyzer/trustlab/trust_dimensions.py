@@ -1,7 +1,5 @@
 """Canonical trust dimensions and state-class helpers."""
 
-from .observers import OBSERVER_PRIVILEGE
-
 TRUST_DIMENSIONS = [
     "bootloader_lock_state",
     "verified_boot_state",

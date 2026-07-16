@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import importlib.util
 import importlib.metadata
-import json
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -14,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from trustlab.validators import load_schema
-
 
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "analyzer/trustlab/schemas"
@@ -123,7 +121,9 @@ def _create_clean_environment(environment_dir, *, cwd):
         [sys.executable, "-m", "venv", str(environment_dir)],
         cwd=cwd,
     )
-    python = environment_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    python = environment_dir / (
+        "Scripts/python.exe" if os.name == "nt" else "bin/python"
+    )
     purelib = Path(
         _run(
             [
@@ -195,7 +195,9 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
         metadata = archive.read(metadata_name).decode("utf-8")
         assert "Requires-Python: >=3.11\n" in metadata
         for version in ("3.11", "3.12", "3.13", "3.14"):
-            assert f"Classifier: Programming Language :: Python :: {version}\n" in metadata
+            assert (
+                f"Classifier: Programming Language :: Python :: {version}\n" in metadata
+            )
         assert "Requires-Dist: tomli" not in metadata
     with tarfile.open(sdist, "r:gz") as archive:
         names = {"/".join(name.split("/")[1:]) for name in archive.getnames()}
@@ -203,7 +205,9 @@ def test_wheel_and_sdist_validate_from_outside_checkout(tmp_path):
 
     report = tmp_path / "report.json"
     diff = tmp_path / "diff.json"
-    report.write_bytes((ROOT / "tests/fixtures/sample_normalized_report.json").read_bytes())
+    report.write_bytes(
+        (ROOT / "tests/fixtures/sample_normalized_report.json").read_bytes()
+    )
     diff.write_bytes((ROOT / "tests/fixtures/sample_diff.json").read_bytes())
     wheelhouse = _offline_wheelhouse(tmp_path / "wheelhouse")
     wheel_python, wheel_purelib = _create_clean_environment(

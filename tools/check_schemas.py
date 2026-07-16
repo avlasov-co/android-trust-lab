@@ -30,7 +30,9 @@ def main() -> int:
     schema_names = check_project_schemas()
 
     manifest = load_object(ROOT / "datasets" / "manifest.json")
-    report_paths = [ROOT / sample["report_path"] for sample in manifest.get("samples", [])]
+    report_paths = [
+        ROOT / sample["report_path"] for sample in manifest.get("samples", [])
+    ]
     report_paths.append(ROOT / "tests" / "fixtures" / "sample_normalized_report.json")
     for path in report_paths:
         validate_report(load_json(path))

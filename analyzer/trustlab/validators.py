@@ -5,13 +5,17 @@ from __future__ import annotations
 import json
 import re
 from importlib.resources import files
-from typing import Any, Dict
+from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError as JSONSchemaSchemaError
 from jsonschema.exceptions import ValidationError as JSONSchemaValidationError
 
-from .exceptions import SchemaIssue, SchemaValidationError, UnsupportedSchemaVersionError
+from .exceptions import (
+    SchemaIssue,
+    SchemaValidationError,
+    UnsupportedSchemaVersionError,
+)
 
 SUPPORTED_REPORT_SCHEMA_VERSIONS = frozenset({"1.0.0"})
 SUPPORTED_DIFF_SCHEMA_VERSIONS = frozenset({"1.0.0"})
@@ -100,20 +104,22 @@ def _is_rfc3339_date_time(value: object) -> bool:
     if utc_date is None:
         return False
     _, utc_month, utc_day = utc_date
-    return (
-        utc_minute_of_day == 23 * 60 + 59
-        and (utc_month, utc_day) in {(6, 30), (12, 31)}
-    )
+    return utc_minute_of_day == 23 * 60 + 59 and (utc_month, utc_day) in {
+        (6, 30),
+        (12, 31),
+    }
 
 
-def load_schema(name: str) -> Dict[str, Any]:
+def load_schema(name: str) -> dict[str, Any]:
     """Load a canonical schema from the installed analyzer package."""
 
     resource = files("trustlab.schemas").joinpath(name)
     try:
         data = json.loads(resource.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
-        raise SchemaValidationError("required packaged schema resource is missing") from exc
+        raise SchemaValidationError(
+            "required packaged schema resource is missing"
+        ) from exc
     except json.JSONDecodeError as exc:
         raise SchemaValidationError("packaged schema resource is invalid JSON") from exc
     if not isinstance(data, dict):
@@ -131,11 +137,13 @@ def schema_resource_names() -> tuple[str, ...]:
     )
 
 
-def check_schema(schema: Dict[str, Any], *, schema_name: str) -> None:
+def check_schema(schema: dict[str, Any], *, schema_name: str) -> None:
     try:
         Draft202012Validator.check_schema(schema)
     except JSONSchemaSchemaError as exc:
-        raise SchemaValidationError(f"project schema is invalid: {schema_name}") from exc
+        raise SchemaValidationError(
+            f"project schema is invalid: {schema_name}"
+        ) from exc
 
 
 def check_project_schemas() -> tuple[str, ...]:
@@ -155,7 +163,9 @@ def _json_pointer(parts: Any) -> str:
 def _constraint_message(error: JSONSchemaValidationError) -> str:
     if error.validator == "required":
         match = re.fullmatch(r"'([^']+)' is a required property", error.message)
-        return "missing required property: " + (match.group(1) if match else "<unknown>")
+        return "missing required property: " + (
+            match.group(1) if match else "<unknown>"
+        )
     if error.validator == "enum":
         return "value is not permitted"
     if error.validator == "type":
@@ -178,7 +188,7 @@ def _error_sort_key(
 
 
 def validate_with_schema(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     schema_name: str,
     *,
     artifact_name: str,
@@ -208,9 +218,7 @@ def validate_with_schema(
             )
             for error in errors
         )
-        diagnostics = [
-            f"{issue.instance_path}: {issue.message}" for issue in issues
-        ]
+        diagnostics = [f"{issue.instance_path}: {issue.message}" for issue in issues]
         plural = "error" if len(errors) == 1 else "errors"
         raise SchemaValidationError(
             f"{artifact_name} schema validation failed for version {version} "
@@ -219,7 +227,7 @@ def validate_with_schema(
         ) from errors[0]
 
 
-def validate_report(data: Dict[str, Any]) -> None:
+def validate_report(data: dict[str, Any]) -> None:
     validate_with_schema(
         data,
         "trust_report.schema.json",
@@ -228,7 +236,7 @@ def validate_report(data: Dict[str, Any]) -> None:
     )
 
 
-def validate_diff(data: Dict[str, Any]) -> None:
+def validate_diff(data: dict[str, Any]) -> None:
     validate_with_schema(
         data,
         "trust_diff.schema.json",

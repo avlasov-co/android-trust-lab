@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
 
 if [[ -n "${PYTHON_BIN:-}" ]]; then
@@ -41,40 +41,55 @@ require_path module/trustlab-magisk
 export PYTHONPATH="$ROOT_DIR/analyzer${PYTHONPATH:+:$PYTHONPATH}"
 export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 
-echo "[1/10] Python source compile check"
+echo "[1/14] Python source compile check"
 "$PYTHON_BIN" -m compileall -q analyzer tools tests
 
-echo "[2/10] Unit tests with branch coverage"
+echo "[2/14] Ruff formatting check"
+"$PYTHON_BIN" -m ruff format --check analyzer tools tests
+
+echo "[3/14] Ruff lint check"
+"$PYTHON_BIN" -m ruff check analyzer tools tests
+
+echo "[4/14] Static type check"
+"$PYTHON_BIN" -m mypy
+
+echo "[5/14] Unit tests with branch coverage"
 "$PYTHON_BIN" -m coverage erase
-"$PYTHON_BIN" -m coverage run --branch --source=analyzer/trustlab -m pytest -q
+"$PYTHON_BIN" -m coverage run -m pytest
 "$PYTHON_BIN" -m coverage report -m
 
-echo "[3/10] Canonical project metadata validation"
+echo "[6/14] Canonical project metadata validation"
 "$PYTHON_BIN" tools/check_metadata.py
 
-echo "[4/10] Project version consistency check"
+echo "[7/14] Project version consistency check"
 "$PYTHON_BIN" tools/check_version_consistency.py
 
-echo "[5/10] Python support policy consistency check"
+echo "[8/14] Python support policy consistency check"
 "$PYTHON_BIN" tools/check_python_support.py
 
-echo "[6/10] Packaged schema consistency check"
+echo "[9/14] Packaged schema consistency check"
 "$PYTHON_BIN" tools/check_schema_consistency.py
 
-echo "[7/10] JSON Schema and checked-in artifact validation"
+echo "[10/14] JSON Schema and checked-in artifact validation"
 "$PYTHON_BIN" tools/check_schemas.py
 
-echo "[8/10] Generated artifact freshness check"
+echo "[11/14] Generated artifact freshness check"
 "$PYTHON_BIN" tools/generate_report.py --check
 
-echo "[9/10] Magisk package safety check"
+echo "[12/14] Magisk package safety check"
 "$PYTHON_BIN" tools/package_magisk_module.py --check-only
 
-echo "[10/10] Shell syntax check"
+echo "[13/14] Shell syntax check"
 while IFS= read -r script; do
   echo "$script"
   sh -n "$script"
 done < <(find module/trustlab-magisk -name "*.sh" -print | sort)
 bash -n scripts/check.sh scripts/verify_release.sh
+
+echo "[14/14] ShellCheck"
+find module/trustlab-magisk -name "*.sh" -print0 \
+  | sort -z \
+  | xargs -0 shellcheck --shell=sh --external-sources
+shellcheck --shell=bash scripts/check.sh scripts/verify_release.sh
 
 echo "repository checks passed"

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
-import os
 import stat
 
 import pytest
 
 from trustlab import report_writer
-from trustlab.exceptions import InvalidJSONError, OutputWriteError, SchemaValidationError
+from trustlab.exceptions import (
+    InvalidJSONError,
+    OutputWriteError,
+    SchemaValidationError,
+)
 
 
 def temporary_siblings(path):

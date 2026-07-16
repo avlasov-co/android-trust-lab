@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
 import hashlib
+from typing import Any
 
 from .trust_dimensions import severity_for_dimension
 
@@ -12,7 +12,10 @@ def json_like_for_hash(value: Any) -> str:
     """Return a stable string representation for deterministic diff IDs."""
     import json
 
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
+    )
+
 
 # Default dimensions must represent actual measured trust-state fields.
 # App-visible/root-visible dimensions are intentionally not included here until
@@ -33,7 +36,7 @@ DIMENSION_PATHS = {
 }
 
 
-def get_path(obj: Dict[str, Any], path: List[str]) -> Any:
+def get_path(obj: dict[str, Any], path: list[str]) -> Any:
     current: Any = obj
     for part in path:
         if not isinstance(current, dict):
@@ -58,7 +61,7 @@ def interpretation(dimension: str) -> str:
     return messages.get(dimension, "Trust-state dimension changed between reports.")
 
 
-def make_diff(base: Dict[str, Any], compare: Dict[str, Any]) -> Dict[str, Any]:
+def make_diff(base: dict[str, Any], compare: dict[str, Any]) -> dict[str, Any]:
     changed = []
     unchanged = []
     confidence_changes = []
@@ -67,33 +70,48 @@ def make_diff(base: Dict[str, Any], compare: Dict[str, Any]) -> Dict[str, Any]:
         before = get_path(base, path)
         after = get_path(compare, path)
         if before != after:
-            changed.append({
-                "dimension": dimension,
-                "before": before,
-                "after": after,
-                "severity": severity_for_dimension(dimension),
-                "interpretation": interpretation(dimension),
-                "evidence_paths": [".".join(path)],
-            })
+            changed.append(
+                {
+                    "dimension": dimension,
+                    "before": before,
+                    "after": after,
+                    "severity": severity_for_dimension(dimension),
+                    "interpretation": interpretation(dimension),
+                    "evidence_paths": [".".join(path)],
+                }
+            )
         else:
             unchanged.append(dimension)
 
     base_conf = get_path(base, ["verified_boot", "confidence"])
     compare_conf = get_path(compare, ["verified_boot", "confidence"])
     if base_conf != compare_conf:
-        confidence_changes.append({"path": "verified_boot.confidence", "before": base_conf, "after": compare_conf})
+        confidence_changes.append(
+            {
+                "path": "verified_boot.confidence",
+                "before": base_conf,
+                "after": compare_conf,
+            }
+        )
 
-    diff_payload = json_like_for_hash({
-        "base_report": base.get("report_id"),
-        "compare_report": compare.get("report_id"),
-        "changed_dimensions": changed,
-        "unchanged_dimensions": unchanged,
-        "confidence_changes": confidence_changes,
-    })
-    diff_id = "atldiff-" + hashlib.sha256(
-        diff_payload.encode("utf-8", errors="surrogatepass")
-    ).hexdigest()[:16]
-    summary = f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged."
+    diff_payload = json_like_for_hash(
+        {
+            "base_report": base.get("report_id"),
+            "compare_report": compare.get("report_id"),
+            "changed_dimensions": changed,
+            "unchanged_dimensions": unchanged,
+            "confidence_changes": confidence_changes,
+        }
+    )
+    diff_id = (
+        "atldiff-"
+        + hashlib.sha256(
+            diff_payload.encode("utf-8", errors="surrogatepass")
+        ).hexdigest()[:16]
+    )
+    summary = (
+        f"{len(changed)} dimensions changed, {len(unchanged)} dimensions unchanged."
+    )
 
     return {
         "diff_id": diff_id,

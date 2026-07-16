@@ -71,9 +71,7 @@ def test_invalid_normalized_model_creates_no_destination_parent(
 
 
 @pytest.mark.parametrize("no_validate", [False, True])
-def test_normalize_refuses_to_replace_its_input(
-    tmp_path, capsys, no_validate
-):
+def test_normalize_refuses_to_replace_its_input(tmp_path, capsys, no_validate):
     raw = tmp_path / "raw.txt"
     original = RAW_FIXTURE.read_bytes()
     raw.write_bytes(original)
@@ -94,9 +92,7 @@ def test_normalize_refuses_symlink_alias_of_input(tmp_path, capsys):
     alias = tmp_path / "report.json"
     alias.symlink_to(raw)
 
-    code = cli.main(
-        ["normalize", "--input", str(raw), "--output", str(alias)]
-    )
+    code = cli.main(["normalize", "--input", str(raw), "--output", str(alias)])
 
     assert_clean_error(capsys, code, "output must not replace an input artifact")
     assert code == cli.EXIT_OUTPUT_WRITE_FAILURE
@@ -256,7 +252,9 @@ def test_invalid_generated_diff_preserves_destination(tmp_path, monkeypatch, cap
     compare_path = tmp_path / "compare.json"
     write_document(base_path, valid_report())
     write_document(compare_path, valid_report())
-    monkeypatch.setattr(cli, "make_diff", lambda *args, **kwargs: {"schema_version": "1.0.0"})
+    monkeypatch.setattr(
+        cli, "make_diff", lambda *args, **kwargs: {"schema_version": "1.0.0"}
+    )
     destination = tmp_path / "diff.json"
     destination.write_bytes(b"sentinel\n")
 
@@ -305,9 +303,7 @@ def test_normalize_invalid_utf8_uses_collection_exit_code(tmp_path, capsys):
     raw = tmp_path / "invalid.raw"
     raw.write_bytes(b"\xff\xfe")
     output = tmp_path / "report.json"
-    code = cli.main(
-        ["normalize", "--input", str(raw), "--output", str(output)]
-    )
+    code = cli.main(["normalize", "--input", str(raw), "--output", str(output)])
     assert_clean_error(capsys, code, "input artifact is not valid UTF-8")
     assert code == cli.EXIT_COLLECTION_FAILURE
     assert not output.exists()
@@ -319,12 +315,12 @@ def test_normalize_parser_failure_uses_normalization_exit_code(
     monkeypatch.setattr(
         normalizer,
         "parse_raw_report",
-        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("injected parser failure")),
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ValueError("injected parser failure")
+        ),
     )
     output = tmp_path / "report.json"
-    code = cli.main(
-        ["normalize", "--input", str(RAW_FIXTURE), "--output", str(output)]
-    )
+    code = cli.main(["normalize", "--input", str(RAW_FIXTURE), "--output", str(output)])
     assert_clean_error(capsys, code, "could not normalize input artifact")
     assert code == cli.EXIT_NORMALIZATION_FAILURE
     assert not output.exists()
@@ -369,7 +365,9 @@ def test_output_write_failure_has_stable_exit_code(tmp_path, monkeypatch, capsys
     monkeypatch.setattr(
         cli,
         "write_json",
-        lambda *args, **kwargs: (_ for _ in ()).throw(OutputWriteError("write failed safely")),
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            OutputWriteError("write failed safely")
+        ),
     )
     destination = tmp_path / "report.json"
     code = cli.main(

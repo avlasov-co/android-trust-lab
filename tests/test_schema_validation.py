@@ -1,6 +1,7 @@
 import copy
-from pathlib import Path
 import sys
+from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "analyzer"))
 
 import pytest
@@ -95,9 +96,9 @@ def test_multiple_validation_errors_are_complete_and_deterministic():
         issue_snapshots.append(caught.value.issues)
     assert messages[0] == messages[1]
     assert "(3 errors)" in messages[0]
-    assert messages[0].index("/: missing required property: target") < messages[0].index(
-        "/collection_timestamp"
-    )
+    assert messages[0].index("/: missing required property: target") < messages[
+        0
+    ].index("/collection_timestamp")
     assert messages[0].index("/collection_timestamp") < messages[0].index(
         "/observer/privilege_level"
     )
@@ -134,14 +135,19 @@ def test_missing_packaged_schema_fails_explicitly():
 
 
 def test_sample_report_schema():
-    report = load_json(ROOT / "datasets" / "samples" / "stock_avd" / "E01_stock_avd__observer-adb__sample.json")
+    report = load_json(
+        ROOT
+        / "datasets"
+        / "samples"
+        / "stock_avd"
+        / "E01_stock_avd__observer-adb__sample.json"
+    )
     validate_report(report)
 
 
 def test_sample_diff_schema():
     diff = load_json(ROOT / "tests" / "fixtures" / "sample_diff.json")
     validate_diff(diff)
-
 
 
 def test_all_manifest_reports_validate():

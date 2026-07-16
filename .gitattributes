@@ -1,0 +1,23 @@
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.json text diff=json
+*.md text diff=markdown
+*.toml text
+*.yaml text
+*.yml text
+
+*.a binary
+*.apk binary
+*.gif binary
+*.gz binary
+*.ico binary
+*.jar binary
+*.jpeg binary
+*.jpg binary
+*.keystore binary
+*.pdf binary
+*.png binary
+*.so binary
+*.webp binary
+*.zip binary

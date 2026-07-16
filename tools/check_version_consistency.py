@@ -30,7 +30,9 @@ def source_version(root: Path = ROOT) -> str:
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "__version__":
-                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    if isinstance(node.value, ast.Constant) and isinstance(
+                        node.value.value, str
+                    ):
                         return node.value.value
     raise ValueError("_version.py must assign a string literal to __version__")
 
@@ -51,17 +53,11 @@ def read_properties(path: Path) -> dict[str, str]:
     return fields
 
 
-def check_errors(
-    root: Path = ROOT,
-    *,
-    distribution_version: str | None = None,
-    public_version: str | None = None,
-) -> list[str]:
+def project_configuration_errors(root: Path) -> list[str]:
     errors: list[str] = []
-    version_text = source_version(root)
-    expected = normalized_version(version_text)
-
-    pyproject = tomllib.loads((root / "analyzer/pyproject.toml").read_text(encoding="utf-8"))
+    pyproject = tomllib.loads(
+        (root / "analyzer/pyproject.toml").read_text(encoding="utf-8")
+    )
     project = pyproject["project"]
     if "version" in project:
         errors.append("pyproject.toml must not contain a static project version")
@@ -69,7 +65,21 @@ def check_errors(
         errors.append("pyproject.toml must declare the project version dynamic")
     dynamic = pyproject.get("tool", {}).get("setuptools", {}).get("dynamic", {})
     if dynamic.get("version", {}).get("attr") != DYNAMIC_VERSION_ATTRIBUTE:
-        errors.append("setuptools must load the version from trustlab._version.__version__")
+        errors.append(
+            "setuptools must load the version from trustlab._version.__version__"
+        )
+    return errors
+
+
+def version_surface_errors(
+    root: Path,
+    expected: Version,
+    version_text: str,
+    *,
+    distribution_version: str | None,
+    public_version: str | None,
+) -> list[str]:
+    errors: list[str] = []
 
     if distribution_version is None:
         try:
@@ -112,10 +122,17 @@ def check_errors(
     except ValueError:
         actual_code = -1
     if actual_code != expected_code:
-        errors.append(f"Magisk versionCode must be {expected_code}, found {module.get('versionCode')!r}")
+        errors.append(
+            f"Magisk versionCode must be {expected_code}, found {module.get('versionCode')!r}"
+        )
 
     if "date-released" in citation or "date-released" in preferred:
         errors.append("development citation metadata must not claim date-released")
+    return errors
+
+
+def release_note_errors(root: Path, version_text: str) -> list[str]:
+    errors: list[str] = []
 
     release_notes = (root / "RELEASE_NOTES_v0.2.0.md").read_text(encoding="utf-8")
     release_notes_lower = release_notes.lower()
@@ -125,8 +142,29 @@ def check_errors(
         errors.append("v0.2.0 notes must say it is not a released version")
     if version_text not in release_notes:
         errors.append("v0.2.0 notes must identify the current development version")
-
     return errors
+
+
+def check_errors(
+    root: Path = ROOT,
+    *,
+    distribution_version: str | None = None,
+    public_version: str | None = None,
+) -> list[str]:
+    version_text = source_version(root)
+    expected = normalized_version(version_text)
+
+    return [
+        *project_configuration_errors(root),
+        *version_surface_errors(
+            root,
+            expected,
+            version_text,
+            distribution_version=distribution_version,
+            public_version=public_version,
+        ),
+        *release_note_errors(root, version_text),
+    ]
 
 
 def main() -> int:
