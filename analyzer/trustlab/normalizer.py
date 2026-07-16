@@ -19,7 +19,7 @@ from .artifacts import (
     parse_collection_payload_text,
 )
 from .bounded_io import read_bounded_regular_file
-from .canonical_json import MAX_CANONICAL_BYTES, canonical_json_bytes
+from .canonical_json import canonical_json_bytes
 from .collection_manifest import (
     ArtifactEntry,
     CollectionManifest,
@@ -40,6 +40,7 @@ from .identity import (
     make_raw_artifact_reference,
 )
 from .observers import observer_spec
+from .parser import KNOWN_SECTION_NAMES, MAX_RAW_TEXT_BYTES
 from .report_v2 import report_v2_from_v1_shape
 from .report_v3 import report_v3_from_v2_shape
 
@@ -83,7 +84,7 @@ REPORTABLE_PROPERTY_KEYS = frozenset(
         "ro.product.model",
     }
 )
-MAX_RAW_ARTIFACT_BYTES = MAX_CANONICAL_BYTES
+MAX_RAW_ARTIFACT_BYTES = MAX_RAW_TEXT_BYTES
 
 
 def unknown_mount(path: str) -> dict[str, Any]:
@@ -384,7 +385,7 @@ def build_report(
     report["provenance"]["command_results"] = [
         _capture_command_result(capture) for capture in parsed.captures
     ]
-    report["extensions"]["org.androidtrustlab.adapter"] = {
+    adapter_extension: dict[str, Any] = {
         "input_kind": parsed.input_kind.value,
         "input_schema_version": parsed.metadata.schema_version,
         "collector_version": parsed.metadata.collector_version,
@@ -399,6 +400,23 @@ def build_report(
             for capture in parsed.captures
         ],
     }
+    unrecognized_sections = []
+    unrecognized_names = (
+        set(fragments.sections) | set(fragments.section_occurrences)
+    ) - KNOWN_SECTION_NAMES
+    for name in sorted(unrecognized_names):
+        content = fragments.sections.get(name, "").encode("utf-8", errors="strict")
+        unrecognized_sections.append(
+            {
+                "name": name,
+                "occurrence_count": fragments.section_occurrences.get(name, 1),
+                "byte_size": len(content),
+                "sha256": hashlib.sha256(content).hexdigest(),
+            }
+        )
+    if unrecognized_sections:
+        adapter_extension["unrecognized_sections"] = unrecognized_sections
+    report["extensions"]["org.androidtrustlab.adapter"] = adapter_extension
     return finalize_report_identity(report)
 
 
@@ -492,15 +510,19 @@ def _normalize_raw_payload(
 ) -> dict[str, Any]:
     """Normalize the exact bytes supplied by a caller after provenance checks."""
 
+    if len(payload) > MAX_RAW_ARTIFACT_BYTES:
+        raise CollectionError(f"raw input artifact exceeds the byte limit: {label}")
     raw_sha256 = hashlib.sha256(payload).hexdigest()
     if expected_sha256 is not None and raw_sha256 != expected_sha256:
         raise CollectionError("raw artifact digest does not match provenance")
     if expected_byte_size is not None and len(payload) != expected_byte_size:
         raise CollectionError("raw artifact byte size does not match provenance")
     try:
-        text = payload.decode("utf-8")
+        text = payload.decode("utf-8", errors="strict")
     except UnicodeDecodeError as exc:
-        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
+        raise CollectionError(
+            f"input artifact is not valid UTF-8 at byte {exc.start}: {label}"
+        ) from exc
     try:
         if manifest_adapter_metadata is None:
             parsed = parse_artifact_text(
@@ -823,12 +845,14 @@ def normalize_collection_manifest_with_inputs(
     """Normalize one manifest snapshot and return its verified input paths."""
 
     manifest = read_collection_manifest(manifest_path)
+    raw_entry = _manifest_raw_report_entry(manifest)
+    if raw_entry.byte_size is None or raw_entry.byte_size > MAX_RAW_ARTIFACT_BYTES:
+        raise CollectionError("collection manifest raw_report exceeds the byte limit")
     verified = verify_collection_artifacts(
         manifest,
         manifest_path,
         retain_payloads=frozenset({"raw_report"}),
     )
-    raw_entry = _manifest_raw_report_entry(manifest)
     try:
         raw_artifact = verified[raw_entry.logical_name]
     except KeyError as exc:

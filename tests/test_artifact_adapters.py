@@ -404,7 +404,9 @@ def test_legacy_diagnostics_are_warned_and_removed_from_fragments(text, fragment
         text, source_ref="legacy.txt"
     )
     assert fragment_name not in result.parsed_capture_names
-    assert any("malformed observed output" in warning for warning in result.warnings)
+    capture = next(item for item in result.captures if item.name == fragment_name)
+    assert capture.status is CaptureStatus.INACCESSIBLE
+    assert any("inferred inaccessible" in warning for warning in result.warnings)
     if fragment_name == "su_paths":
         assert result.fragments.su_paths == ()
     elif fragment_name == "magisk":
@@ -423,6 +425,12 @@ def test_legacy_diagnostic_does_not_normalize_as_root_evidence(tmp_path):
     validate_report(report)
     assert report["root_state"]["su_present"]["status"] == "not_collected"
     assert report["root_state"]["root_paths"]["status"] == "not_collected"
+    su_result = next(
+        item
+        for item in report["provenance"]["command_results"]
+        if item["command_id"] == "su_paths"
+    )
+    assert su_result["status"] == "inaccessible"
 
 
 def test_versioned_adapter_schema_is_enforced_during_parse():

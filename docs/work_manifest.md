@@ -23,6 +23,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | CLI failure and write contract | Implemented | `docs/cli_contract.md`, `tests/test_cli_failures.py`, `tests/test_report_writer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cli_failures.py tests/test_report_writer.py` |
 | Parser / normalizer | Implemented | `analyzer/trustlab/parser.py`, `analyzer/trustlab/normalizer.py`, `tests/test_parser.py`, `tests/test_normalizer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser.py tests/test_normalizer.py` |
 | Typed artifact adapters | Implemented | `analyzer/trustlab/artifacts.py`, `docs/artifact_adapters.md`, versioned adapter schemas, `tests/test_artifact_adapters.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_artifact_adapters.py` |
+| Bounded parser and hostile-input policy | Implemented | `docs/parser_limits.md`, `analyzer/trustlab/parser.py`, `tests/test_parser_limits.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser_limits.py tests/test_adversarial_inputs.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `datasets/derived/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
 | JSON schemas, identity, and migration | Implemented | report v1/v2/v3 and diff v1/v2 schemas, `analyzer/trustlab/identity.py`, `analyzer/trustlab/migrations.py`, `tests/test_content_identity.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_content_identity.py tests/test_report_migration.py` |
 | Portable collection manifests | Implemented | `collector/schema/collection_manifest_v1_0_0.schema.json`, `analyzer/trustlab/collection_manifest.py`, `tests/test_collection_manifest.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_collection_manifest.py` |
@@ -131,11 +132,11 @@ Latest validation for this evidence packet:
 | Check | Command | Status |
 |---|---|---|
 | Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 48 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 27 analyzer and tool modules |
-| Unit tests | Gate step 5 | 311 passed on Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 92.79% statements; 82.31% branches; floors 85%/80% |
-| Tools coverage | Gate step 5 | 86.92% statements; 74.11% branches; floors 70%/60% |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 56 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 32 analyzer and tool modules |
+| Unit tests | Gate step 5 | 485 passed on the development runtime; CI covers Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 91.97% statements; 81.97% branches; floors 85%/80% |
+| Tools coverage | Gate step 5 | 87.05% statements; 74.56% branches; floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |

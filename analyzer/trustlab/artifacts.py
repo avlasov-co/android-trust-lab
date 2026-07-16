@@ -17,7 +17,6 @@ from typing import Protocol
 from jsonschema import Draft202012Validator, FormatChecker
 
 from .bounded_io import read_bounded_regular_file
-from .canonical_json import MAX_CANONICAL_BYTES
 from .exceptions import (
     CollectionError,
     InvalidJSONError,
@@ -27,9 +26,13 @@ from .exceptions import (
 )
 from .identity import validate_relative_artifact_path
 from .parser import (
+    MAX_PARSER_WARNINGS,
+    MAX_RAW_TEXT_BYTES,
+    PARSER_WARNING_LIMIT_MESSAGE,
     ParsedIdentity,
     ParsedMount,
     ParsedProcesses,
+    classify_shell_diagnostic,
     parse_getenforce,
     parse_getprop,
     parse_id,
@@ -38,6 +41,7 @@ from .parser import (
     parse_paths,
     parse_processes,
     parse_raw_text,
+    validate_parser_text,
 )
 from .validators import load_schema
 
@@ -112,6 +116,7 @@ class EvidenceFragments:
     """Constrained syntactic fragments consumed by the normalizer."""
 
     sections: Mapping[str, str] = field(default_factory=dict)
+    section_occurrences: Mapping[str, int] = field(default_factory=dict)
     properties: Mapping[str, str] = field(default_factory=dict)
     boot_state: Mapping[str, str] = field(default_factory=dict)
     mounts: tuple[ParsedMount, ...] = ()
@@ -171,7 +176,60 @@ def _required_string(value: object, *, field_name: str) -> str:
     return result
 
 
-def _strict_json(text: str) -> Mapping[str, object]:
+MAX_JSON_NESTING_DEPTH = 32
+MAX_JSON_NODES = 100_000
+
+
+def _validate_json_shape(value: object) -> tuple[str, ...]:
+    """Bound nested JSON work after decoding and before schema traversal."""
+
+    nodes = 0
+    warnings: list[str] = []
+    stack: list[tuple[object, int]] = [(value, 0)]
+    while stack:
+        current, depth = stack.pop()
+        nodes += 1
+        if nodes > MAX_JSON_NODES:
+            raise NormalizationError("artifact JSON exceeds the node count limit")
+        if isinstance(current, dict):
+            if depth >= MAX_JSON_NESTING_DEPTH and current:
+                raise NormalizationError(
+                    "artifact JSON exceeds the nesting depth limit"
+                )
+            nodes += len(current)
+            if nodes > MAX_JSON_NODES:
+                raise NormalizationError("artifact JSON exceeds the node count limit")
+            for key in current:
+                for warning in validate_parser_text(key):
+                    _append_decoded_json_warning(warnings, warning)
+            stack.extend((item, depth + 1) for item in current.values())
+        elif isinstance(current, list):
+            if depth >= MAX_JSON_NESTING_DEPTH and current:
+                raise NormalizationError(
+                    "artifact JSON exceeds the nesting depth limit"
+                )
+            stack.extend((item, depth + 1) for item in current)
+        elif isinstance(current, str):
+            for warning in validate_parser_text(current):
+                _append_decoded_json_warning(warnings, warning)
+    return tuple(warnings)
+
+
+def _append_decoded_json_warning(warnings: list[str], warning: str) -> None:
+    message = f"decoded JSON string: {warning}"
+    if message not in warnings:
+        warnings.append(message)
+
+
+def _strict_json(
+    text: str,
+    *,
+    text_validated: bool = False,
+    warning_sink: list[str] | None = None,
+) -> Mapping[str, object]:
+    if not text_validated:
+        validate_parser_text(text)
+
     def reject_constant(value: str) -> None:
         raise ValueError(f"non-standard JSON constant: {value}")
 
@@ -197,9 +255,30 @@ def _strict_json(text: str) -> Mapping[str, object]:
         ) from exc
     except ValueError as exc:
         raise InvalidJSONError("invalid artifact JSON") from exc
+    except RecursionError as exc:
+        raise InvalidJSONError(
+            "artifact JSON exceeds the decoder nesting limit"
+        ) from exc
     if not isinstance(value, dict):
         raise NormalizationError("artifact JSON must be an object")
+    decoded_warnings = _validate_json_shape(value)
+    if warning_sink is not None:
+        warning_sink.extend(decoded_warnings)
     return value
+
+
+def _bounded_warnings(*groups: Sequence[str]) -> tuple[str, ...]:
+    warnings: list[str] = []
+    for group in groups:
+        for warning in group:
+            if warning in warnings or PARSER_WARNING_LIMIT_MESSAGE in warnings:
+                continue
+            if len(warnings) < MAX_PARSER_WARNINGS - 1:
+                warnings.append(warning)
+            elif len(warnings) < MAX_PARSER_WARNINGS:
+                warnings.append(PARSER_WARNING_LIMIT_MESSAGE)
+                return tuple(warnings)
+    return tuple(warnings)
 
 
 def _metadata(document: Mapping[str, object]) -> ArtifactMetadata:
@@ -387,36 +466,54 @@ def _captures(
 
 
 def _has_capture_diagnostic(text: str) -> bool:
-    lowered_output = text.lower()
-    return any(
-        diagnostic in lowered_output
-        for diagnostic in (
-            "permission denied",
-            "operation not permitted",
-            "access denied",
-            "inaccessible",
-            "unavailable",
-            "command not found",
-            "no such file",
-            "not found",
-            "timed out",
-            "timeout",
-            "error:",
-            "failed:",
-        )
-    )
+    return classify_shell_diagnostic(text) is not None
 
 
 def _is_legacy_negative_sentinel(capture: CommandCapture, semantic: str | None) -> bool:
     lowered_output = capture.stdout.lower()
     if semantic == "magisk":
-        return "magisk" in lowered_output and "not found" in lowered_output
+        return (
+            re.fullmatch(
+                r"magisk:\s*not found(?:\s+in\s+path)?", lowered_output.strip()
+            )
+            is not None
+        )
     if semantic == "su_paths":
         lines = [
             line.strip().lower() for line in capture.stdout.splitlines() if line.strip()
         ]
-        return bool(lines) and all(line.startswith("not found") for line in lines)
+        return bool(lines) and all(line == "not found" for line in lines)
     return semantic == "selinux" and "permission denied" in lowered_output
+
+
+def _infer_legacy_capture_status(
+    capture: CommandCapture,
+) -> tuple[CommandCapture, str | None]:
+    if capture.status is not CaptureStatus.OBSERVED:
+        return capture, None
+    semantic = _CAPTURE_SEMANTICS.get(capture.name)
+    if _is_legacy_negative_sentinel(capture, semantic):
+        if semantic != "selinux":
+            return capture, None
+    diagnostic = classify_shell_diagnostic(capture.stdout)
+    if diagnostic is None:
+        return capture, None
+    inferred_status = {
+        "inaccessible": CaptureStatus.INACCESSIBLE,
+        "timeout": CaptureStatus.TIMEOUT,
+        "command_error": CaptureStatus.COMMAND_ERROR,
+    }[diagnostic]
+    return (
+        replace(
+            capture,
+            status=inferred_status,
+            timed_out=inferred_status is CaptureStatus.TIMEOUT,
+            stdout="",
+            stderr=(f"legacy {inferred_status.value} inferred from diagnostic output"),
+        ),
+        f"legacy capture {capture.name} inferred {inferred_status.value} "
+        "from diagnostic output",
+    )
 
 
 def _observed_capture_syntax_is_valid(
@@ -544,6 +641,19 @@ def _parsed_capture_names(
     return frozenset(parsed), tuple(warnings)
 
 
+def _capture_errors(captures: Sequence[CommandCapture]) -> tuple[str, ...]:
+    return tuple(
+        f"capture {capture.name} ended with {capture.status.value}"
+        for capture in captures
+        if capture.status
+        in {
+            CaptureStatus.COMMAND_ERROR,
+            CaptureStatus.ERROR,
+            CaptureStatus.TIMEOUT,
+        }
+    )
+
+
 def _first_observed(captures: Sequence[CommandCapture], *names: str) -> str:
     name_set = frozenset(names)
     for capture in captures:
@@ -591,7 +701,8 @@ class LegacySectionedTextAdapter:
 
     def parse(self, text: str, *, source_ref: str) -> ArtifactParseResult:
         raw = parse_raw_text(text)
-        captures = []
+        captures: list[CommandCapture] = []
+        inference_warnings: list[str] = []
         declared_sections = set(raw["section_names"])
         aliases = {
             "properties": ("GETPROP", "PROPS"),
@@ -605,14 +716,14 @@ class LegacySectionedTextAdapter:
             "processes": ("PS", "PROCESSES"),
         }
         for capture_name, section_names in aliases.items():
-            content = next(
-                (
-                    raw["sections"][name]
-                    for name in section_names
-                    if name in raw["sections"]
+            selected_section = next(
+                (name for name in section_names if name in raw["sections"]),
+                next(
+                    (name for name in section_names if name in declared_sections),
+                    section_names[0],
                 ),
-                "",
             )
+            content = raw["sections"].get(selected_section, "")
             present = any(name in declared_sections for name in section_names)
             status = (
                 CaptureStatus.OBSERVED
@@ -621,7 +732,7 @@ class LegacySectionedTextAdapter:
                 if present
                 else CaptureStatus.NOT_COLLECTED
             )
-            captures.append(
+            capture, inference_warning = _infer_legacy_capture_status(
                 CommandCapture(
                     name=capture_name,
                     status=status,
@@ -629,9 +740,13 @@ class LegacySectionedTextAdapter:
                     timed_out=False,
                     stdout=content,
                     stderr="",
-                    source_ref=f"legacy-sections/{section_names[0]}",
+                    source_ref=f"legacy-sections/{selected_section}",
                 )
             )
+            _validate_capture_outcome(capture)
+            captures.append(capture)
+            if inference_warning is not None:
+                inference_warnings.append(inference_warning)
         parsed_names, parse_warnings = _parsed_capture_names(
             captures, fail_on_malformed=False
         )
@@ -639,26 +754,37 @@ class LegacySectionedTextAdapter:
             capture
             for capture in captures
             if _legacy_capture_has_usable_fragments(capture)
+            or (
+                capture.name in {"selinux_mode", "getenforce"}
+                and capture.status is CaptureStatus.INACCESSIBLE
+            )
         )
         fragments = replace(
             _fragments_from_captures(sanitized_captures),
             sections=raw["sections"],
+            section_occurrences=raw["section_occurrences"],
         )
         return ArtifactParseResult(
             input_kind=self.input_kind,
             metadata=ArtifactMetadata("legacy-sectioned-text-1", "legacy"),
             captures=tuple(captures),
-            warnings=(
-                "legacy sectioned text has inferred command status and no collector manifest",
-                *parse_warnings,
+            warnings=_bounded_warnings(
+                (
+                    "legacy sectioned text has inferred command status and no collector manifest",
+                ),
+                raw["warnings"],
+                inference_warnings,
+                parse_warnings,
             ),
-            errors=(),
+            errors=_capture_errors(captures),
             fragments=fragments,
             parsed_capture_names=parsed_names,
         )
 
 
-def _legacy_host_captures(text: str) -> tuple[CommandCapture, ...]:
+def _legacy_host_captures(
+    text: str,
+) -> tuple[tuple[CommandCapture, ...], tuple[str, ...]]:
     raw = parse_raw_text(text)
     declared_sections = set(raw["section_names"])
     aliases = {
@@ -668,6 +794,7 @@ def _legacy_host_captures(text: str) -> tuple[CommandCapture, ...]:
         "python_version": "PYTHON_VERSION",
     }
     captures: list[CommandCapture] = []
+    warnings: list[str] = []
     for capture_name, section_name in aliases.items():
         content = raw["sections"].get(section_name, "")
         present = section_name in declared_sections
@@ -678,7 +805,7 @@ def _legacy_host_captures(text: str) -> tuple[CommandCapture, ...]:
             if present
             else CaptureStatus.NOT_COLLECTED
         )
-        captures.append(
+        capture, warning = _infer_legacy_capture_status(
             CommandCapture(
                 name=capture_name,
                 status=status,
@@ -689,7 +816,11 @@ def _legacy_host_captures(text: str) -> tuple[CommandCapture, ...]:
                 source_ref=f"legacy-sections/{section_name}",
             )
         )
-    return tuple(captures)
+        _validate_capture_outcome(capture)
+        captures.append(capture)
+        if warning is not None:
+            warnings.append(warning)
+    return tuple(captures), tuple(warnings)
 
 
 class ManifestAdapter:
@@ -700,7 +831,12 @@ class ManifestAdapter:
         self.input_kind = input_kind
 
     def parse(self, text: str, *, source_ref: str) -> ArtifactParseResult:
-        document = _strict_json(text)
+        parser_warnings = list(validate_parser_text(text))
+        document = _strict_json(
+            text,
+            text_validated=True,
+            warning_sink=parser_warnings,
+        )
         declared_kind = _required_string(
             document.get("artifact_kind"), field_name="artifact_kind"
         )
@@ -713,17 +849,23 @@ class ManifestAdapter:
             if self.input_kind is InputKind.APP_PROBE_JSON
             else "artifact_collection_manifest_v1_0_0.schema.json"
         )
-        errors = sorted(
+        first_error = next(
             Draft202012Validator(
                 load_schema(schema_name), format_checker=FormatChecker()
             ).iter_errors(document),
-            key=lambda error: tuple(str(part) for part in error.absolute_path),
+            None,
         )
-        if errors:
+        if first_error is not None:
             raise NormalizationError(f"artifact JSON does not match {schema_name}")
         captures = _captures(document, input_kind=self.input_kind)
         parsed_names, _ = _parsed_capture_names(captures, fail_on_malformed=True)
-        return self._result(document, metadata, captures, parsed_names)
+        return self._result(
+            document,
+            metadata,
+            captures,
+            parsed_names,
+            parser_warnings=parser_warnings,
+        )
 
     def _validate_metadata(self, metadata: ArtifactMetadata) -> None:
         if metadata.schema_version not in self.supported_schema_versions:
@@ -749,17 +891,10 @@ class ManifestAdapter:
         metadata: ArtifactMetadata,
         captures: tuple[CommandCapture, ...],
         parsed_names: frozenset[str],
+        *,
+        parser_warnings: Sequence[str] = (),
     ) -> ArtifactParseResult:
-        errors = tuple(
-            f"capture {capture.name} ended with {capture.status.value}"
-            for capture in captures
-            if capture.status
-            in {
-                CaptureStatus.COMMAND_ERROR,
-                CaptureStatus.ERROR,
-                CaptureStatus.TIMEOUT,
-            }
-        )
+        errors = _capture_errors(captures)
         warnings_value = document.get("warnings", [])
         if not isinstance(warnings_value, list) or not all(
             isinstance(item, str) for item in warnings_value
@@ -769,7 +904,7 @@ class ManifestAdapter:
             input_kind=self.input_kind,
             metadata=metadata,
             captures=captures,
-            warnings=tuple(warnings_value),
+            warnings=_bounded_warnings(parser_warnings, warnings_value),
             errors=errors,
             fragments=_fragments_from_captures(captures),
             parsed_capture_names=parsed_names,
@@ -793,8 +928,10 @@ class ManifestAdapter:
         legacy = selected.parse(text, source_ref=source_ref)
         allowed = _ALLOWED_CAPTURE_NAMES[self.input_kind]
         available_captures = legacy.captures
+        host_warnings: tuple[str, ...] = ()
         if self.input_kind is InputKind.HOST_COLLECTION_MANIFEST:
-            available_captures = (*available_captures, *_legacy_host_captures(text))
+            host_captures, host_warnings = _legacy_host_captures(text)
+            available_captures = (*available_captures, *host_captures)
         captures = tuple(
             capture for capture in available_captures if capture.name in allowed
         )
@@ -805,14 +942,17 @@ class ManifestAdapter:
             if capture.name not in allowed
             and capture.status in {CaptureStatus.OBSERVED, CaptureStatus.EMPTY}
         )
-        warnings = (
-            "portable collection manifest selected the observer-specific adapter; "
-            "legacy payload has inferred per-command status",
-            *(
+        warnings = _bounded_warnings(
+            (
+                "portable collection manifest selected the observer-specific adapter; "
+                "legacy payload has inferred per-command status",
+            ),
+            tuple(
                 f"ignored observer-inapplicable legacy capture: {name}"
                 for name in ignored
             ),
-            *legacy.warnings[1:],
+            legacy.warnings[1:],
+            host_warnings,
         )
         return replace(
             legacy,
@@ -820,7 +960,12 @@ class ManifestAdapter:
             metadata=metadata,
             captures=captures,
             warnings=warnings,
-            fragments=_fragments_from_captures(captures),
+            errors=_capture_errors(captures),
+            fragments=replace(
+                _fragments_from_captures(captures),
+                sections=legacy.fragments.sections,
+                section_occurrences=legacy.fragments.section_occurrences,
+            ),
             parsed_capture_names=parsed_names,
         )
 
@@ -858,6 +1003,7 @@ def _looks_like_json(text: str) -> bool:
 def adapter_for_text(text: str, *, explicit_kind: str | None = None) -> ArtifactAdapter:
     """Select by declared metadata, with a deliberate non-JSON legacy fallback."""
 
+    validate_parser_text(text)
     if explicit_kind and explicit_kind != "auto":
         try:
             kind = InputKind(explicit_kind)
@@ -874,7 +1020,7 @@ def adapter_for_text(text: str, *, explicit_kind: str | None = None) -> Artifact
         raise InvalidJSONError("artifact JSON must not contain a UTF-8 BOM")
     if not _looks_like_json(text):
         return ADAPTERS[InputKind.LEGACY_SECTIONED_TEXT]
-    document = _strict_json(text)
+    document = _strict_json(text, text_validated=True)
     declared_kind = document.get("artifact_kind")
     if not isinstance(declared_kind, str):
         raise NormalizationError("JSON artifact_kind is required for adapter selection")
@@ -936,12 +1082,14 @@ def parse_artifact(
     try:
         payload = read_bounded_regular_file(
             source,
-            limit=MAX_CANONICAL_BYTES,
+            limit=MAX_RAW_TEXT_BYTES,
             subject="artifact adapter input",
         )
-        text = payload.decode("utf-8")
+        text = payload.decode("utf-8", errors="strict")
     except UnicodeDecodeError as exc:
-        raise CollectionError(f"input artifact is not valid UTF-8: {label}") from exc
+        raise CollectionError(
+            f"input artifact is not valid UTF-8 at byte {exc.start}: {label}"
+        ) from exc
     return parse_artifact_text(
         text,
         source_ref=label,

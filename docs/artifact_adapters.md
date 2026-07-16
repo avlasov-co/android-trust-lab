@@ -82,6 +82,8 @@ The direct file path uses the same bounded, regular-file, no-follow snapshot
 reader as legacy normalization. Exact source bytes are hashed and any expected
 size/digest is checked before UTF-8 decoding or adapter parsing. JSON parsing
 rejects duplicate object members and non-standard constants.
+[Parser limits and malformed-input policy](parser_limits.md) defines the shared
+byte, line, section, JSON nesting, duplicate, warning, and recovery contract.
 
 ## Interpretation boundary
 

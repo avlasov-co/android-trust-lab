@@ -28,6 +28,11 @@ supported. Portable manifest metadata selects the ADB, host, app, or Magisk
 adapter; direct versioned JSON can also declare its input kind. Typed metadata
 cannot be contradicted by CLI or library overrides.
 
+All raw parser entry points share the bounded decoding and malformed-input
+contract in `docs/parser_limits.md` from the repository root. Oversized input
+fails closed; legacy duplicate recovery is deterministic and explicitly
+diagnosed rather than silently truncated.
+
 Dataset manifest `2.0.0` is the sole writable dataset contract; frozen v1 remains
 readable only. `trustlab dataset verify` validates the complete portable graph,
 all byte bindings, collection relationships, and deterministic report/diff

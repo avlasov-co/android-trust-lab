@@ -5,17 +5,17 @@ from pathlib import Path
 import pytest
 
 import trustlab.bounded_io as bounded_io_module
-from trustlab.exceptions import CollectionError
+from trustlab.exceptions import CollectionError, NormalizationError
 from trustlab.normalizer import normalize_raw_file
 from trustlab.parser import (
     classify_mount,
     parse_getenforce,
-    parse_getprop,
     parse_id,
     parse_mount_line,
     parse_paths,
     parse_processes,
     parse_raw_report,
+    parse_raw_text,
 )
 from trustlab.validators import validate_report
 
@@ -87,11 +87,10 @@ def test_truncated_and_variant_parser_inputs_degrade_explicitly():
     }
 
 
-def test_enormous_property_line_is_parsed_without_truncation():
+def test_enormous_property_line_is_rejected_without_truncation():
     value = "x" * 1_000_000
-    assert parse_getprop(f"[ro.product.model]: [{value}]") == {
-        "ro.product.model": value
-    }
+    with pytest.raises(NormalizationError, match="line byte limit"):
+        parse_raw_text(f"=== GETPROP ===\n[ro.product.model]: [{value}]")
 
 
 def test_invalid_utf8_policy_rejects_raw_artifact(tmp_path):

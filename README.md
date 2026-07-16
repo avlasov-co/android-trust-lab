@@ -22,7 +22,8 @@ minimum supported runtime.
 Raw inputs cross a version-aware, observer-specific typed adapter boundary
 before normalization. Adapter selection uses declared metadata, and legacy
 sectioned text remains an explicit warned compatibility path. See
-`docs/artifact_adapters.md`.
+`docs/artifact_adapters.md` and the shared bounded-input policy in
+`docs/parser_limits.md`.
 
 It is not a root detector, bypass tool, root-hiding framework, Magisk hiding project, Play Integrity bypass project, SafetyNet bypass project, banking-app bypass project, or DuckDetector clone.
 
