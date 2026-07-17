@@ -206,7 +206,7 @@
     },
     {
       "artifact_id": "diff-stock-adb-vs-rooted-adb",
-      "byte_size": 6248,
+      "byte_size": 6273,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -218,11 +218,11 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.7.0",
-      "sha256": "355a2a39c3761c9acc3a7bdfb2a10f25ecfc621276acf3e42fd6004292301636"
+      "sha256": "d35e5d2458d0569d270c1dc194b67fd4aaf7f2a0e18c3b26e0f4e41fc652604b"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-rooted-root",
-      "byte_size": 5655,
+      "byte_size": 5680,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -234,11 +234,11 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.7.0",
-      "sha256": "515083b1731a51ba6e30b84445f341af44aaff9a1eac3121c3b1ce58d754b8ef"
+      "sha256": "35a6b4062df0ac9641f97bf7433de9535e9fe5ad0439f7173488d440f3f002bf"
     },
     {
       "artifact_id": "diff-stock-vs-writable-system",
-      "byte_size": 8477,
+      "byte_size": 8502,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -250,11 +250,11 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.7.0",
-      "sha256": "93175fcec45fa3f472b10d933bee7f9eed4daa78e02abb34797b5a1d81272737"
+      "sha256": "7ed70d9fbb0b4d3d41c17d98a306086d1bf6f7c8461e47c6912bbf25d096d233"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-magisk-root",
-      "byte_size": 40810,
+      "byte_size": 40835,
       "media_type": "application/json",
       "producer": {
         "kind": "generator",
@@ -266,7 +266,7 @@
       "role": "derived_diff",
       "schema_family": "diff",
       "schema_version": "2.7.0",
-      "sha256": "31a01f67e2ba42e4a38f91352f82ca81f4f5e1735b07ad05e6061ac5c3266804"
+      "sha256": "6358c11800a2a675fe1484db3c803d76b25891be538eacdba321a622de835ba5"
     }
   ],
   "authorization": {

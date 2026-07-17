@@ -1,0 +1,203 @@
+{
+  "artifact_kind": "app_probe_json",
+  "schema_version": "2.0.0",
+  "collector": {
+    "name": "trustlab-app",
+    "version": "0.3.0-dev0"
+  },
+  "observer": {
+    "observer_type": "unprivileged_app",
+    "privilege_level": "app_sandbox",
+    "collection_method": "app_snapshot"
+  },
+  "collection_id": "atlcol-0001020304050607",
+  "experiment_id": "unknown",
+  "target": {
+    "pseudonymous_id": "target-0011223344556677",
+    "target_type": "avd"
+  },
+  "started_at": "2026-07-16T10:00:00Z",
+  "ended_at": "2026-07-16T10:00:01Z",
+  "completion_status": "complete",
+  "environment": {
+    "platform": "android",
+    "transport": "app_api",
+    "execution_context": "app_collector"
+  },
+  "redaction_policy": {
+    "policy_id": "atl_portable_v1",
+    "redaction_state": "applied",
+    "direct_identifiers_removed": true,
+    "serials_removed": true,
+    "secrets_removed": true,
+    "applied_fields": [
+      "build_fingerprint_hashed",
+      "diagnostics_categorized",
+      "file_paths_replaced",
+      "installer_package_categorized",
+      "mount_fields_allowlisted",
+      "selinux_categories_removed"
+    ]
+  },
+  "probes": [
+    {
+      "probe_id": "build_version",
+      "mechanism": "public_api",
+      "capability": {"api_name": "android.os.build", "minimum_sdk": 1},
+      "source_ref": "captures/build_version.txt",
+      "status": "observed",
+      "value": {
+        "sdk_int": 37,
+        "release": "17",
+        "security_patch": "2026-07-05",
+        "base_os_present": true,
+        "build_type": "userdebug",
+        "build_tags": ["dev_keys"],
+        "supported_abis": ["x86_64"],
+        "build_fingerprint_sha256": "b243ff6b3d4321745821394b6412d867f059d633d58ddadcae6559f45e9c3a21"
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "app_identity",
+      "mechanism": "public_api",
+      "capability": {"api_name": "android.process.my_uid", "minimum_sdk": 1},
+      "source_ref": "captures/app_identity.txt",
+      "status": "observed",
+      "value": {"app_uid": 10123, "debuggable": true},
+      "diagnostic": null
+    },
+    {
+      "probe_id": "install_source",
+      "mechanism": "public_api",
+      "capability": {"api_name": "android.package_manager.install_source", "minimum_sdk": 5},
+      "source_ref": "captures/install_source.txt",
+      "status": "observed",
+      "value": {
+        "api_variant": "install_source_info",
+        "installer_present": true,
+        "source_category": "app_store"
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "selinux_self_context",
+      "mechanism": "procfs",
+      "capability": {"api_name": "proc.self.attr.current", "minimum_sdk": null},
+      "source_ref": "captures/selinux_self_context.txt",
+      "status": "observed",
+      "value": {"base_context": "u:r:untrusted_app:s0", "categories_removed": true},
+      "diagnostic": null
+    },
+    {
+      "probe_id": "file_system_shell",
+      "mechanism": "filesystem",
+      "capability": {"api_name": "android.system.os", "minimum_sdk": 21},
+      "source_ref": "captures/file_system_shell.txt",
+      "status": "observed",
+      "value": {
+        "path_id": "system_shell",
+        "exists": true,
+        "read_access": {"status": "observed", "value": true, "diagnostic": null}
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "file_system_su",
+      "mechanism": "filesystem",
+      "capability": {"api_name": "android.system.os", "minimum_sdk": 21},
+      "source_ref": "captures/file_system_su.txt",
+      "status": "observed",
+      "value": {
+        "path_id": "system_su",
+        "exists": false,
+        "read_access": {"status": "observed", "value": false, "diagnostic": null}
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "file_system_xbin_su",
+      "mechanism": "filesystem",
+      "capability": {"api_name": "android.system.os", "minimum_sdk": 21},
+      "source_ref": "captures/file_system_xbin_su.txt",
+      "status": "observed",
+      "value": {
+        "path_id": "system_xbin_su",
+        "exists": false,
+        "read_access": {"status": "observed", "value": false, "diagnostic": null}
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "file_vendor_bin_su",
+      "mechanism": "filesystem",
+      "capability": {"api_name": "android.system.os", "minimum_sdk": 21},
+      "source_ref": "captures/file_vendor_bin_su.txt",
+      "status": "observed",
+      "value": {
+        "path_id": "vendor_bin_su",
+        "exists": false,
+        "read_access": {"status": "observed", "value": false, "diagnostic": null}
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "file_sbin_su",
+      "mechanism": "filesystem",
+      "capability": {"api_name": "android.system.os", "minimum_sdk": 21},
+      "source_ref": "captures/file_sbin_su.txt",
+      "status": "observed",
+      "value": {
+        "path_id": "sbin_su",
+        "exists": false,
+        "read_access": {"status": "observed", "value": false, "diagnostic": null}
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "proc_self_status",
+      "mechanism": "procfs",
+      "capability": {"api_name": "proc.self.status", "minimum_sdk": null},
+      "source_ref": "captures/proc_self_status.txt",
+      "status": "observed",
+      "value": {
+        "no_new_privs": true,
+        "seccomp_mode": 2,
+        "seccomp_filter_count": 1,
+        "effective_capabilities_nonzero": false,
+        "bounding_capabilities_nonzero": false
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "proc_self_mountinfo",
+      "mechanism": "procfs",
+      "capability": {"api_name": "proc.self.mountinfo", "minimum_sdk": null},
+      "source_ref": "captures/proc_self_mountinfo.txt",
+      "status": "observed",
+      "value": {
+        "record_count": 42,
+        "malformed_record_count": 0,
+        "apex_mount_count": 12,
+        "selected_mounts": [
+          {"mount_point_id": "root", "filesystem_type": "ext4", "read_only": true, "overlay": false},
+          {"mount_point_id": "system", "filesystem_type": "ext4", "read_only": true, "overlay": false},
+          {"mount_point_id": "apex", "filesystem_type": "tmpfs", "read_only": true, "overlay": false}
+        ]
+      },
+      "diagnostic": null
+    },
+    {
+      "probe_id": "emulator_indicators",
+      "mechanism": "public_api",
+      "capability": {"api_name": "android.os.build.indicators", "minimum_sdk": 1},
+      "source_ref": "captures/emulator_indicators.txt",
+      "status": "observed",
+      "value": {
+        "outcome": "indicated",
+        "indicators": ["hardware_ranchu", "product_sdk"]
+      },
+      "diagnostic": null
+    }
+  ]
+}

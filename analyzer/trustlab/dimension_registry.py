@@ -26,7 +26,7 @@ REGISTRY_SCHEMA_RESOURCE_NAME: Final = "trust_dimension_registry_v1_0_0.schema.j
 
 CANONICAL_EVIDENCE_STATUSES: Final = tuple(status.value for status in EvidenceStatus)
 CONTEXTUAL_DIMENSION_IDS: Final = frozenset(
-    {"physical_device_state", "app_visible_state", "root_visible_state"}
+    {"physical_device_state", "root_visible_state"}
 )
 
 
@@ -130,6 +130,19 @@ def _contextual_unavailable_extractor_v1(
     return _contextual_sentinel()
 
 
+def _app_probe_extension_v1(
+    report: Mapping[str, Any], definition: TrustDimension
+) -> Any:
+    """Read only the validated v2 app extension; observer metadata is not evidence."""
+
+    del definition
+    extensions = report.get("extensions")
+    if not isinstance(extensions, Mapping):
+        return _contextual_sentinel()
+    value = extensions.get("org.androidtrustlab.app-probe")
+    return value if isinstance(value, Mapping) else _contextual_sentinel()
+
+
 def _canonical_equality_v1(before: Any, after: Any, definition: TrustDimension) -> bool:
     del definition
     return bool(_comparison_value(before) == _comparison_value(after))
@@ -150,6 +163,7 @@ def _contextual_unavailable_comparator_v1(
 EXTRACTOR_LOOKUP: Final[Mapping[str, Extractor]] = MappingProxyType(
     {
         "nested_path_v1": _nested_path_v1,
+        "app_probe_extension_v1": _app_probe_extension_v1,
         "contextual_unavailable_v1": _contextual_unavailable_extractor_v1,
     }
 )
@@ -313,7 +327,12 @@ def _validate_measured_definition(definition: TrustDimension) -> None:
         raise TrustDimensionRegistryError(
             f"measured dimension {definition.id} has non-canonical statuses"
         )
-    if definition.extractor_id != "nested_path_v1" or (
+    expected_extractor = (
+        "app_probe_extension_v1"
+        if definition.id == "app_visible_state"
+        else "nested_path_v1"
+    )
+    if definition.extractor_id != expected_extractor or (
         definition.comparator_id != "canonical_equality_v1"
     ):
         raise TrustDimensionRegistryError(
@@ -353,9 +372,9 @@ def _semantic_validation(definitions: tuple[TrustDimension, ...]) -> None:
         _validate_measured_definition(definition)
         all_paths.extend(definition.evidence_paths)
 
-    if default_count != 27 or contextual_ids != CONTEXTUAL_DIMENSION_IDS:
+    if default_count != 28 or contextual_ids != CONTEXTUAL_DIMENSION_IDS:
         raise TrustDimensionRegistryError(
-            "registry must contain 27 measured dimensions and the three canonical contextual dimensions"
+            "registry must contain 28 measured dimensions and the two canonical contextual dimensions"
         )
     if len(set(all_paths)) != len(all_paths):
         raise TrustDimensionRegistryError(

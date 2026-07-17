@@ -132,7 +132,7 @@ def test_cross_version_diff_uses_explicit_migration_chain():
 
     diff = make_diff(v1, v2)
     assert diff["changed_dimensions"] == []
-    assert len(diff["unchanged_dimensions"]) == 27
+    assert len(diff["unchanged_dimensions"]) == 28
     current = migrate_report_to_current(v2)
     provenance = diff["provenance"]
     compatibility = diff["compatibility"]

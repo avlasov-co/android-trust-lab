@@ -110,7 +110,7 @@ def test_repository_tool_entry_points_pass(capsys):
     assert "Python support policy is consistent" in output
     assert "schema resources are consistent" in output
     assert (
-        "validated 22 schemas, 30 dimensions in 1 registry, 8 reports, 6 diffs"
+        "validated 23 schemas, 30 dimensions in 1 registry, 8 reports, 6 diffs"
         in output
     )
     assert "1 collection manifest" in output

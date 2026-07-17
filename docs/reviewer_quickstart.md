@@ -18,7 +18,7 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Read-only Magisk root collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md` |
 | Deterministic Magisk structural packaging | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
 | Android app / Gradle project | Scaffold implemented | `app/`; one unprivileged module, checksum-locked wrapper, strict dependency verification |
-| Unprivileged app probe | Design and placeholder only | `collector/android/app_probe_design.md`, empty `app/observer/.../probe` package |
+| Unprivileged app probe | Core implemented; UI/export pending | `collector/android/app_probe_design.md`, `app/observer/.../probe`, `tests/test_app_probe_v2.py` |
 | Android instrumentation tests | Not present | Added in a later roadmap step |
 | APK manifest or permission analyzer | Not present | No APK parser, manifest parser, or permission-policy checker is included |
 | Physical-device validation | Not collected | `experiments/E99_physical_device_template.md` |
@@ -75,9 +75,10 @@ cd app
   :observer:lintDebug
 ```
 
-The Step 31 app has no probe behavior yet. Launching it performs no collection,
-and its merged manifest requests no permissions or features. The only exported
-component is the launcher activity; cleartext traffic and backup are disabled.
+The Step 32 probe core is implemented but is not invoked by the launcher yet.
+Launching the app performs no collection, and its merged manifest requests no
+permissions or features. The only exported component is the launcher activity;
+cleartext traffic and backup are disabled.
 
 ## Minimal analyzer demo
 

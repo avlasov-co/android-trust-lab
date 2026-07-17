@@ -18,7 +18,7 @@
   "$defs": {
     "dimensionId": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
-    "evidencePath": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*$", "maxLength": 512},
+    "evidencePath": {"type": "string", "pattern": "^(?:[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*|extensions\\.org\\.androidtrustlab\\.app-probe)$", "maxLength": 512},
     "materialityRule": {
       "type": "object",
       "required": ["policy_id", "value"],
@@ -82,14 +82,14 @@
           "enum": [
             "boot_integrity", "mandatory_access_control", "process_visibility",
             "mount_integrity", "root_visibility", "magisk_visibility",
-            "properties", "environment", "contextual"
+            "properties", "environment", "app_visibility", "contextual"
           ]
         },
         "supported_report_versions": {
           "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
           "items": {"$ref": "#/$defs/semver"}
         },
-        "extractor_id": {"enum": ["nested_path_v1", "contextual_unavailable_v1"]},
+        "extractor_id": {"enum": ["nested_path_v1", "app_probe_extension_v1", "contextual_unavailable_v1"]},
         "comparator_id": {"enum": ["canonical_equality_v1", "contextual_unavailable_v1"]},
         "expected_statuses": {
           "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true,

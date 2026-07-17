@@ -30,6 +30,7 @@ class SchemaFamily(StrEnum):
     DIFF = "diff"
     DATASET_MANIFEST = "dataset_manifest"
     COLLECTION_MANIFEST = "collection_manifest"
+    APP_PROBE = "app_probe"
     EXPERIMENT_SPEC = "experiment_spec"
 
 
@@ -90,6 +91,10 @@ SCHEMA_SUPPORT: Final[Mapping[SchemaFamily, SchemaSupport]] = MappingProxyType(
             current_write_version="1.0.0",
             readable_versions=frozenset({"1.0.0"}),
         ),
+        SchemaFamily.APP_PROBE: SchemaSupport(
+            current_write_version="2.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0"}),
+        ),
         SchemaFamily.EXPERIMENT_SPEC: SchemaSupport(
             current_write_version=None,
             readable_versions=frozenset(),
@@ -125,6 +130,8 @@ SCHEMA_RESOURCE_REGISTRY: Final[Mapping[tuple[SchemaFamily, str], str]] = (
             (SchemaFamily.COLLECTION_MANIFEST, "1.0.0"): (
                 "collection_manifest_v1_0_0.schema.json"
             ),
+            (SchemaFamily.APP_PROBE, "1.0.0"): "app_probe_v1_0_0.schema.json",
+            (SchemaFamily.APP_PROBE, "2.0.0"): "app_probe_v2_0_0.schema.json",
         }
     )
 )

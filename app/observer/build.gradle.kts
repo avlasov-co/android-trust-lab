@@ -27,6 +27,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     lint {
         abortOnError = true
         checkDependencies = true

@@ -56,8 +56,8 @@ EXPECTED_ORDER = (
     "magisk_command_status",
     "property_consistency",
     "emulator_state",
-    "physical_device_state",
     "app_visible_state",
+    "physical_device_state",
     "root_visible_state",
 )
 
@@ -84,11 +84,11 @@ def test_registry_is_schema_valid_and_has_exact_canonical_order():
     assert definitions == TRUST_DIMENSION_DEFINITIONS
     assert tuple(definition.id for definition in definitions) == EXPECTED_ORDER
     assert (
-        tuple(definition.id for definition in DEFAULT_DIMENSIONS) == EXPECTED_ORDER[:27]
+        tuple(definition.id for definition in DEFAULT_DIMENSIONS) == EXPECTED_ORDER[:28]
     )
     assert (
         tuple(definition.id for definition in CONTEXTUAL_DIMENSION_DEFINITIONS)
-        == EXPECTED_ORDER[27:]
+        == EXPECTED_ORDER[28:]
     )
     assert tuple(TRUST_DIMENSIONS_BY_ID) == EXPECTED_ORDER
 
@@ -103,6 +103,7 @@ def test_registry_schema_closes_objects_and_allowlists_executable_policy_ids():
     properties = schema["$defs"]["dimension"]["properties"]
     assert properties["extractor_id"]["enum"] == [
         "nested_path_v1",
+        "app_probe_extension_v1",
         "contextual_unavailable_v1",
     ]
     assert properties["comparator_id"]["enum"] == [
@@ -136,9 +137,17 @@ def test_all_safe_extractors_and_comparators_are_referenced():
 def test_every_measured_dimension_extracts_its_unique_report_path():
     report = sample_report()
     paths = [definition.evidence_paths[0] for definition in DEFAULT_DIMENSIONS]
-    assert len(paths) == len(set(paths)) == 27
+    assert len(paths) == len(set(paths)) == 28
 
     for definition in DEFAULT_DIMENSIONS:
+        if definition.id == "app_visible_state":
+            assert extract_dimension(report, definition) == {
+                "status": "not_collected",
+                "value": None,
+                "reason": "direct supporting payload is not available",
+                "evidence_refs": [],
+            }
+            continue
         current: object = report
         for part in definition.evidence_paths[0].split("."):
             assert isinstance(current, dict)
@@ -259,7 +268,7 @@ def test_matrix_order_is_unique_contiguous_and_preserves_current_dimensions():
             "must support only current report version",
         ),
         (
-            lambda document: document["dimensions"][27].update(
+            lambda document: document["dimensions"][28].update(
                 evidence_paths=["target.observer_type"]
             ),
             "cannot fabricate an evidence path",

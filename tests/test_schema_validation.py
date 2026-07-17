@@ -31,6 +31,7 @@ def test_project_schemas_are_valid_draft_2020_12():
 def test_packaged_project_schema_registry_is_meta_schema_valid():
     assert check_project_schemas() == (
         "app_probe_v1_0_0.schema.json",
+        "app_probe_v2_0_0.schema.json",
         "artifact_collection_manifest_v1_0_0.schema.json",
         "collection_manifest_v1_0_0.schema.json",
         "dataset_manifest_v1_0_0.schema.json",

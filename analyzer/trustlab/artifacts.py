@@ -10,6 +10,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal, Protocol
@@ -17,6 +18,7 @@ from typing import Literal, Protocol
 from jsonschema import Draft202012Validator, FormatChecker
 
 from .bounded_io import read_bounded_regular_file
+from .compatibility import SchemaFamily, schema_resource_name
 from .exceptions import (
     CollectionError,
     InvalidJSONError,
@@ -120,6 +122,27 @@ class ArtifactMetadata:
     collection_timestamp: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class AppProbeEvidence:
+    """One schema-validated v2 app probe projected into portable evidence."""
+
+    probe_id: str
+    status: CaptureStatus
+    value: object | None
+    source_ref: str
+
+
+@dataclass(frozen=True, slots=True)
+class AppProbeFragments:
+    """Typed fields that may safely influence normalized app observations."""
+
+    evidence: tuple[AppProbeEvidence, ...]
+    android_version: str | None
+    sdk: str | None
+    selinux_context: ParsedContext
+    emulator_indicators: tuple[str, ...] | None
+
+
 def _unknown_identity() -> ParsedIdentity:
     return {
         "uid": "unknown",
@@ -183,6 +206,7 @@ class EvidenceFragments:
     magisk_text: str = ""
     processes: ParsedProcesses = field(default_factory=_empty_processes)
     process_evidence: ParsedProcessSet = field(default_factory=_empty_process_evidence)
+    app_probe: AppProbeFragments | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1308,8 +1332,383 @@ class ManifestAdapter:
         )
 
 
+APP_PROBE_V2_IDS = (
+    "build_version",
+    "app_identity",
+    "install_source",
+    "selinux_self_context",
+    "file_system_shell",
+    "file_system_su",
+    "file_system_xbin_su",
+    "file_vendor_bin_su",
+    "file_sbin_su",
+    "proc_self_status",
+    "proc_self_mountinfo",
+    "emulator_indicators",
+)
+
+_APP_REDACTION_FIELDS = frozenset(
+    {
+        "build_fingerprint_hashed",
+        "diagnostics_categorized",
+        "file_paths_replaced",
+        "installer_package_categorized",
+        "mount_fields_allowlisted",
+        "selinux_categories_removed",
+    }
+)
+
+
+def _app_object(value: object, *, field_name: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise NormalizationError(f"app probe field {field_name!r} must be an object")
+    return value
+
+
+def _app_probe_v2_metadata(document: Mapping[str, object]) -> ArtifactMetadata:
+    collector = _app_object(document.get("collector"), field_name="collector")
+    observer = _app_object(document.get("observer"), field_name="observer")
+    target = _app_object(document.get("target"), field_name="target")
+    return ArtifactMetadata(
+        schema_version=_required_string(
+            document.get("schema_version"), field_name="schema_version"
+        ),
+        collector_version=_required_string(
+            collector.get("version"), field_name="collector.version"
+        ),
+        observer_type=_required_string(
+            observer.get("observer_type"), field_name="observer.observer_type"
+        ),
+        collection_method=_required_string(
+            observer.get("collection_method"),
+            field_name="observer.collection_method",
+        ),
+        experiment_id=_required_string(
+            document.get("experiment_id"), field_name="experiment_id"
+        ),
+        target_type=_required_string(
+            target.get("target_type"), field_name="target.target_type"
+        ),
+        collection_timestamp=_required_string(
+            document.get("ended_at"), field_name="ended_at"
+        ),
+    )
+
+
+def _parse_rfc3339(value: object, *, field_name: str) -> datetime:
+    if not isinstance(value, str):
+        raise NormalizationError(f"app probe field {field_name!r} must be a timestamp")
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise NormalizationError(
+            f"app probe field {field_name!r} must be a timestamp"
+        ) from exc
+
+
+def _validate_app_probe_v2_semantics(  # noqa: C901 - closed cross-field contract stays auditable
+    document: Mapping[str, object],
+) -> None:
+    probes_value = document.get("probes")
+    if not isinstance(probes_value, list):
+        raise NormalizationError("app probe results must be an array")
+    probe_ids = tuple(
+        probe.get("probe_id") if isinstance(probe, dict) else None
+        for probe in probes_value
+    )
+    if probe_ids != APP_PROBE_V2_IDS:
+        raise NormalizationError("app probe results must use the canonical probe order")
+
+    started = _parse_rfc3339(document.get("started_at"), field_name="started_at")
+    ended = _parse_rfc3339(document.get("ended_at"), field_name="ended_at")
+    if ended < started:
+        raise NormalizationError("app probe end timestamp precedes its start")
+
+    redaction = _app_object(
+        document.get("redaction_policy"), field_name="redaction_policy"
+    )
+    applied = redaction.get("applied_fields")
+    if not isinstance(applied, list) or frozenset(applied) != _APP_REDACTION_FIELDS:
+        raise NormalizationError("app probe redaction policy is incomplete")
+
+    statuses = tuple(
+        _capture_status(probe.get("status"), capture_name=str(probe.get("probe_id")))
+        for probe in probes_value
+        if isinstance(probe, dict)
+    )
+    expected_completion = (
+        "partial"
+        if any(
+            status in {CaptureStatus.INACCESSIBLE, CaptureStatus.ERROR}
+            for status in statuses
+        )
+        else "complete"
+    )
+    if document.get("completion_status") != expected_completion:
+        raise NormalizationError(
+            "app probe completion status does not match probe outcomes"
+        )
+
+    probes = {
+        str(probe["probe_id"]): probe
+        for probe in probes_value
+        if isinstance(probe, dict)
+    }
+    install = probes["install_source"]
+    if install.get("status") == "observed":
+        install_value = _app_object(
+            install.get("value"), field_name="install_source.value"
+        )
+        present = install_value.get("installer_present")
+        category = install_value.get("source_category")
+        if (present is False) != (category == "none"):
+            raise NormalizationError(
+                "app install-source category does not match source presence"
+            )
+
+    emulator = probes["emulator_indicators"]
+    target = _app_object(document.get("target"), field_name="target")
+    if emulator.get("status") == "observed":
+        emulator_value = _app_object(
+            emulator.get("value"), field_name="emulator_indicators.value"
+        )
+        indicators = emulator_value.get("indicators")
+        outcome = emulator_value.get("outcome")
+        if not isinstance(indicators, list) or (
+            (outcome == "indicated") != bool(indicators)
+        ):
+            raise NormalizationError(
+                "app emulator outcome does not match its selected indicators"
+            )
+        expected_target = "avd" if indicators else "unknown"
+        if target.get("target_type") != expected_target:
+            raise NormalizationError(
+                "app target type does not match emulator indicator evidence"
+            )
+    elif target.get("target_type") != "unknown":
+        raise NormalizationError(
+            "app target type requires observed emulator indicator evidence"
+        )
+
+    expected_file_fields = {
+        "file_system_shell": ("system_shell", "captures/file_system_shell.txt"),
+        "file_system_su": ("system_su", "captures/file_system_su.txt"),
+        "file_system_xbin_su": (
+            "system_xbin_su",
+            "captures/file_system_xbin_su.txt",
+        ),
+        "file_vendor_bin_su": (
+            "vendor_bin_su",
+            "captures/file_vendor_bin_su.txt",
+        ),
+        "file_sbin_su": ("sbin_su", "captures/file_sbin_su.txt"),
+    }
+    for probe_id, (path_id, source_ref) in expected_file_fields.items():
+        probe = probes[probe_id]
+        if probe.get("source_ref") != source_ref:
+            raise NormalizationError("app file probe source reference is inconsistent")
+        if probe.get("status") != "observed":
+            continue
+        value = _app_object(probe.get("value"), field_name=f"{probe_id}.value")
+        if value.get("path_id") != path_id:
+            raise NormalizationError("app file probe path identifier is inconsistent")
+        readability = _app_object(
+            value.get("read_access"), field_name=f"{probe_id}.read_access"
+        )
+        if value.get("exists") is False and not (
+            readability.get("status") == "observed"
+            and readability.get("value") is False
+        ):
+            raise NormalizationError(
+                "an absent app file must have observed false readability"
+            )
+
+
+def _app_probe_v2_captures(
+    document: Mapping[str, object],
+) -> tuple[tuple[CommandCapture, ...], AppProbeFragments]:
+    probes_value = document.get("probes")
+    if not isinstance(probes_value, list):
+        raise NormalizationError("app probe results must be an array")
+    captures: list[CommandCapture] = []
+    evidence: list[AppProbeEvidence] = []
+    for raw_probe in probes_value:
+        probe = _app_object(raw_probe, field_name="probes[]")
+        probe_id = _required_string(probe.get("probe_id"), field_name="probe_id")
+        status = _capture_status(probe.get("status"), capture_name=probe_id)
+        source_ref = _required_string(
+            probe.get("source_ref"), field_name=f"{probe_id}.source_ref"
+        )
+        value = probe.get("value")
+        stdout = (
+            json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            if status is CaptureStatus.OBSERVED
+            else ""
+        )
+        capture = CommandCapture(
+            name=probe_id,
+            status=status,
+            exit_code=None,
+            timed_out=False,
+            stdout=stdout,
+            stderr="",
+            source_ref=source_ref,
+        )
+        _validate_capture_outcome(capture)
+        captures.append(capture)
+        evidence.append(
+            AppProbeEvidence(
+                probe_id=probe_id,
+                status=status,
+                value=value,
+                source_ref=source_ref,
+            )
+        )
+
+    by_id = {item.probe_id: item for item in evidence}
+    build = by_id["build_version"]
+    build_value = (
+        _app_object(build.value, field_name="build_version.value")
+        if build.status is CaptureStatus.OBSERVED
+        else None
+    )
+    selinux = by_id["selinux_self_context"]
+    selinux_value = (
+        _app_object(selinux.value, field_name="selinux_self_context.value")
+        if selinux.status is CaptureStatus.OBSERVED
+        else None
+    )
+    emulator = by_id["emulator_indicators"]
+    emulator_value = (
+        _app_object(emulator.value, field_name="emulator_indicators.value")
+        if emulator.status is CaptureStatus.OBSERVED
+        else None
+    )
+    indicators = emulator_value.get("indicators") if emulator_value else None
+    if indicators is not None and not (
+        isinstance(indicators, list)
+        and all(isinstance(item, str) for item in indicators)
+    ):
+        raise NormalizationError("app emulator indicators must be strings")
+    base_context = selinux_value.get("base_context") if selinux_value else None
+    if base_context is not None and not isinstance(base_context, str):
+        raise NormalizationError("app SELinux base context must be a string")
+    app_fragments = AppProbeFragments(
+        evidence=tuple(evidence),
+        android_version=(
+            str(build_value["release"]) if build_value is not None else None
+        ),
+        sdk=(str(build_value["sdk_int"]) if build_value is not None else None),
+        selinux_context=(
+            parse_selinux_context(base_context, evidence_path=selinux.source_ref)
+            if base_context is not None
+            else _empty_context()
+        ),
+        emulator_indicators=(
+            tuple(str(item) for item in indicators) if indicators is not None else None
+        ),
+    )
+    return tuple(captures), app_fragments
+
+
 class AppProbeAdapter(ManifestAdapter):
-    supported_schema_versions = frozenset({"1.0.0"})
+    supported_schema_versions = frozenset({"1.0.0", "2.0.0"})
+
+    def parse(self, text: str, *, source_ref: str) -> ArtifactParseResult:
+        parser_warnings = list(validate_parser_text(text))
+        document = _strict_json(
+            text,
+            text_validated=True,
+            warning_sink=parser_warnings,
+        )
+        declared_kind = _required_string(
+            document.get("artifact_kind"), field_name="artifact_kind"
+        )
+        if declared_kind != self.input_kind.value:
+            raise NormalizationError("artifact kind does not match selected adapter")
+        version = _required_string(
+            document.get("schema_version"), field_name="schema_version"
+        )
+        if version == "1.0.0":
+            return super().parse(text, source_ref=source_ref)
+        if version not in self.supported_schema_versions:
+            raise UnsupportedSchemaVersionError("unsupported app probe schema version")
+        metadata = _app_probe_v2_metadata(document)
+        self._validate_metadata(metadata)
+        schema_name = schema_resource_name(SchemaFamily.APP_PROBE, version)
+        first_error = next(
+            Draft202012Validator(
+                load_schema(schema_name), format_checker=FormatChecker()
+            ).iter_errors(document),
+            None,
+        )
+        if first_error is not None:
+            raise NormalizationError(f"artifact JSON does not match {schema_name}")
+        _validate_app_probe_v2_semantics(document)
+        captures, app_fragments = _app_probe_v2_captures(document)
+        parsed_names, parse_warnings = _parsed_capture_names(
+            captures, fail_on_malformed=True
+        )
+        return ArtifactParseResult(
+            input_kind=self.input_kind,
+            metadata=metadata,
+            captures=captures,
+            warnings=_bounded_warnings(parser_warnings, parse_warnings),
+            errors=_capture_errors(captures),
+            fragments=EvidenceFragments(
+                selinux_context=app_fragments.selinux_context,
+                app_probe=app_fragments,
+            ),
+            parsed_capture_names=parsed_names,
+        )
+
+    def parse_manifest_payload(
+        self,
+        text: str,
+        *,
+        source_ref: str,
+        metadata: ArtifactMetadata,
+    ) -> ArtifactParseResult:
+        """Parse the typed JSON bound by an app collection manifest."""
+
+        if not _looks_like_json(text):
+            return super().parse_manifest_payload(
+                text,
+                source_ref=source_ref,
+                metadata=metadata,
+            )
+        result = self.parse(text, source_ref=source_ref)
+        if result.metadata.schema_version != "2.0.0":
+            raise NormalizationError(
+                "app collection manifests require the typed v2 app probe"
+            )
+        declared = result.metadata
+        comparisons = {
+            "collector version": (
+                declared.collector_version,
+                metadata.collector_version,
+            ),
+            "observer type": (declared.observer_type, metadata.observer_type),
+            "collection method": (
+                declared.collection_method,
+                metadata.collection_method,
+            ),
+            "experiment ID": (declared.experiment_id, metadata.experiment_id),
+            "target type": (declared.target_type, metadata.target_type),
+            "collection timestamp": (
+                declared.collection_timestamp,
+                metadata.collection_timestamp,
+            ),
+        }
+        mismatch = next(
+            (name for name, values in comparisons.items() if values[0] != values[1]),
+            None,
+        )
+        if mismatch is not None:
+            raise NormalizationError(
+                f"app probe {mismatch} does not match its collection manifest"
+            )
+        return result
 
 
 ADAPTERS: dict[InputKind, ArtifactAdapter] = {

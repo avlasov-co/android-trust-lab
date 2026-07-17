@@ -82,8 +82,8 @@ trust-diff v2.2 JSON + markdown summary
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |
 | Deterministic Magisk structural packaging guardrails | implemented through `tools/package_magisk_module.py` |
-| Android app and Gradle scaffold | implemented under `app/`; performs no collection yet |
-| Unprivileged app probe | design and empty package only; implementation remains pending |
+| Android app and Gradle scaffold | implemented under `app/`; launcher performs no collection yet |
+| Unprivileged app probe | typed public-API probe core and Python adapter implemented; review/export UI remains pending |
 | Android instrumentation tests | not present |
 | APK manifest / permission analyzer | not present |
 | Physical-device validation | not collected in this release |

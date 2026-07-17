@@ -39,7 +39,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Tests | Implemented | `tests/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q` |
 | CI checks | Implemented | `.github/workflows/ci.yml`, `.github/workflows/docs.yml` | GitHub Actions on push / PR |
 | One-command release verification | Implemented | `scripts/verify_release.sh` | `bash scripts/verify_release.sh` |
-| Android app scaffold | Implemented | `app/observer/`; one launcher activity and empty probe package, with no collection behavior | `cd app && ./gradlew --dependency-verification strict :observer:assembleDebug :observer:testDebugUnitTest :observer:lintDebug` |
+| Android app scaffold | Implemented | `app/observer/`; one collection-free launcher activity plus the typed app-probe core | `cd app && ./gradlew --dependency-verification strict :observer:assembleDebug :observer:testDebugUnitTest :observer:lintDebug` |
 | Gradle project | Implemented | Requires JDK 17 / API 37; checksum-locks Gradle 9.4.1 and Maven artifacts with dependency locks/verification | Same Android scaffold gate |
 | Instrumentation tests | Not implemented | No Android instrumentation test source exists | Not applicable |
 | Physical-device validation | Not performed | `experiments/E99_physical_device_template.md` is a template only | Not applicable |
@@ -60,7 +60,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Magisk package guardrails | Implemented | Closed 15-file payload, bounded regular-file inventory, normalized ZIP modes/metadata, and two-build byte comparison |
 | Release verification script | Implemented | `scripts/verify_release.sh` runs compile, tests, generated-output, package, and shell checks |
 | AVD-limited sample workflow | Implemented | Sample directories are checked in under `datasets/samples/` |
-| Unprivileged app probe | Design and placeholder only | The `app/` scaffold exists, but the probe package intentionally has no collector implementation yet |
+| Unprivileged app probe | Core implemented; UI/export pending | The typed public-API collector core and Python adapter exist; the launcher remains collection-free until the explicit Step 33 flow |
 | Privileged probe design notes | Partially implemented | Design notes exist and the Magisk collector implements a read-only root-observer path |
 | Emulator workflow | Partially implemented | Experiment docs and sample artifacts exist; no fully automated emulator launch/run harness is included |
 | Physical-device workflow | Design-only | Template exists, but no collected physical-device reports are checked in |
@@ -179,7 +179,8 @@ supported.
 - No production attestation, hardware-backed trust, TEE, OEM boot-chain, Widevine, DRM, or device-specific security conclusions are claimed.
 - Current samples are synthetic / AVD-limited and intended for analyzer and collector workflow validation.
 - Dataset verification and repository generation require POSIX directory-descriptor safety primitives in this release.
-- The unprivileged app probe remains design/placeholder-only inside the working app scaffold.
+- The typed unprivileged app-probe core is implemented, while user initiation,
+  review, and export remain pending.
 - The physical-device experiment file is a template, not completed evidence.
 
 ## Why this project matters

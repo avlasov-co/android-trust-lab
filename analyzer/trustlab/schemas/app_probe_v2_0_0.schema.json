@@ -1,0 +1,464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avlasov-co/android-trust-lab/schema/app-probe/2.0.0",
+  "title": "Android Trust Lab App Probe v2",
+  "description": "Bounded public-API and app-sandbox evidence from the unprivileged Android observer.",
+  "type": "object",
+  "required": [
+    "artifact_kind", "schema_version", "collector", "observer", "collection_id",
+    "experiment_id", "target", "started_at", "ended_at", "completion_status",
+    "environment", "redaction_policy", "probes"
+  ],
+  "properties": {
+    "artifact_kind": {"const": "app_probe_json"},
+    "schema_version": {"const": "2.0.0"},
+    "collector": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "trustlab-app"},
+        "version": {"$ref": "#/$defs/semver"}
+      },
+      "additionalProperties": false
+    },
+    "observer": {
+      "type": "object",
+      "required": ["observer_type", "privilege_level", "collection_method"],
+      "properties": {
+        "observer_type": {"const": "unprivileged_app"},
+        "privilege_level": {"const": "app_sandbox"},
+        "collection_method": {"const": "app_snapshot"}
+      },
+      "additionalProperties": false
+    },
+    "collection_id": {"type": "string", "pattern": "^atlcol-[a-f0-9]{16}$"},
+    "experiment_id": {"type": "string", "pattern": "^(?:unknown|E[0-9]{2}_[a-z0-9_]+)$"},
+    "target": {
+      "type": "object",
+      "required": ["pseudonymous_id", "target_type"],
+      "properties": {
+        "pseudonymous_id": {"type": "string", "pattern": "^target-[a-f0-9]{16}$"},
+        "target_type": {"enum": ["avd", "physical", "unknown"]}
+      },
+      "additionalProperties": false
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "completion_status": {"enum": ["complete", "partial", "failed"]},
+    "environment": {
+      "type": "object",
+      "required": ["platform", "transport", "execution_context"],
+      "properties": {
+        "platform": {"const": "android"},
+        "transport": {"const": "app_api"},
+        "execution_context": {"const": "app_collector"}
+      },
+      "additionalProperties": false
+    },
+    "redaction_policy": {"$ref": "#/$defs/redactionPolicy"},
+    "probes": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "prefixItems": [
+        {"$ref": "#/$defs/buildProbe"},
+        {"$ref": "#/$defs/identityProbe"},
+        {"$ref": "#/$defs/installSourceProbe"},
+        {"$ref": "#/$defs/selinuxProbe"},
+        {"$ref": "#/$defs/fileSystemShellProbe"},
+        {"$ref": "#/$defs/fileSystemSuProbe"},
+        {"$ref": "#/$defs/fileSystemXbinSuProbe"},
+        {"$ref": "#/$defs/fileVendorBinSuProbe"},
+        {"$ref": "#/$defs/fileSbinSuProbe"},
+        {"$ref": "#/$defs/procStatusProbe"},
+        {"$ref": "#/$defs/mountInfoProbe"},
+        {"$ref": "#/$defs/emulatorProbe"}
+      ],
+      "items": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    },
+    "redactionPolicy": {
+      "type": "object",
+      "required": [
+        "policy_id", "redaction_state", "direct_identifiers_removed",
+        "serials_removed", "secrets_removed", "applied_fields"
+      ],
+      "properties": {
+        "policy_id": {"const": "atl_portable_v1"},
+        "redaction_state": {"const": "applied"},
+        "direct_identifiers_removed": {"const": true},
+        "serials_removed": {"const": true},
+        "secrets_removed": {"const": true},
+        "applied_fields": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "build_fingerprint_hashed", "diagnostics_categorized",
+              "file_paths_replaced", "installer_package_categorized",
+              "mount_fields_allowlisted", "selinux_categories_removed"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["exception_class", "message_code"],
+      "properties": {
+        "exception_class": {
+          "enum": [
+            "none", "ErrnoException", "IOException", "NameNotFoundException",
+            "RuntimeException", "SecurityException", "UnsupportedOperationException"
+          ]
+        },
+        "message_code": {
+          "enum": [
+            "access_denied", "api_level_too_low", "capability_unavailable",
+            "input_limit_exceeded", "io_failure", "malformed_data",
+            "self_package_unavailable", "unexpected_platform_error"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability": {
+      "type": "object",
+      "required": ["api_name", "minimum_sdk"],
+      "properties": {
+        "api_name": {"type": "string", "pattern": "^[a-z][a-z0-9_.]{1,63}$"},
+        "minimum_sdk": {"type": ["integer", "null"], "minimum": 1, "maximum": 10000}
+      },
+      "additionalProperties": false
+    },
+    "probeEnvelope": {
+      "type": "object",
+      "required": ["probe_id", "mechanism", "capability", "source_ref", "status", "value", "diagnostic"],
+      "properties": {
+        "probe_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+        "mechanism": {"enum": ["public_api", "procfs", "filesystem"]},
+        "capability": {"$ref": "#/$defs/capability"},
+        "source_ref": {"type": "string", "pattern": "^captures/[a-z][a-z0-9_]{1,63}\\.txt$"},
+        "status": {"enum": ["observed", "inaccessible", "unsupported", "error"]},
+        "value": {},
+        "diagnostic": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/diagnostic"}]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {
+            "properties": {
+              "value": {"not": {"type": "null"}},
+              "diagnostic": {"type": "null"}
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {"type": "null"},
+              "diagnostic": {"$ref": "#/$defs/diagnostic"}
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "buildValue": {
+      "type": "object",
+      "required": [
+        "sdk_int", "release", "security_patch", "base_os_present", "build_type",
+        "build_tags", "supported_abis", "build_fingerprint_sha256"
+      ],
+      "properties": {
+        "sdk_int": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "release": {"type": "string", "pattern": "^(?:unknown|[0-9]{1,3}(?:\\.[0-9]{1,3}){0,3})$"},
+        "security_patch": {"type": "string", "pattern": "^(?:unknown|[0-9]{4}-[0-9]{2}-[0-9]{2})$"},
+        "base_os_present": {"type": "boolean"},
+        "build_type": {"enum": ["user", "userdebug", "eng", "other"]},
+        "build_tags": {
+          "type": "array", "maxItems": 4, "uniqueItems": true,
+          "items": {"enum": ["release_keys", "test_keys", "dev_keys", "other"]}
+        },
+        "supported_abis": {
+          "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+          "items": {"enum": ["arm64-v8a", "armeabi-v7a", "x86", "x86_64", "riscv64", "other"]}
+        },
+        "build_fingerprint_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "identityValue": {
+      "type": "object",
+      "required": ["app_uid", "debuggable"],
+      "properties": {
+        "app_uid": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "debuggable": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "installSourceValue": {
+      "type": "object",
+      "required": ["api_variant", "installer_present", "source_category"],
+      "properties": {
+        "api_variant": {"enum": ["install_source_info", "legacy_installer_api"]},
+        "installer_present": {"type": "boolean"},
+        "source_category": {"enum": ["none", "platform_installer", "app_store", "other"]}
+      },
+      "additionalProperties": false
+    },
+    "selinuxValue": {
+      "type": "object",
+      "required": ["base_context", "categories_removed"],
+      "properties": {
+        "base_context": {"type": "string", "pattern": "^[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+$", "maxLength": 256},
+        "categories_removed": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "readAccess": {
+      "type": "object",
+      "required": ["status", "value", "diagnostic"],
+      "properties": {
+        "status": {"enum": ["observed", "inaccessible", "unsupported", "error"]},
+        "value": {"type": ["boolean", "null"]},
+        "diagnostic": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/diagnostic"}]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {"properties": {"value": {"type": "boolean"}, "diagnostic": {"type": "null"}}},
+          "else": {"properties": {"value": {"type": "null"}, "diagnostic": {"$ref": "#/$defs/diagnostic"}}}
+        }
+      ],
+      "additionalProperties": false
+    },
+    "fileValue": {
+      "type": "object",
+      "required": ["path_id", "exists", "read_access"],
+      "properties": {
+        "path_id": {"enum": ["system_shell", "system_su", "system_xbin_su", "vendor_bin_su", "sbin_su"]},
+        "exists": {"type": "boolean"},
+        "read_access": {"$ref": "#/$defs/readAccess"}
+      },
+      "additionalProperties": false
+    },
+    "procStatusValue": {
+      "type": "object",
+      "required": ["no_new_privs", "seccomp_mode", "seccomp_filter_count", "effective_capabilities_nonzero", "bounding_capabilities_nonzero"],
+      "properties": {
+        "no_new_privs": {"type": ["boolean", "null"]},
+        "seccomp_mode": {"type": ["integer", "null"], "minimum": 0, "maximum": 2},
+        "seccomp_filter_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 65535},
+        "effective_capabilities_nonzero": {"type": ["boolean", "null"]},
+        "bounding_capabilities_nonzero": {"type": ["boolean", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "mountRecord": {
+      "type": "object",
+      "required": ["mount_point_id", "filesystem_type", "read_only", "overlay"],
+      "properties": {
+        "mount_point_id": {"enum": ["root", "system", "system_root", "vendor", "product", "system_ext", "odm", "data", "apex"]},
+        "filesystem_type": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,31}$"},
+        "read_only": {"type": "boolean"},
+        "overlay": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "mountInfoValue": {
+      "type": "object",
+      "required": ["record_count", "malformed_record_count", "apex_mount_count", "selected_mounts"],
+      "properties": {
+        "record_count": {"type": "integer", "minimum": 0, "maximum": 16384},
+        "malformed_record_count": {"const": 0},
+        "apex_mount_count": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "selected_mounts": {
+          "type": "array", "maxItems": 9, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/mountRecord"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "emulatorValue": {
+      "type": "object",
+      "required": ["outcome", "indicators"],
+      "properties": {
+        "outcome": {"enum": ["indicated", "not_indicated"]},
+        "indicators": {
+          "type": "array", "maxItems": 9, "uniqueItems": true,
+          "items": {
+            "enum": [
+              "fingerprint_generic", "fingerprint_emulator", "hardware_goldfish",
+              "hardware_ranchu", "hardware_cuttlefish", "model_emulator",
+              "product_sdk", "brand_device_generic", "manufacturer_genymotion"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "buildProbe": {"$ref": "#/$defs/buildProbeObject"},
+    "buildProbeObject": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "build_version"}, "mechanism": {"const": "public_api"},
+          "capability": {"const": {"api_name": "android.os.build", "minimum_sdk": 1}},
+          "source_ref": {"const": "captures/build_version.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/buildValue"}]}
+        }}
+      ]
+    },
+    "identityProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "app_identity"}, "mechanism": {"const": "public_api"},
+          "capability": {"const": {"api_name": "android.process.my_uid", "minimum_sdk": 1}},
+          "source_ref": {"const": "captures/app_identity.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/identityValue"}]}
+        }}
+      ]
+    },
+    "installSourceProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "install_source"}, "mechanism": {"const": "public_api"},
+          "capability": {"const": {"api_name": "android.package_manager.install_source", "minimum_sdk": 5}},
+          "source_ref": {"const": "captures/install_source.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/installSourceValue"}]}
+        }}
+      ]
+    },
+    "selinuxProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "selinux_self_context"}, "mechanism": {"const": "procfs"},
+          "capability": {"const": {"api_name": "proc.self.attr.current", "minimum_sdk": null}},
+          "source_ref": {"const": "captures/selinux_self_context.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/selinuxValue"}]}
+        }}
+      ]
+    },
+    "fileSystemShellProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/fileProbe"},
+        {"properties": {
+          "probe_id": {"const": "file_system_shell"},
+          "source_ref": {"const": "captures/file_system_shell.txt"},
+          "value": {"oneOf": [
+            {"type": "null"},
+            {"allOf": [{"$ref": "#/$defs/fileValue"}, {"properties": {"path_id": {"const": "system_shell"}}}]}
+          ]}
+        }}
+      ]
+    },
+    "fileSystemSuProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/fileProbe"},
+        {"properties": {
+          "probe_id": {"const": "file_system_su"},
+          "source_ref": {"const": "captures/file_system_su.txt"},
+          "value": {"oneOf": [
+            {"type": "null"},
+            {"allOf": [{"$ref": "#/$defs/fileValue"}, {"properties": {"path_id": {"const": "system_su"}}}]}
+          ]}
+        }}
+      ]
+    },
+    "fileSystemXbinSuProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/fileProbe"},
+        {"properties": {
+          "probe_id": {"const": "file_system_xbin_su"},
+          "source_ref": {"const": "captures/file_system_xbin_su.txt"},
+          "value": {"oneOf": [
+            {"type": "null"},
+            {"allOf": [{"$ref": "#/$defs/fileValue"}, {"properties": {"path_id": {"const": "system_xbin_su"}}}]}
+          ]}
+        }}
+      ]
+    },
+    "fileVendorBinSuProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/fileProbe"},
+        {"properties": {
+          "probe_id": {"const": "file_vendor_bin_su"},
+          "source_ref": {"const": "captures/file_vendor_bin_su.txt"},
+          "value": {"oneOf": [
+            {"type": "null"},
+            {"allOf": [{"$ref": "#/$defs/fileValue"}, {"properties": {"path_id": {"const": "vendor_bin_su"}}}]}
+          ]}
+        }}
+      ]
+    },
+    "fileSbinSuProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/fileProbe"},
+        {"properties": {
+          "probe_id": {"const": "file_sbin_su"},
+          "source_ref": {"const": "captures/file_sbin_su.txt"},
+          "value": {"oneOf": [
+            {"type": "null"},
+            {"allOf": [{"$ref": "#/$defs/fileValue"}, {"properties": {"path_id": {"const": "sbin_su"}}}]}
+          ]}
+        }}
+      ]
+    },
+    "fileProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"enum": ["file_system_shell", "file_system_su", "file_system_xbin_su", "file_vendor_bin_su", "file_sbin_su"]},
+          "mechanism": {"const": "filesystem"},
+          "capability": {"const": {"api_name": "android.system.os", "minimum_sdk": 21}},
+          "source_ref": {"enum": ["captures/file_system_shell.txt", "captures/file_system_su.txt", "captures/file_system_xbin_su.txt", "captures/file_vendor_bin_su.txt", "captures/file_sbin_su.txt"]},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/fileValue"}]}
+        }}
+      ]
+    },
+    "procStatusProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "proc_self_status"}, "mechanism": {"const": "procfs"},
+          "capability": {"const": {"api_name": "proc.self.status", "minimum_sdk": null}},
+          "source_ref": {"const": "captures/proc_self_status.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/procStatusValue"}]}
+        }}
+      ]
+    },
+    "mountInfoProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "proc_self_mountinfo"}, "mechanism": {"const": "procfs"},
+          "capability": {"const": {"api_name": "proc.self.mountinfo", "minimum_sdk": null}},
+          "source_ref": {"const": "captures/proc_self_mountinfo.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mountInfoValue"}]}
+        }}
+      ]
+    },
+    "emulatorProbe": {
+      "allOf": [
+        {"$ref": "#/$defs/probeEnvelope"},
+        {"properties": {
+          "probe_id": {"const": "emulator_indicators"}, "mechanism": {"const": "public_api"},
+          "capability": {"const": {"api_name": "android.os.build.indicators", "minimum_sdk": 1}},
+          "source_ref": {"const": "captures/emulator_indicators.txt"},
+          "value": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/emulatorValue"}]}
+        }}
+      ]
+    }
+  }
+}

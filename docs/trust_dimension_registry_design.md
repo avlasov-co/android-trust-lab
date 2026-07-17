@@ -47,8 +47,11 @@ array order is the canonical deterministic diff and documentation order.
 ## Comparator lookup contract
 
 Registry entries select functions through exact string IDs in immutable Python
-lookup maps. `nested_path_v1` and `contextual_unavailable_v1` are the only
-extractors. `canonical_equality_v1` compares status/value evidence while
+lookup maps. `nested_path_v1`, `app_probe_extension_v1`, and
+`contextual_unavailable_v1` are the only extractors.
+`app_probe_extension_v1` reads only the validated
+`org.androidtrustlab.app-probe` extension and otherwise returns the canonical
+not-collected sentinel. `canonical_equality_v1` compares status/value evidence while
 excluding evidence-reference noise; `contextual_unavailable_v1` accepts only
 the canonical not-collected contextual sentinel. No `eval`, import path, query
 language, lambda, or registry-supplied expression is permitted.
@@ -60,11 +63,12 @@ or unknown identifier fails closed during core or consumer initialization.
 
 The registry describes current report `6.0.0` dimensions and current diff
 `2.7.0` generation. This metadata-only refactor does not bump either wire
-schema. The 27 measured dimensions remain enabled by default and preserve their
-existing paths, order, materiality, direction, confidence, and interpretation.
-`physical_device_state`, `app_visible_state`, and `root_visible_state` remain
-documented contextual dimensions with no fabricated path and are not diffed
-until direct report payloads exist.
+schema. The first 27 measured dimensions preserve their existing paths, order,
+materiality, direction, confidence, and interpretation. Step 32 activates
+`app_visible_state` as the twenty-eighth measured dimension only when a
+validated typed app-probe extension exists. `physical_device_state` and
+`root_visible_state` remain documented contextual dimensions with no fabricated
+path and are not diffed until direct report payloads exist.
 
 Historical diff versions remain readable. Their legacy observer-only dimension
 metadata and frozen severity spellings stay in compatibility validation code;

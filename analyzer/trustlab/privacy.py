@@ -445,7 +445,8 @@ def sanitize_raw_artifact_references(
         collector = str(artifact.get("collector_name", "unknown"))
         artifact["collector_name"] = (
             collector
-            if collector in {"unknown", "trustlab", "trustlab-magisk", "adb"}
+            if collector
+            in {"unknown", "trustlab", "trustlab-app", "trustlab-magisk", "adb"}
             else "redacted-collector"
         )
         version = str(artifact.get("collector_version", "unknown"))
@@ -647,9 +648,17 @@ _PORTABLE_CAPTURE_NAMES = frozenset(
     {
         "adb_version",
         "app_context",
+        "app_identity",
         "boot_state",
+        "build_version",
         "collector_context",
         "emulator_version",
+        "emulator_indicators",
+        "file_sbin_su",
+        "file_system_shell",
+        "file_system_su",
+        "file_system_xbin_su",
+        "file_vendor_bin_su",
         "getprop_selected",
         "getenforce",
         "identity",
@@ -661,14 +670,18 @@ _PORTABLE_CAPTURE_NAMES = frozenset(
         "mounts",
         "processes",
         "proc_mounts",
+        "proc_self_mountinfo",
+        "proc_self_status",
         "properties",
         "ps_selected",
         "python_version",
         "root_probe",
         "selinux_context",
+        "selinux_self_context",
         "selinux_denials",
         "selinux_mode",
         "su_paths",
+        "install_source",
     }
 )
 _PORTABLE_CAPTURE_STATUSES = frozenset(
@@ -713,6 +726,7 @@ def _validate_adapter_extension(adapter: object) -> None:
     input_version = adapter.get("input_schema_version")
     if input_version not in {
         "1.0.0",
+        "2.0.0",
         "legacy-sectioned-text-1",
         "unknown",
     }:
@@ -780,6 +794,302 @@ def _validate_adapter_extension(adapter: object) -> None:
                 else {allowed_aliases}
             ):
                 raise SchemaValidationError("report adapter capture is not semantic")
+
+
+_APP_PROBE_IDS = (
+    "build_version",
+    "app_identity",
+    "install_source",
+    "selinux_self_context",
+    "file_system_shell",
+    "file_system_su",
+    "file_system_xbin_su",
+    "file_vendor_bin_su",
+    "file_sbin_su",
+    "proc_self_status",
+    "proc_self_mountinfo",
+    "emulator_indicators",
+)
+_APP_PROBE_STATUSES = frozenset(
+    {"observed", "inaccessible", "unsupported", "command_error"}
+)
+_APP_PROBE_REASONS = {
+    "observed": None,
+    "inaccessible": "the app sandbox could not access this capability",
+    "unsupported": "the selected capability is unsupported",
+    "command_error": "the app probe did not produce trustworthy evidence",
+}
+
+
+def _plain_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _app_exact_object(value: object, fields: set[str]) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != fields:
+        raise SchemaValidationError("report app-probe value is not portable")
+    return value
+
+
+def _validate_app_probe_value(  # noqa: C901 - fixed typed probe dispatch stays centralized
+    probe_id: str, value: object
+) -> None:
+    if probe_id == "build_version":
+        item = _app_exact_object(
+            value,
+            {
+                "sdk_int",
+                "release",
+                "security_patch",
+                "base_os_present",
+                "build_type",
+                "build_tags",
+                "supported_abis",
+                "build_fingerprint_sha256",
+            },
+        )
+        if (
+            not _plain_int(item["sdk_int"])
+            or not 1 <= item["sdk_int"] <= 10000
+            or not isinstance(item["release"], str)
+            or re.fullmatch(
+                r"(?:unknown|[0-9]{1,3}(?:\.[0-9]{1,3}){0,3})", item["release"]
+            )
+            is None
+            or not isinstance(item["security_patch"], str)
+            or re.fullmatch(
+                r"(?:unknown|[0-9]{4}-[0-9]{2}-[0-9]{2})", item["security_patch"]
+            )
+            is None
+            or not isinstance(item["base_os_present"], bool)
+            or not isinstance(item["build_type"], str)
+            or item["build_type"] not in {"user", "userdebug", "eng", "other"}
+            or not isinstance(item["build_tags"], list)
+            or len(item["build_tags"]) > 4
+            or not all(isinstance(tag, str) for tag in item["build_tags"])
+            or len(item["build_tags"]) != len(set(item["build_tags"]))
+            or not set(item["build_tags"])
+            <= {"release_keys", "test_keys", "dev_keys", "other"}
+            or not isinstance(item["supported_abis"], list)
+            or not 1 <= len(item["supported_abis"]) <= 8
+            or not all(isinstance(abi, str) for abi in item["supported_abis"])
+            or len(item["supported_abis"]) != len(set(item["supported_abis"]))
+            or not set(item["supported_abis"])
+            <= {"arm64-v8a", "armeabi-v7a", "x86", "x86_64", "riscv64", "other"}
+            or not isinstance(item["build_fingerprint_sha256"], str)
+            or re.fullmatch(r"[a-f0-9]{64}", item["build_fingerprint_sha256"]) is None
+        ):
+            raise SchemaValidationError("report app-probe build value is unsafe")
+        return
+    if probe_id == "app_identity":
+        item = _app_exact_object(value, {"app_uid", "debuggable"})
+        if (
+            not _plain_int(item["app_uid"])
+            or not 0 <= item["app_uid"] <= 2147483647
+            or not isinstance(item["debuggable"], bool)
+        ):
+            raise SchemaValidationError("report app-probe identity value is unsafe")
+        return
+    if probe_id == "install_source":
+        item = _app_exact_object(
+            value, {"api_variant", "installer_present", "source_category"}
+        )
+        if (
+            not isinstance(item["api_variant"], str)
+            or item["api_variant"]
+            not in {"install_source_info", "legacy_installer_api"}
+            or not isinstance(item["installer_present"], bool)
+            or not isinstance(item["source_category"], str)
+            or item["source_category"]
+            not in {"none", "platform_installer", "app_store", "other"}
+            or ((item["source_category"] == "none") != (not item["installer_present"]))
+        ):
+            raise SchemaValidationError("report app-probe install source is unsafe")
+        return
+    if probe_id == "selinux_self_context":
+        item = _app_exact_object(value, {"base_context", "categories_removed"})
+        if (
+            not isinstance(item["base_context"], str)
+            or len(item["base_context"]) > 256
+            or re.fullmatch(
+                r"[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+",
+                item["base_context"],
+            )
+            is None
+            or not isinstance(item["categories_removed"], bool)
+        ):
+            raise SchemaValidationError("report app-probe SELinux value is unsafe")
+        return
+    file_paths = {
+        "file_system_shell": "system_shell",
+        "file_system_su": "system_su",
+        "file_system_xbin_su": "system_xbin_su",
+        "file_vendor_bin_su": "vendor_bin_su",
+        "file_sbin_su": "sbin_su",
+    }
+    if probe_id in file_paths:
+        item = _app_exact_object(value, {"path_id", "exists", "read_access"})
+        readability = _app_exact_object(item["read_access"], {"status", "value"})
+        status = readability["status"]
+        if (
+            not isinstance(item["path_id"], str)
+            or item["path_id"] != file_paths[probe_id]
+            or not isinstance(item["exists"], bool)
+            or not isinstance(status, str)
+            or status not in _APP_PROBE_STATUSES
+            or (status == "observed" and not isinstance(readability["value"], bool))
+            or (status != "observed" and readability["value"] is not None)
+            or (
+                item["exists"] is False
+                and not (status == "observed" and readability["value"] is False)
+            )
+        ):
+            raise SchemaValidationError("report app-probe file value is unsafe")
+        return
+    if probe_id == "proc_self_status":
+        fields = {
+            "no_new_privs",
+            "seccomp_mode",
+            "seccomp_filter_count",
+            "effective_capabilities_nonzero",
+            "bounding_capabilities_nonzero",
+        }
+        item = _app_exact_object(value, fields)
+        if (
+            not (item["no_new_privs"] is None or isinstance(item["no_new_privs"], bool))
+            or not (
+                item["effective_capabilities_nonzero"] is None
+                or isinstance(item["effective_capabilities_nonzero"], bool)
+            )
+            or not (
+                item["bounding_capabilities_nonzero"] is None
+                or isinstance(item["bounding_capabilities_nonzero"], bool)
+            )
+            or not (
+                item["seccomp_mode"] is None
+                or (_plain_int(item["seccomp_mode"]) and 0 <= item["seccomp_mode"] <= 2)
+            )
+            or not (
+                item["seccomp_filter_count"] is None
+                or (
+                    _plain_int(item["seccomp_filter_count"])
+                    and 0 <= item["seccomp_filter_count"] <= 65535
+                )
+            )
+        ):
+            raise SchemaValidationError("report app-probe proc status is unsafe")
+        return
+    if probe_id == "proc_self_mountinfo":
+        item = _app_exact_object(
+            value,
+            {
+                "record_count",
+                "malformed_record_count",
+                "apex_mount_count",
+                "selected_mounts",
+            },
+        )
+        records = item["selected_mounts"]
+        if (
+            not _plain_int(item["record_count"])
+            or not 0 <= item["record_count"] <= 16384
+            or not _plain_int(item["malformed_record_count"])
+            or item["malformed_record_count"] != 0
+            or not _plain_int(item["apex_mount_count"])
+            or not 0 <= item["apex_mount_count"] <= 4096
+            or not isinstance(records, list)
+            or len(records) > 9
+        ):
+            raise SchemaValidationError("report app-probe mount summary is unsafe")
+        allowed_points = {
+            "root",
+            "system",
+            "system_root",
+            "vendor",
+            "product",
+            "system_ext",
+            "odm",
+            "data",
+            "apex",
+        }
+        for record in records:
+            current = _app_exact_object(
+                record,
+                {"mount_point_id", "filesystem_type", "read_only", "overlay"},
+            )
+            if (
+                not isinstance(current["mount_point_id"], str)
+                or current["mount_point_id"] not in allowed_points
+                or not isinstance(current["filesystem_type"], str)
+                or re.fullmatch(
+                    r"[a-z0-9][a-z0-9_.-]{0,31}", current["filesystem_type"]
+                )
+                is None
+                or not isinstance(current["read_only"], bool)
+                or not isinstance(current["overlay"], bool)
+            ):
+                raise SchemaValidationError("report app-probe mount record is unsafe")
+        return
+    if probe_id == "emulator_indicators":
+        item = _app_exact_object(value, {"outcome", "indicators"})
+        indicators = item["indicators"]
+        allowed = {
+            "fingerprint_generic",
+            "fingerprint_emulator",
+            "hardware_goldfish",
+            "hardware_ranchu",
+            "hardware_cuttlefish",
+            "model_emulator",
+            "product_sdk",
+            "brand_device_generic",
+            "manufacturer_genymotion",
+        }
+        if (
+            not isinstance(item["outcome"], str)
+            or item["outcome"] not in {"indicated", "not_indicated"}
+            or not isinstance(indicators, list)
+            or len(indicators) > 9
+            or not all(isinstance(indicator, str) for indicator in indicators)
+            or len(indicators) != len(set(indicators))
+            or not set(indicators) <= allowed
+            or ((item["outcome"] == "indicated") != bool(indicators))
+        ):
+            raise SchemaValidationError("report app-probe emulator value is unsafe")
+        return
+    raise SchemaValidationError("report app-probe ID is not portable")
+
+
+def _validate_app_probe_extension(extension: object) -> None:
+    outer = _app_exact_object(extension, {"status", "value", "reason", "evidence_refs"})
+    value = _app_exact_object(outer["value"], {"schema_version", "probes"})
+    probes = value["probes"]
+    expected_refs = [f"captures/{probe_id}.txt" for probe_id in _APP_PROBE_IDS]
+    if (
+        outer["status"] != "observed"
+        or outer["reason"] is not None
+        or outer["evidence_refs"] != expected_refs
+        or value["schema_version"] != "2.0.0"
+        or not isinstance(probes, list)
+        or len(probes) != len(_APP_PROBE_IDS)
+    ):
+        raise SchemaValidationError("report app-probe extension is not portable")
+    for expected_id, probe in zip(_APP_PROBE_IDS, probes, strict=True):
+        item = _app_exact_object(
+            probe, {"probe_id", "status", "value", "reason", "evidence_refs"}
+        )
+        status = item["status"]
+        if (
+            item["probe_id"] != expected_id
+            or not isinstance(status, str)
+            or status not in _APP_PROBE_STATUSES
+            or item["reason"] != _APP_PROBE_REASONS.get(status)
+            or item["evidence_refs"] != [f"captures/{expected_id}.txt"]
+            or (status == "observed" and item["value"] is None)
+            or (status != "observed" and item["value"] is not None)
+        ):
+            raise SchemaValidationError("report app-probe evidence is not portable")
+        if status == "observed":
+            _validate_app_probe_value(expected_id, item["value"])
 
 
 def _validate_collection_extension(extension: object) -> None:
@@ -933,6 +1243,7 @@ def _validate_report_extensions(report: dict[str, Any]) -> None:
         return
     allowed = {
         "org.androidtrustlab.adapter",
+        "org.androidtrustlab.app-probe",
         "org.androidtrustlab.collection",
         "org.androidtrustlab.comparison-context",
         "org.androidtrustlab.migration",
@@ -945,6 +1256,8 @@ def _validate_report_extensions(report: dict[str, Any]) -> None:
         raise SchemaValidationError("report uses an unportable extension")
     if "org.androidtrustlab.adapter" in extensions:
         _validate_adapter_extension(extensions["org.androidtrustlab.adapter"])
+    if "org.androidtrustlab.app-probe" in extensions:
+        _validate_app_probe_extension(extensions["org.androidtrustlab.app-probe"])
     if "org.androidtrustlab.collection" in extensions:
         _validate_collection_extension(extensions["org.androidtrustlab.collection"])
     if "org.androidtrustlab.comparison-context" in extensions:
@@ -1037,6 +1350,7 @@ def _validate_direct_raw_artifacts(report: dict[str, Any]) -> None:
             "adb",
             "redacted-collector",
             "trustlab",
+            "trustlab-app",
             "trustlab-magisk",
             "unknown",
         }:
@@ -2111,6 +2425,7 @@ def _validate_manifest_tools(manifest: dict[str, Any]) -> None:
             "sdkmanager",
             "trustlab_fixture",
             "trustlab_host",
+            "trustlab_app",
             "trustlab_magisk",
         }
         for name, version in tool_versions.items():
@@ -2198,6 +2513,10 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
                     and relative_path == "adb_snapshot.txt"
                 )
                 or (collector_name == "trustlab-magisk" and relative_path == "raw.txt")
+                or (
+                    collector_name == "trustlab-app"
+                    and relative_path == "app_probe.json"
+                )
             )
             valid = (
                 probe_id in safe_probe_ids
@@ -2278,6 +2597,19 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
                     )
                     or (status != "observed" and relative_path is None)
                 )
+            )
+        elif collector_name == "trustlab-app" and str(logical_name).startswith(
+            "probe_outcome."
+        ):
+            app_probe_id = str(logical_name).removeprefix("probe_outcome.")
+            valid = (
+                app_probe_id in _APP_PROBE_IDS
+                and probe_id == f"app.{app_probe_id}"
+                and artifact.get("media_type") == "application/json"
+                and artifact.get("status")
+                in {"inaccessible", "command_error", "unsupported"}
+                and relative_path is None
+                and artifact.get("redaction_state") == "withheld"
             )
         elif logical_name == "other_observed_artifact":
             valid = (

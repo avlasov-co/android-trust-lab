@@ -1,4 +1,4 @@
 /**
- * Reserved for the public-API probe implementation. The Step 31 scaffold performs no collection.
+ * Typed public-API app-probe core. The launcher remains collection-free until the Step 33 UI.
  */
 package org.androidtrustlab.observer.probe;

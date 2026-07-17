@@ -13,6 +13,9 @@ select the observer-specific adapter. Direct JSON inputs select from their
 declared `artifact_kind`, `schema_version`, and `collector_version`; direct
 non-JSON input uses the warned legacy fallback. `--artifact-kind` can make
 direct-input selection explicit and is rejected with `--manifest`.
+For `trustlab-app`, an `application/json` manifest entry selects the typed v2
+app-probe adapter and enforces exact artifact/manifest metadata and outcome
+binding; legacy `text/plain` app manifests retain the historical read path.
 `dataset verify` is read-only: it validates dataset source and manifest
 contracts, safe relative paths, exact size/hash bindings, the closed reference
 graph, collection relationships, and deterministic report/diff freshness.

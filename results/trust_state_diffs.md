@@ -6,7 +6,7 @@ These diffs are generated from checked-in sample reports with `tools/generate_re
 
 ### E01 stock AVD ADB observer vs E02 rooted AVD ADB observer
 
-1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
+1 dimensions changed, 27 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
 
 Comparability: `comparable`. Reasons: target_identity_matches, target_class_matches, state_identity_differs, experiment_differs, protocol_matches, observer_matches, observer_privilege_matches, observer_effective_uid_matches, report_schema_matches, environment_context_matches, measurement_differs.
 Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
@@ -17,7 +17,7 @@ Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.
 
 ### E01 stock AVD vs E03 writable-system AVD
 
-2 dimensions changed, 25 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
+2 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
 
 Comparability: `comparable`. Reasons: target_identity_matches, target_class_matches, state_identity_differs, experiment_differs, protocol_matches, observer_matches, observer_privilege_matches, observer_effective_uid_matches, report_schema_matches, environment_context_matches, measurement_differs.
 Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
@@ -31,7 +31,7 @@ Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.
 
 ### E02 rooted AVD ADB observer vs E02 rooted AVD root observer
 
-0 dimensions changed, 27 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
+0 dimensions changed, 28 dimensions unchanged; 0 signals became available, 0 signals became unavailable.
 
 Comparability: `comparable`. Reasons: target_identity_matches, target_class_matches, state_identity_matches, experiment_matches, protocol_differs, observer_differs, observer_privilege_differs, observer_effective_uid_differs, report_schema_matches, environment_context_matches, measurement_differs.
 Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.
@@ -46,7 +46,7 @@ Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.
 
 ### E02 rooted ADB observer vs E05 Magisk root collector fixture
 
-11 dimensions changed, 16 dimensions unchanged; 9 signals became available, 0 signals became unavailable.
+11 dimensions changed, 17 dimensions unchanged; 9 signals became available, 0 signals became unavailable.
 
 Comparability: `limited`. Reasons: target_identity_matches, target_class_matches, state_identity_differs, experiment_differs, protocol_differs, observer_differs, observer_privilege_differs, observer_effective_uid_differs, report_schema_matches, environment_context_matches, measurement_differs.
 Input schemas: base `6.0.0`, compare `6.0.0`; canonical comparison schema: `6.0.0`; migration mode: `temporary_in_memory`.

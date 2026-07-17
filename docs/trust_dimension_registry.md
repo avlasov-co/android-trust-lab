@@ -37,8 +37,8 @@ Contextual dimensions support report schema `6.0.0`, remain disabled by default,
 | `magisk_command_status` | Magisk command status | `magisk_visibility` | `magisk_state.command_status` | `low` | `indeterminate_v1` | `evidence_v1` | — |
 | `property_consistency` | Security property consistency | `properties` | `properties.security` | `moderate` | `indeterminate_v1` | `property_map_v1` | 9 |
 | `emulator_state` | Emulator state | `environment` | `emulator_state.is_emulator` | `informational` | `indeterminate_v1` | `evidence_v1` | — |
+| `app_visible_state` | App-visible state | `app_visibility` | `extensions.org.androidtrustlab.app-probe` | `informational` | `indeterminate_v1` | `evidence_v1` | — |
 | `physical_device_state` | Physical-device state | `contextual` | `—` | `informational` | `context_only_v1` | `not_applicable_v1` | — |
-| `app_visible_state` | App-visible state | `contextual` | `—` | `informational` | `context_only_v1` | `not_applicable_v1` | — |
 | `root_visible_state` | Root-visible state | `contextual` | `—` | `informational` | `context_only_v1` | `not_applicable_v1` | — |
 
 ## Descriptions and interpretation
@@ -72,6 +72,6 @@ Contextual dimensions support report schema `6.0.0`, remain disabled by default,
 | `magisk_command_status` | Collection outcome for the Magisk command probe. | Trust-state dimension changed between reports. |
 | `property_consistency` | Allowlisted security-relevant property group evidence. | Security-relevant property group changed. This does not imply bypass by itself. |
 | `emulator_state` | Evidence that the target is an emulator or virtual device. | Trust-state dimension changed between reports. |
+| `app_visible_state` | Typed evidence measured directly by the public-API unprivileged app probe. | App-visible evidence changed; interpret the transition in its observer and capability context. |
 | `physical_device_state` | Reserved context dimension for direct physical-device evidence. | Physical-device state is unavailable until direct supporting payloads are present. |
-| `app_visible_state` | Reserved context dimension for direct app-probe payloads. | App-visible state is unavailable until direct app-probe payloads are present. |
 | `root_visible_state` | Reserved context dimension for a future direct root-probe payload. | Root-visible state is unavailable until a direct root-probe payload is present. |

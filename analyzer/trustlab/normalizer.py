@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -225,6 +226,7 @@ def structured_selinux_state(
         "selinux_context",
         "collector_context",
         "app_context",
+        "selinux_self_context",
     )
     context_status = _portable_capture_status(context_capture)
     context = parsed.fragments.selinux_context
@@ -400,6 +402,158 @@ def detect_emulator(props: dict[str, str], target_type: str) -> dict[str, Any]:
             indicators.append(key)
     is_emulator = bool(indicators)
     return {"is_emulator": is_emulator, "indicators": sorted(set(indicators))}
+
+
+def _portable_app_status(status: CaptureStatus) -> str:
+    return {
+        CaptureStatus.OBSERVED: "observed",
+        CaptureStatus.INACCESSIBLE: "inaccessible",
+        CaptureStatus.UNSUPPORTED: "unsupported",
+        CaptureStatus.ERROR: "command_error",
+        CaptureStatus.EMPTY: "observed_absent",
+        CaptureStatus.NOT_COLLECTED: "not_collected",
+        CaptureStatus.COMMAND_ERROR: "command_error",
+        CaptureStatus.TIMEOUT: "command_error",
+    }[status]
+
+
+def _portable_app_reason(status: str) -> str | None:
+    return {
+        "observed": None,
+        "observed_absent": "the selected app-visible value was absent",
+        "inaccessible": "the app sandbox could not access this capability",
+        "unsupported": "the selected capability is unsupported",
+        "command_error": "the app probe did not produce trustworthy evidence",
+        "not_collected": "the app probe was not collected",
+    }[status]
+
+
+def _portable_app_value(value: object) -> object:
+    if isinstance(value, dict):
+        result: dict[str, object] = {}
+        for key, item in value.items():
+            if key == "diagnostic":
+                continue
+            if key == "status" and item == "error":
+                result[key] = "command_error"
+            else:
+                result[key] = _portable_app_value(item)
+        return result
+    if isinstance(value, list):
+        return [_portable_app_value(item) for item in value]
+    return value
+
+
+def _app_probe_extension(parsed: ArtifactParseResult) -> dict[str, Any] | None:
+    app = parsed.fragments.app_probe
+    if app is None:
+        return None
+    projected = []
+    refs = []
+    for evidence in app.evidence:
+        status = _portable_app_status(evidence.status)
+        projected.append(
+            {
+                "probe_id": evidence.probe_id,
+                "status": status,
+                "value": (
+                    _portable_app_value(evidence.value)
+                    if evidence.status is CaptureStatus.OBSERVED
+                    else None
+                ),
+                "reason": _portable_app_reason(status),
+                "evidence_refs": [evidence.source_ref],
+            }
+        )
+        refs.append(evidence.source_ref)
+    return {
+        "status": "observed",
+        "value": {
+            "schema_version": "2.0.0",
+            "probes": projected,
+        },
+        "reason": None,
+        "evidence_refs": refs,
+    }
+
+
+def _apply_app_probe_evidence(
+    report: dict[str, Any], parsed: ArtifactParseResult
+) -> None:
+    app = parsed.fragments.app_probe
+    if app is None:
+        return
+    evidence_by_id = {item.probe_id: item for item in app.evidence}
+    build = evidence_by_id["build_version"]
+    build_status = _portable_app_status(build.status)
+    if build.status is CaptureStatus.OBSERVED:
+        report["target"]["android_version"] = {
+            "status": "observed",
+            "value": app.android_version,
+            "reason": None,
+        }
+        report["target"]["sdk"] = {
+            "status": "observed",
+            "value": app.sdk,
+            "reason": None,
+        }
+    else:
+        unavailable = {
+            "status": build_status,
+            "value": None,
+            "reason": _portable_app_reason(build_status),
+        }
+        report["target"]["android_version"] = dict(unavailable)
+        report["target"]["sdk"] = dict(unavailable)
+
+    emulator = evidence_by_id["emulator_indicators"]
+    emulator_status = _portable_app_status(emulator.status)
+    if emulator.status is CaptureStatus.OBSERVED:
+        indicators = list(app.emulator_indicators or ())
+        if indicators:
+            report["limitations"]["emulator_target"] = True
+            report["emulator_state"] = {
+                "is_emulator": {
+                    "status": "observed",
+                    "value": True,
+                    "reason": None,
+                },
+                "indicators": {
+                    "status": "observed",
+                    "value": indicators,
+                    "reason": None,
+                },
+            }
+        else:
+            report["limitations"]["emulator_target"] = False
+            reason = "no selected emulator indicator was observed"
+            report["emulator_state"] = {
+                "is_emulator": {
+                    "status": "observed_absent",
+                    "value": False,
+                    "reason": reason,
+                },
+                "indicators": {
+                    "status": "observed_absent",
+                    "value": [],
+                    "reason": reason,
+                },
+            }
+    else:
+        report["limitations"]["emulator_target"] = False
+        unavailable = {
+            "status": emulator_status,
+            "value": None,
+            "reason": _portable_app_reason(emulator_status),
+        }
+        report["emulator_state"] = {
+            "is_emulator": dict(unavailable),
+            "indicators": dict(unavailable),
+        }
+
+    extension = _app_probe_extension(parsed)
+    if extension is not None:
+        report["extensions"]["org.androidtrustlab.app-probe"] = extension
 
 
 def _mount_attempt(attempt: MountSourceAttempt) -> dict[str, Any]:
@@ -752,9 +906,9 @@ def build_report(
         f"capture issue {index:03d} withheld"
         for index, _error in enumerate(parsed.errors, start=1)
     ]
-    if not props:
+    if not props and fragments.app_probe is None:
         collection_errors.append("missing getprop section")
-    if not mounts:
+    if not mounts and fragments.app_probe is None:
         collection_errors.append("missing mount section")
 
     captured_names = set(parsed.parsed_capture_names)
@@ -970,6 +1124,7 @@ def build_report(
         "environment_context": "unknown",
         "measurement_id": report["collection_event_id"],
     }
+    _apply_app_probe_evidence(report, parsed)
     return finalize_report_identity(report)
 
 
@@ -1301,11 +1456,16 @@ def _canonical_manifest_payload(manifest: dict[str, Any]) -> bytes:
 
 
 def _manifest_raw_report_entry(manifest: CollectionManifest) -> ArtifactEntry:
+    expected_media_types = (
+        {"application/json", "text/plain"}
+        if manifest.collector.name == "trustlab-app"
+        else {"text/plain"}
+    )
     raw_entries = [
         artifact
         for artifact in manifest.artifacts
         if artifact.logical_name == "raw_report"
-        and artifact.media_type == "text/plain"
+        and artifact.media_type in expected_media_types
         and artifact.status is EvidenceStatus.OBSERVED
     ]
     if len(raw_entries) != 1:
@@ -1322,6 +1482,125 @@ def _manifest_raw_report_entry(manifest: CollectionManifest) -> ArtifactEntry:
             "collection manifest raw_report provenance is incomplete"
         )
     return raw_entry
+
+
+def _validate_app_probe_manifest_binding(
+    payload: bytes, manifest: CollectionManifest, *, media_type: str
+) -> None:
+    if manifest.collector.name != "trustlab-app" or media_type == "text/plain":
+        return
+    try:
+        text = payload.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise CollectionError("app probe artifact must be valid UTF-8") from exc
+    parsed = parse_artifact_text(text, source_ref="app_probe.json")
+    if (
+        parsed.input_kind is not InputKind.APP_PROBE_JSON
+        or parsed.metadata.schema_version != "2.0.0"
+    ):
+        raise NormalizationError(
+            "app collection manifest must bind a typed v2 app probe"
+        )
+    document = json.loads(text)
+    if not isinstance(document, dict):
+        raise NormalizationError("app probe artifact must be an object")
+    expected_metadata = {
+        "collector": {
+            "name": manifest.collector.name,
+            "version": manifest.collector.version,
+        },
+        "observer": {
+            "observer_type": manifest.observer.observer_type,
+            "privilege_level": manifest.observer.privilege_level,
+            "collection_method": manifest.observer.collection_method,
+        },
+        "collection_id": manifest.collection_id,
+        "experiment_id": manifest.experiment_id,
+        "target": {
+            "pseudonymous_id": manifest.target.pseudonymous_id,
+            "target_type": manifest.target.target_type,
+        },
+        "started_at": manifest.started_at,
+        "ended_at": manifest.ended_at,
+        "completion_status": manifest.completion_status,
+        "environment": {
+            "platform": manifest.environment.platform,
+            "transport": manifest.environment.transport,
+            "execution_context": manifest.environment.execution_context,
+        },
+    }
+    mismatch = next(
+        (
+            name
+            for name, expected in expected_metadata.items()
+            if document.get(name) != expected
+        ),
+        None,
+    )
+    if mismatch is not None:
+        raise NormalizationError(
+            f"app probe {mismatch} does not match its collection manifest"
+        )
+    redaction = document.get("redaction_policy")
+    manifest_redaction = manifest.redaction_policy
+    expected_redaction = {
+        "policy_id": manifest_redaction.policy_id,
+        "redaction_state": manifest_redaction.redaction_state,
+        "direct_identifiers_removed": manifest_redaction.direct_identifiers_removed,
+        "serials_removed": manifest_redaction.serials_removed,
+        "secrets_removed": manifest_redaction.secrets_removed,
+    }
+    if not isinstance(redaction, dict) or any(
+        redaction.get(name) != value for name, value in expected_redaction.items()
+    ):
+        raise NormalizationError(
+            "app probe redaction policy does not match its collection manifest"
+        )
+    if dict(manifest.tool_versions) != {"trustlab_app": manifest.collector.version}:
+        raise NormalizationError(
+            "app collection manifest tool version does not match its collector"
+        )
+
+    expected_outcomes = []
+    status_map = {
+        CaptureStatus.INACCESSIBLE: "inaccessible",
+        CaptureStatus.UNSUPPORTED: "unsupported",
+        CaptureStatus.ERROR: "command_error",
+    }
+    for capture in parsed.captures:
+        if capture.status is CaptureStatus.OBSERVED:
+            continue
+        try:
+            status = status_map[capture.status]
+        except KeyError as exc:
+            raise NormalizationError(
+                "app probe contains a non-portable outcome"
+            ) from exc
+        expected_outcomes.append(
+            {
+                "logical_name": f"probe_outcome.{capture.name}",
+                "relative_path": None,
+                "media_type": "application/json",
+                "byte_size": None,
+                "sha256": None,
+                "probe_id": f"app.{capture.name}",
+                "status": status,
+                "exit_code": None,
+                "timed_out": False,
+                "sensitivity": "internal",
+                "redaction_state": "withheld",
+                "detail": None,
+            }
+        )
+    manifest_outcomes = [
+        artifact.to_dict()
+        for artifact in manifest.artifacts
+        if artifact.logical_name != "raw_report"
+    ]
+    if manifest_outcomes != expected_outcomes:
+        raise NormalizationError(
+            "app probe outcomes do not match their collection manifest"
+        )
 
 
 def _manifest_collection_errors(manifest: CollectionManifest) -> list[str]:
@@ -1358,6 +1637,9 @@ def normalize_collection_payload(
 
     validate_collection_manifest(manifest_data)
     raw_entry = _manifest_raw_report_entry(manifest)
+    _validate_app_probe_manifest_binding(
+        payload, manifest, media_type=raw_entry.media_type
+    )
     manifest_digest = hashlib.sha256(
         _canonical_manifest_payload(manifest_data)
     ).hexdigest()

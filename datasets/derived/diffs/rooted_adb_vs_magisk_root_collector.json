@@ -825,8 +825,8 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "73c9c6eae55b05c9ed036c6fac7a3477c28c02f3de3d9d8ac2712a03ec0b2843",
-  "diff_id": "atldiff-73c9c6eae55b05c9ed036c6fac7a3477",
+  "content_digest": "676cb879e52758c351ea10479019ba2f987ddbc6fd3d58952a3b55bc0bf771b3",
+  "diff_id": "atldiff-676cb879e52758c351ea10479019ba2f",
   "missing_signals": [],
   "new_signals": [
     {
@@ -1326,7 +1326,7 @@
     }
   },
   "schema_version": "2.7.0",
-  "summary": "11 dimensions changed, 16 dimensions unchanged; 9 signals became available, 0 signals became unavailable.",
+  "summary": "11 dimensions changed, 17 dimensions unchanged; 9 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -1343,6 +1343,7 @@
     "su_invocation_result",
     "magisk_command_status",
     "property_consistency",
-    "emulator_state"
+    "emulator_state",
+    "app_visible_state"
   ]
 }

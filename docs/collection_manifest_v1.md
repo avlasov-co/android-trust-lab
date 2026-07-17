@@ -80,6 +80,14 @@ capture: its consolidated `raw_report` is integrity-bound, while missing
 per-command results remain `not_collected` instead of masquerading as an empty
 successful artifact.
 
+An unprivileged app collection binds exactly one `app_probe.json` raw report as
+`application/json`. The v2 artifact repeats the manifest's collector, observer,
+collection, target, timing, completion, environment, and redaction metadata;
+normalization rejects any mismatch. Every inaccessible, unsupported, or failed
+app probe also has an exact null-path manifest outcome. Historical
+`trustlab-app` manifests with a `text/plain` legacy sectioned report remain
+readable but cannot activate typed app-visible evidence.
+
 The hardened Magisk runtime adds exact per-probe artifacts, structured command
 results, a sanitized collection log, and an explicit boot-completion entry.
 Every observed runtime file is integrity-bound, and the completion manifest is

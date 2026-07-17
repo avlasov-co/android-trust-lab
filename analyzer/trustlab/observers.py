@@ -36,7 +36,7 @@ OBSERVER_REGISTRY = {
         observer_id="unprivileged_app",
         privilege_level="app_sandbox",
         label="Unprivileged app observer",
-        supported_artifact_adapters=("raw_report_text", "collection_manifest_v1"),
+        supported_artifact_adapters=("app_probe_json", "collection_manifest_v1"),
     ),
     "root_collector": ObserverSpec(
         observer_id="root_collector",

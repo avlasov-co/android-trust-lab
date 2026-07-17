@@ -12,6 +12,9 @@ class ScaffoldContractTest {
     fun manifestRequestsNoPermissions() {
         assertFalse(manifest.contains("<uses-permission"))
         assertFalse(manifest.contains("<uses-feature"))
+        assertFalse(manifest.contains("android.permission.INTERNET"))
+        assertFalse(manifest.contains("android.permission.ACCESS_NETWORK_STATE"))
+        assertFalse(manifest.contains("android.permission.ACCESS_LOCAL_NETWORK"))
     }
 
     @Test

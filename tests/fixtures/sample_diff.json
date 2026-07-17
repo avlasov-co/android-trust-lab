@@ -125,8 +125,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "ceee5b5986fb1861a98864b8a22f2a2b97d92f02f7493721d10550c04ec385cb",
-  "diff_id": "atldiff-ceee5b5986fb1861a98864b8a22f2a2b",
+  "content_digest": "f66c712313ea758b767d6e343cfab5d22f78cbc0f06b7f3adf8bb3df9981ab79",
+  "diff_id": "atldiff-f66c712313ea758b767d6e343cfab5d2",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -157,7 +157,7 @@
     }
   },
   "schema_version": "2.7.0",
-  "summary": "1 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
+  "summary": "1 dimensions changed, 27 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",
     "verified_boot_state",
@@ -184,6 +184,7 @@
     "magisk_module_context",
     "magisk_command_status",
     "property_consistency",
-    "emulator_state"
+    "emulator_state",
+    "app_visible_state"
   ]
 }

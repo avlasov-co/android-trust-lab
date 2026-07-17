@@ -36,7 +36,8 @@ bash scripts/verify_release.sh
 
 ## What this repo does not claim
 
-- No implemented app probe, export flow, or review UI beyond the small scaffold.
+- The app-probe core and analyzer contract are implemented, but the user-facing
+  initiation, review, and export flow is not yet wired.
 - No Android managed-device or instrumentation test automation yet.
 - No physical-device validation in this release.
 - No APK manifest or permission analyzer.

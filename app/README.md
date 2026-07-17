@@ -1,9 +1,12 @@
 # Android observer scaffold
 
 This directory is a self-contained Gradle project for the transparent,
-unprivileged Android Trust Lab observer. Step 31 intentionally contains no
-probe implementation: opening the app performs no collection, schedules no
-work, and makes no network request.
+unprivileged Android Trust Lab observer. The Step 32 probe core produces a
+typed, manifest-bound app-visible snapshot through public Android APIs and
+bounded reads from the app sandbox view. It is deliberately not invoked by the
+launcher activity yet: opening the app performs no collection, schedules no
+work, and makes no network request. Step 33 owns explicit user initiation,
+review, and export.
 
 ## Fixed identity and platform baseline
 
@@ -60,3 +63,16 @@ The manifest contains no `uses-permission` or `uses-feature` declaration. The
 only exported component is the launcher activity required to open the app.
 Cleartext traffic is disabled, and there are no services, receivers, providers,
 native libraries, hidden APIs, shell bridges, or background capabilities.
+
+## Probe boundary
+
+`observer/src/main/kotlin/org/androidtrustlab/observer/probe/` contains the
+closed v2 contract, public-API platform source, bounded `/proc/self` and fixed
+file checks, redaction/parsing helpers, deterministic canonical JSON encoder,
+and artifact/manifest builder. Probe failures remain categorical
+`inaccessible`, `unsupported`, or `error` results; exceptions are not converted
+to absence and raw messages are never exported. The probe does not enumerate
+packages, accounts, identifiers, network state, user files, clipboard,
+contacts, or location, and the app declares no networking permission.
+Repeated collections use a private stored random target pseudonym, never a
+platform or hardware identifier; each collection ID remains fresh.

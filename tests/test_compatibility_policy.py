@@ -69,6 +69,10 @@ def test_supported_version_table_is_complete_and_exact():
             current_write_version="1.0.0",
             readable_versions=frozenset({"1.0.0"}),
         ),
+        SchemaFamily.APP_PROBE: SchemaSupport(
+            current_write_version="2.0.0",
+            readable_versions=frozenset({"1.0.0", "2.0.0"}),
+        ),
         SchemaFamily.EXPERIMENT_SPEC: SchemaSupport(
             current_write_version=None,
             readable_versions=frozenset(),
@@ -111,6 +115,8 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
         (SchemaFamily.COLLECTION_MANIFEST, "1.0.0"): (
             "collection_manifest_v1_0_0.schema.json"
         ),
+        (SchemaFamily.APP_PROBE, "1.0.0"): "app_probe_v1_0_0.schema.json",
+        (SchemaFamily.APP_PROBE, "2.0.0"): "app_probe_v2_0_0.schema.json",
     }
     assert (
         schema_resource_name(SchemaFamily.REPORT, "1.0.0")
@@ -172,9 +178,13 @@ def test_supported_schema_versions_do_not_imply_planned_support():
     assert supported_schema_versions(SchemaFamily.COLLECTION_MANIFEST) == frozenset(
         {"1.0.0"}
     )
+    assert supported_schema_versions(SchemaFamily.APP_PROBE) == frozenset(
+        {"1.0.0", "2.0.0"}
+    )
     assert supported_schema_versions(SchemaFamily.EXPERIMENT_SPEC) == frozenset()
     assert current_write_version(SchemaFamily.REPORT) == "6.0.0"
     assert current_write_version(SchemaFamily.COLLECTION_MANIFEST) == "1.0.0"
+    assert current_write_version(SchemaFamily.APP_PROBE) == "2.0.0"
 
 
 def test_writers_emit_literal_versions_declared_by_the_support_table():

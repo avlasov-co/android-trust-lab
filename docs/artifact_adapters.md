@@ -42,7 +42,10 @@ trustlab normalize \
 [Collection manifest v1](collection_manifest_v1.md). It verifies the bound raw
 report and selects the ADB, host, app, or Magisk adapter from validated observer
 metadata. A current `text/plain` bound report uses the historical section syntax
-inside that observer-specific boundary. `--artifact-kind` applies only to
+inside that observer-specific boundary. A `trustlab-app` manifest may instead
+bind the closed typed app-probe v2 document as `application/json`; exact artifact
+and manifest metadata, digest, size, and unavailable-probe outcomes must agree.
+Legacy app text manifests remain readable. `--artifact-kind` applies only to
 direct `--input` normalization.
 
 For JSON adapters, declared experiment, target, observer, method, timestamp,
@@ -66,7 +69,8 @@ Every adapter implements the `ArtifactAdapter` protocol and returns an immutable
 - `EvidenceFragments` containing only constrained syntactic properties, boot
   key/value facts, selected mount records plus every mount-source attempt,
   identity fields, separately parsed SELinux mode/current-context facts, `su`
-  paths, Magisk text, and bounded selected-process observations.
+  paths, Magisk text, bounded selected-process observations, and the typed
+  app-probe evidence needed for its strict report extension.
 
 Only coherent, syntactically parsed `observed` captures and deliberately empty
 captures contribute parser fragments. Successful statuses require a zero or

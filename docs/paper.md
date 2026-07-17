@@ -61,7 +61,7 @@ This repository rejects bypass, hiding, evasion, persistence, SELinux weakening,
 ## Future Work
 
 - physical-device validation
-- app probe implementation
+- user-facing app-probe review and export flow
 - richer provenance capture
 - report visualization
 - Cuttlefish experiments

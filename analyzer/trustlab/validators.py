@@ -1198,7 +1198,14 @@ def _validate_v5_security_provenance(data: dict[str, Any]) -> None:
             evidence_name="SELinux policy-mode evidence",
         )
 
-    context_names = frozenset({"selinux_context", "collector_context", "app_context"})
+    context_names = frozenset(
+        {
+            "selinux_context",
+            "collector_context",
+            "app_context",
+            "selinux_self_context",
+        }
+    )
     context_capture = _v5_adapter_capture(data, context_names)
     context_result = _v5_command_status(
         data,
