@@ -17,8 +17,8 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Generated result tables and diffs | Implemented | `results/`, `datasets/derived/diffs/`, `tools/generate_report.py` |
 | Read-only Magisk root collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md` |
 | Deterministic Magisk structural packaging | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
-| Android app / Gradle project | Scaffold implemented | `app/`; one unprivileged module, checksum-locked wrapper, strict dependency verification |
-| Unprivileged app probe | Core implemented; UI/export pending | `collector/android/app_probe_design.md`, `app/observer/.../probe`, `tests/test_app_probe_v2.py` |
+| Android app / Gradle project | Implemented | `app/`; one unprivileged module, checksum-locked wrapper, strict dependency verification |
+| Unprivileged app probe | Implemented | typed probe, explicit review UI, redaction preview, and verified local SAF export; see `docs/app_ui_export.md` |
 | Android instrumentation tests | Not present | Added in a later roadmap step |
 | APK manifest or permission analyzer | Not present | No APK parser, manifest parser, or permission-policy checker is included |
 | Physical-device validation | Not collected | `experiments/E99_physical_device_template.md` |
@@ -75,10 +75,12 @@ cd app
   :observer:lintDebug
 ```
 
-The Step 32 probe core is implemented but is not invoked by the launcher yet.
-Launching the app performs no collection, and its merged manifest requests no
-permissions or features. The only exported component is the launcher activity;
-cleartext traffic and backup are disabled.
+Launching the app performs no collection. The user must acknowledge the fixed
+scope and press Start; completed results and the exact redacted artifact remain
+visible before export. The merged manifest requests no permissions or features.
+The only exported component is the launcher activity; cleartext traffic and
+backup are disabled. See `docs/app_ui_export.md` for the state, accessibility,
+and verified temporary-document publication contracts.
 
 ## Minimal analyzer demo
 

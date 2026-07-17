@@ -26,21 +26,36 @@ internal fun interface ProbeEntropy {
     fun bytes(count: Int): ByteArray
 }
 
+internal class ProbeCollectionCancelledException : Exception()
+
 internal class ProbeOrchestrator(private val source: ProbeSource) {
-    fun run(): List<ProbeResult> = listOf(
-        observe(ProbeId.BUILD_VERSION, source::buildVersion),
-        observe(ProbeId.APP_IDENTITY, source::appIdentity),
-        observe(ProbeId.INSTALL_SOURCE, source::installSource),
-        observe(ProbeId.SELINUX_SELF_CONTEXT, source::selinuxSelfContext),
-        observe(ProbeId.FILE_SYSTEM_SHELL) { source.fileCheck(FilePathId.SYSTEM_SHELL) },
-        observe(ProbeId.FILE_SYSTEM_SU) { source.fileCheck(FilePathId.SYSTEM_SU) },
-        observe(ProbeId.FILE_SYSTEM_XBIN_SU) { source.fileCheck(FilePathId.SYSTEM_XBIN_SU) },
-        observe(ProbeId.FILE_VENDOR_BIN_SU) { source.fileCheck(FilePathId.VENDOR_BIN_SU) },
-        observe(ProbeId.FILE_SBIN_SU) { source.fileCheck(FilePathId.SBIN_SU) },
-        observe(ProbeId.PROC_SELF_STATUS, source::procSelfStatus),
-        observe(ProbeId.PROC_SELF_MOUNTINFO, source::procSelfMountInfo),
-        observe(ProbeId.EMULATOR_INDICATORS, source::emulatorIndicators),
-    )
+    fun run(
+        onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> },
+        shouldCancel: () -> Boolean = { false },
+    ): List<ProbeResult> {
+        val operations: List<Pair<ProbeId, () -> ProbeValue>> = listOf(
+            ProbeId.BUILD_VERSION to source::buildVersion,
+            ProbeId.APP_IDENTITY to source::appIdentity,
+            ProbeId.INSTALL_SOURCE to source::installSource,
+            ProbeId.SELINUX_SELF_CONTEXT to source::selinuxSelfContext,
+            ProbeId.FILE_SYSTEM_SHELL to { source.fileCheck(FilePathId.SYSTEM_SHELL) },
+            ProbeId.FILE_SYSTEM_SU to { source.fileCheck(FilePathId.SYSTEM_SU) },
+            ProbeId.FILE_SYSTEM_XBIN_SU to { source.fileCheck(FilePathId.SYSTEM_XBIN_SU) },
+            ProbeId.FILE_VENDOR_BIN_SU to { source.fileCheck(FilePathId.VENDOR_BIN_SU) },
+            ProbeId.FILE_SBIN_SU to { source.fileCheck(FilePathId.SBIN_SU) },
+            ProbeId.PROC_SELF_STATUS to source::procSelfStatus,
+            ProbeId.PROC_SELF_MOUNTINFO to source::procSelfMountInfo,
+            ProbeId.EMULATOR_INDICATORS to source::emulatorIndicators,
+        )
+        val results = ArrayList<ProbeResult>(operations.size)
+        operations.forEach { (probeId, operation) ->
+            if (shouldCancel()) throw ProbeCollectionCancelledException()
+            results += observe(probeId, operation)
+            onProgress(results.size, operations.size)
+        }
+        if (shouldCancel()) throw ProbeCollectionCancelledException()
+        return results
+    }
 
     private fun observe(probeId: ProbeId, block: () -> ProbeValue): ProbeResult = try {
         ProbeResult(probeId, ProbeStatus.OBSERVED, block(), null)
@@ -58,9 +73,12 @@ internal class AppProbeCollector(
     private val targetPseudonym: String,
     private val experimentId: String = "unknown",
 ) {
-    fun collect(): AppProbeArtifact {
+    fun collect(
+        onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> },
+        shouldCancel: () -> Boolean = { false },
+    ): AppProbeArtifact {
         val startedAt = clock.now()
-        val probes = ProbeOrchestrator(source).run()
+        val probes = ProbeOrchestrator(source).run(onProgress, shouldCancel)
         val endedAt = clock.now()
         val emulator = probes.last()
         val indicators = (emulator.value as? EmulatorIndicatorsValue)?.indicators.orEmpty()
@@ -93,20 +111,41 @@ internal class AppProbeCollector(
     }
 }
 
+data class AppProbeExportMetadata(
+    val collectionId: String,
+    val appVersion: String,
+    val appProbeSchemaVersion: String,
+    val manifestSchemaVersion: String,
+    val startedAt: String,
+    val endedAt: String,
+    val completionStatus: String,
+)
+
+data class AppProbeOutcome(
+    val probeId: String,
+    val status: String,
+)
+
 class AppProbeBundle internal constructor(
     artifactBytes: ByteArray,
     manifestBytes: ByteArray,
     val artifactSha256: String,
     val manifestSha256: String,
+    val metadata: AppProbeExportMetadata,
+    outcomes: List<AppProbeOutcome>,
 ) {
     private val artifactPayload = artifactBytes.copyOf()
     private val manifestPayload = manifestBytes.copyOf()
+    private val outcomeSnapshot = outcomes.toList()
 
     val artifactBytes: ByteArray
         get() = artifactPayload.copyOf()
 
     val manifestBytes: ByteArray
         get() = manifestPayload.copyOf()
+
+    val outcomes: List<AppProbeOutcome>
+        get() = outcomeSnapshot.toList()
 
     companion object {
         const val ARTIFACT_FILE_NAME = "app_probe.json"
@@ -150,6 +189,18 @@ internal object AppProbeBundleBuilder {
             manifestBytes = manifestBytes,
             artifactSha256 = artifactSha256,
             manifestSha256 = sha256(manifestBytes),
+            metadata = AppProbeExportMetadata(
+                collectionId = artifact.collectionId,
+                appVersion = artifact.collectorVersion,
+                appProbeSchemaVersion = AppProbeArtifact.SCHEMA_VERSION,
+                manifestSchemaVersion = "1.0.0",
+                startedAt = artifact.startedAt,
+                endedAt = artifact.endedAt,
+                completionStatus = artifact.completion.wireName,
+            ),
+            outcomes = artifact.probes.map {
+                AppProbeOutcome(it.probeId.wireName, it.status.wireName)
+            },
         )
     }
 
@@ -243,9 +294,13 @@ internal object AppProbeBundleBuilder {
         .joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }
 
-/** Explicit entry point for Step 33; no Activity or lifecycle callback invokes it in Step 32. */
+/** Explicit entry point used only after the user starts a foreground probe session. */
 object PublicAppProbe {
-    fun collect(context: Context): AppProbeBundle {
+    fun collect(
+        context: Context,
+        onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> },
+        shouldCancel: () -> Boolean = { false },
+    ): AppProbeBundle {
         val random = SecureRandom()
         val entropy = ProbeEntropy { count -> ByteArray(count).also(random::nextBytes) }
         val applicationContext = context.applicationContext
@@ -256,6 +311,6 @@ object PublicAppProbe {
             entropy = entropy,
             targetPseudonym = TargetPseudonymStore.loadOrCreate(applicationContext, entropy),
         )
-        return AppProbeBundleBuilder.build(collector.collect())
+        return AppProbeBundleBuilder.build(collector.collect(onProgress, shouldCancel))
     }
 }

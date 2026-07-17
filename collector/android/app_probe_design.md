@@ -152,7 +152,10 @@ Probe code lives below
 - fixed-order orchestration with per-probe exception isolation;
 - deterministic artifact and manifest bundle construction.
 
-`MainActivity` remains collection-free in Step 32. Step 33 owns explicit user
-consent, progress, preview, and scoped export. No startup collection,
-background scheduler, network capability, shell execution, reflection, native
-code, package enumeration, root bridge, or dynamic download is permitted.
+`MainActivity` performs no startup or recreation collection. It requires scope
+acknowledgement and an explicit Start action, renders fixed progress and the
+exact redacted preview, and uses a transient local SAF tree grant for verified
+temporary-document publication. No background scheduler, network capability,
+shell execution, reflection, native code, package enumeration, root bridge, or
+dynamic download is permitted. The UI/export contract is documented in
+`docs/app_ui_export.md`.

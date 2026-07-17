@@ -27,12 +27,13 @@ state as a known metadata defect until Step 03 resolves it truthfully.
 | `tools/` | Deterministic artifact generator and validation/package helpers |
 | `scripts/` | Unified local verification entry point and compatibility wrapper |
 | `.github/workflows/` | Hosted repository and documentation checks |
-| `app/` | JDK 17 / API 37 unprivileged Android observer scaffold |
+| `app/` | JDK 17 / API 37 unprivileged Android observer and explicit review/export flow |
 
 At the Phase 1 audit there was no Android application, Gradle project,
-instrumentation test suite, or 50-step roadmap file. Step 31 now provides the
-small `app/` Gradle scaffold; the unprivileged probe implementation and Android
-instrumentation suite remain pending.
+instrumentation test suite, or 50-step roadmap file. The repository now has the
+small `app/` Gradle project, typed unprivileged probe, and explicit foreground
+review/export flow. Android instrumentation coverage remains a later roadmap
+step.
 
 ## Supported development commands
 

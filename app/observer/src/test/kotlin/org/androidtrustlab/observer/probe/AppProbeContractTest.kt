@@ -24,6 +24,25 @@ class AppProbeContractTest {
     }
 
     @Test
+    fun orchestratorReportsFixedProgressAndCancelsBetweenProbes() {
+        val progress = mutableListOf<Pair<Int, Int>>()
+        val completed = ProbeOrchestrator(FakeSource()).run(
+            onProgress = { current, total -> progress += current to total },
+        )
+        assertEquals((1..12).map { it to 12 }, progress)
+        assertEquals(ProbeId.entries, completed.map(ProbeResult::probeId))
+
+        var calls = 0
+        assertThrows(ProbeCollectionCancelledException::class.java) {
+            ProbeOrchestrator(FakeSource()).run(
+                onProgress = { _, _ -> calls += 1 },
+                shouldCancel = { calls == 3 },
+            )
+        }
+        assertEquals(3, calls)
+    }
+
+    @Test
     fun failureClassifierCoversAllFourWireStatusesWithoutRawMessages() {
         assertEquals(ProbeStatus.INACCESSIBLE, FailureClassifier.classify(ProbeInaccessibleException()).status)
         assertEquals(ProbeStatus.UNSUPPORTED, FailureClassifier.classify(ProbeUnsupportedException()).status)
@@ -225,7 +244,9 @@ class AppProbeContractTest {
             .joinToString("\n", transform = File::readText)
         listOf(
             "java.net.",
-            "android.net.",
+            "android.net.ConnectivityManager",
+            "android.net.NetworkCapabilities",
+            "android.net.NetworkRequest",
             "Runtime.getRuntime",
             "ProcessBuilder",
             "getInstalledPackages",

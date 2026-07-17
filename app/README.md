@@ -1,12 +1,13 @@
 # Android observer scaffold
 
 This directory is a self-contained Gradle project for the transparent,
-unprivileged Android Trust Lab observer. The Step 32 probe core produces a
-typed, manifest-bound app-visible snapshot through public Android APIs and
-bounded reads from the app sandbox view. It is deliberately not invoked by the
-launcher activity yet: opening the app performs no collection, schedules no
-work, and makes no network request. Step 33 owns explicit user initiation,
-review, and export.
+unprivileged Android Trust Lab observer. Its typed probe produces a
+manifest-bound app-visible snapshot through public Android APIs and bounded
+reads from the app sandbox view. Opening the app only explains scope: collection
+requires acknowledgement and an explicit Start action, runs only in the
+foreground, and makes no network request. The completed artifact, categorical
+outcomes, limitations, and redactions remain visible before a scoped local
+export.
 
 ## Fixed identity and platform baseline
 
@@ -76,3 +77,13 @@ packages, accounts, identifiers, network state, user files, clipboard,
 contacts, or location, and the app declares no networking permission.
 Repeated collections use a private stored random target pseudonym, never a
 platform or hardware identifier; each collection ID remains fresh.
+
+## Review and export boundary
+
+`MainActivity` renders an immutable, process-retained session state. It does
+not collect during startup or recreation. The flow and Storage Access Framework
+publication contract are documented in `../docs/app_ui_export.md`. Export is a
+fully staged, digest-verified ZIP published from a temporary document through
+one provider rename. The provider must advertise write, delete, and rename
+support; the app retains no directory grant and reports only categorical
+success, cancellation, or failure.
