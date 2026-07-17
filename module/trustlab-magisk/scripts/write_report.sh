@@ -9,7 +9,7 @@ OWNERLESS_STALE_SECONDS=300
 COLLECTION_METHOD=${1:-magisk_module_manual}
 REQUESTED_BOOT_RESULT=${2:-auto}
 case "$COLLECTION_METHOD" in
-  magisk_module_boot|magisk_module_manual) ;;
+  magisk_module_boot|magisk_module_manual|magisk_module_webui) ;;
   *) COLLECTION_METHOD=magisk_module_manual ;;
 esac
 case "$REQUESTED_BOOT_RESULT" in
@@ -552,6 +552,10 @@ finalize_collection() {
   TS_END_ISO=$(utc_iso_time)
   [ -n "$TS_END_ISO" ] || TS_END_ISO=$TS_START_ISO
   COLLECTOR_VERSION=$(sed -n 's/^version=//p' "$MODDIR/module.prop" 2>/dev/null | head -n 1)
+  # Installer-only development suffixes are module packaging metadata, not a
+  # collector schema version. Keep emitted portable manifests on the canonical
+  # collector version used by the host validator.
+  COLLECTOR_VERSION=${COLLECTOR_VERSION%%.installfix.*}
   COLLECTION_TOKEN=$(printf '%s:%s' "$RUN_ID" "$RAW_SHA256" \
     | sha256sum 2>/dev/null | awk '{print substr($1,1,16)}')
   if ! valid_iso_time "$TS_END_ISO" \

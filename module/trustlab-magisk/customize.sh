@@ -17,6 +17,8 @@ $MODPATH/scripts/collect_process_state.sh
 $MODPATH/scripts/collect_props.sh
 $MODPATH/scripts/collect_root_state.sh
 $MODPATH/scripts/collect_selinux.sh
+$MODPATH/scripts/run_collection.sh
+$MODPATH/scripts/webui_api.sh
 $MODPATH/scripts/write_report.sh
 "
 

@@ -1,6 +1,6 @@
 #!/system/bin/sh
 MODDIR=${0%/*}
-REPORT_SCRIPT="$MODDIR/scripts/write_report.sh"
+RUNNER="$MODDIR/scripts/run_collection.sh"
 
 # Late boot collector. One report, then exit. No daemon, no mutation.
 BOOT_VALUE=unknown
@@ -15,8 +15,8 @@ boot_wait_interrupted() {
   # an explicit partial collection instead of becoming uninterruptible.
   trap - HUP INT TERM
   printf 'Android Trust Lab: boot_wait_interrupted\n' >&2
-  if [ -x "$REPORT_SCRIPT" ]; then
-    sh "$REPORT_SCRIPT" "magisk_module_boot" "interrupted"
+  if [ -x "$RUNNER" ]; then
+    sh "$RUNNER" boot interrupted
   fi
   exit 130
 }
@@ -47,8 +47,8 @@ while [ "$BOOT_VALUE" != "1" ] && [ "$count" -lt 120 ]; do
   read_boot_completion
 done
 
-if [ ! -x "$REPORT_SCRIPT" ]; then
-  printf 'Android Trust Lab: write_report.sh is missing or not executable\n' >&2
+if [ ! -x "$RUNNER" ]; then
+  printf 'Android Trust Lab: collection runner is missing or not executable\n' >&2
   exit 1
 fi
 
@@ -67,5 +67,5 @@ fi
 # Do not discard collector output or errors.  write_report.sh itself exposes
 # only the final manifest path plus fixed, sanitized diagnostics.
 trap - HUP INT TERM
-sh "$REPORT_SCRIPT" "magisk_module_boot" "$BOOT_RESULT"
+sh "$RUNNER" boot "$BOOT_RESULT"
 exit $?
