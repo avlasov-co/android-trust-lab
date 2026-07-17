@@ -124,6 +124,7 @@ git ls-files --cached --others --exclude-standard -z \
   | xargs -0 "$PYTHON_BIN" -m detect_secrets.pre_commit_hook \
     --baseline .secrets.baseline \
     --exclude-files '^\.secrets\.baseline$' \
+    --exclude-files '^app/gradle/verification-metadata\.xml$' \
     --exclude-lines '^\s+"sha256": "[a-f0-9]{64}",?\s*$' \
     --no-verify \
     --

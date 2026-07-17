@@ -9,3 +9,8 @@ build/
 .android/
 *.zip
 .DS_Store
+app/.gradle/
+app/.idea/
+app/.kotlin/
+app/local.properties
+app/**/*.iml

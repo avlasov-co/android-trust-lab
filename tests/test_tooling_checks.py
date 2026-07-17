@@ -128,17 +128,19 @@ def test_ci_gate_enforces_baseline_aware_secret_detection():
     check_line_filter = next(
         line for line in check_script.splitlines() if "--exclude-lines" in line
     )
-    check_file_filter = next(
+    check_file_filters = [
         line for line in check_script.splitlines() if "--exclude-files" in line
-    )
+    ]
     pre_commit_line_filter = next(
         line for line in pre_commit.splitlines() if "--exclude-lines" in line
     )
     assert '"sha256"' in check_line_filter
     assert '"sha256"' in pre_commit_line_filter
-    assert "datasets/manifest" not in check_file_filter
+    assert any("verification-metadata" in line for line in check_file_filters)
+    assert "app/gradle/verification-metadata" in pre_commit
+    assert all("datasets/manifest" not in line for line in check_file_filters)
     assert "datasets/manifest" not in pre_commit_line_filter
-    assert "results/artifact_manifest" not in check_file_filter
+    assert all("results/artifact_manifest" not in line for line in check_file_filters)
     assert "results/artifact_manifest" not in pre_commit_line_filter
     assert "run: bash scripts/check.sh" in workflow
 

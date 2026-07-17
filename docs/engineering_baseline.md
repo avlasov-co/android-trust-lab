@@ -27,9 +27,12 @@ state as a known metadata defect until Step 03 resolves it truthfully.
 | `tools/` | Deterministic artifact generator and validation/package helpers |
 | `scripts/` | Unified local verification entry point and compatibility wrapper |
 | `.github/workflows/` | Hosted repository and documentation checks |
+| `app/` | JDK 17 / API 37 unprivileged Android observer scaffold |
 
-There is no Android application, Gradle project, instrumentation test suite, or
-50-step roadmap file in this checkout. The unprivileged app probe is design-only.
+At the Phase 1 audit there was no Android application, Gradle project,
+instrumentation test suite, or 50-step roadmap file. Step 31 now provides the
+small `app/` Gradle scaffold; the unprivileged probe implementation and Android
+instrumentation suite remain pending.
 
 ## Supported development commands
 
@@ -64,6 +67,16 @@ python3 tools/check_coverage.py /tmp/android-trust-lab-coverage.json
 PYTHONPATH=analyzer python3 tools/check_schemas.py
 PYTHONPATH=analyzer python3 tools/generate_report.py --check
 python3 tools/package_magisk_module.py --check-only
+```
+
+The Android scaffold uses its own verified wrapper and JDK 17 gate:
+
+```bash
+cd app
+./gradlew --dependency-verification strict \
+  :observer:assembleDebug \
+  :observer:testDebugUnitTest \
+  :observer:lintDebug
 ```
 
 ## Tests and coverage

@@ -23,7 +23,8 @@ Capture what a normal Android app can see.
 
 ## Portable output
 
-The future app implementation must emit strict
+The Step 31 app scaffold performs no collection. The future probe implementation
+must emit strict
 `collector/schema/app_probe_v1_0_0.schema.json` JSON with artifact kind
 `app_probe_json` and observer type `unprivileged_app`. Unsupported APIs, access
 denials, command errors, timeouts, and skipped probes remain separate outcomes.

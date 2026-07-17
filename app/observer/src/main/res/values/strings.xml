@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Android Trust Lab</string>
+    <string name="scaffold_message">This unprivileged scaffold performs no collection. A later step will add an explicit, user-started public-API probe. The app does not certify device security.</string>
+</resources>

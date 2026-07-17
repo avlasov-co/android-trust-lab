@@ -39,13 +39,13 @@ repos:
         files: ^(analyzer/trustlab/schemas|collector/schema)/
       - id: detect-secrets
         name: detect secrets
-        # Ignore only canonical SHA-256 binding lines; scan all manifest metadata.
+        # Ignore canonical digest lines and Gradle's generated checksum catalog.
         entry: >-
           detect-secrets-hook --baseline .secrets.baseline
           --exclude-lines '^\s+"sha256": "[a-f0-9]{64}",?\s*$'
         language: system
         types: [text]
-        exclude: ^\.secrets\.baseline$
+        exclude: ^(?:\.secrets\.baseline|app/gradle/verification-metadata\.xml)$
       - id: shellcheck-android
         name: ShellCheck Android scripts
         entry: shellcheck --shell=sh --external-sources

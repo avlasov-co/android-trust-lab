@@ -28,14 +28,16 @@ bash scripts/verify_release.sh
 - A read-only Magisk collector module.
 - Deterministic structural packaging guardrails for the Magisk module; these do
   not prove shell-script runtime semantics.
+- A JDK 17 / API 37 Android scaffold with a checksum-locked Gradle distribution
+  and Maven dependency graph; its manifest requests no permissions, and the
+  probe itself is not implemented yet.
 - Clear responsible-use boundaries.
 - Explicit implemented-vs-design-only scope.
 
 ## What this repo does not claim
 
-- No Android app.
-- No Gradle project.
-- No instrumentation tests.
+- No implemented app probe, export flow, or review UI beyond the small scaffold.
+- No Android managed-device or instrumentation test automation yet.
 - No physical-device validation in this release.
 - No APK manifest or permission analyzer.
 - No Play Integrity, SafetyNet, DRM, Widevine, or app-specific bypass work.

@@ -1,0 +1,6 @@
+Android Trust Lab observer application
+Copyright 2025-2026 Android Trust Lab contributors
+
+This product includes software developed by the Kotlin project and the JUnit
+project. Their test/runtime artifacts are checksum-locked by Gradle dependency
+verification. License details are recorded in THIRD_PARTY_NOTICES.md.

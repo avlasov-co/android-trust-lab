@@ -82,8 +82,9 @@ trust-diff v2.2 JSON + markdown summary
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |
 | Deterministic Magisk structural packaging guardrails | implemented through `tools/package_magisk_module.py` |
-| Android app, Gradle project, and instrumentation tests | not present |
-| Unprivileged app probe | design only |
+| Android app and Gradle scaffold | implemented under `app/`; performs no collection yet |
+| Unprivileged app probe | design and empty package only; implementation remains pending |
+| Android instrumentation tests | not present |
 | APK manifest / permission analyzer | not present |
 | Physical-device validation | not collected in this release |
 
@@ -106,6 +107,21 @@ for f in module/trustlab-magisk/*.sh module/trustlab-magisk/scripts/*.sh; do sh 
 These checks validate analyzer tests, generated sample artifacts, and the
 Magisk collector's deterministic structural packaging contract. Packaging
 validation does not prove shell-script runtime semantics.
+
+The Android scaffold has a separate JDK 17 / SDK 37 gate:
+
+```bash
+cd app
+./gradlew --dependency-verification strict \
+  :observer:assembleDebug \
+  :observer:testDebugUnitTest \
+  :observer:lintDebug
+```
+
+The Gradle distribution and Maven dependency graph are checksum-verified. JDK
+17 and SDK 37 remain external prerequisites and are not checksum-provisioned by
+this repository. See `app/README.md` for prerequisites and the deliberately
+unprivileged manifest contract.
 
 ## Basic virtual-target workflow
 
