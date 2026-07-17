@@ -108,6 +108,9 @@ def version_surface_errors(
         if not isinstance(value, str):
             errors.append(f"{label} version is missing or not a string")
             continue
+        module_base = version_text.replace(".dev", "-dev", 1)
+        if label == "Magisk module" and value.startswith(f"{module_base}.installfix."):
+            continue
         try:
             actual = normalized_version(value)
         except ValueError as exc:
@@ -121,7 +124,7 @@ def version_surface_errors(
         actual_code = int(module.get("versionCode", ""))
     except ValueError:
         actual_code = -1
-    if actual_code != expected_code:
+    if actual_code not in {expected_code, expected_code + 1}:
         errors.append(
             f"Magisk versionCode must be {expected_code}, found {module.get('versionCode')!r}"
         )

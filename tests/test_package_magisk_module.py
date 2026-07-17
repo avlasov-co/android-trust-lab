@@ -363,7 +363,9 @@ def test_package_zip_contains_module_root_files(tmp_path):
         names = set(archive.namelist())
     assert "module.prop" in names
     assert "scripts/write_report.sh" in names
-    assert not any(name.startswith("META-INF/") for name in names)
+    assert "META-INF/com/google/android/update-binary" in names
+    assert "META-INF/com/google/android/updater-script" in names
+    assert "customize.sh" in names
 
 
 def test_package_bytes_ignore_checkout_modes_and_mtimes(tmp_path):
@@ -413,10 +415,15 @@ def test_package_zip_metadata_modes_order_and_payload_are_canonical(tmp_path):
     with zipfile.ZipFile(output) as archive:
         infos = archive.infolist()
         assert archive.comment == b""
-    assert [info.filename for info in infos] == sorted(
-        package_magisk_module.ALLOWED_FILES
-    )
+        assert [info.filename for info in infos] == sorted(
+            package_magisk_module.ALLOWED_FILES
+            | package_magisk_module.ARCHIVE_DIRECTORY_ENTRIES
+        )
     for info in infos:
+        if info.filename.endswith("/"):
+            assert stat.S_ISDIR(info.external_attr >> 16)
+            assert stat.S_IMODE(info.external_attr >> 16) == 0o755
+            continue
         expected_mode = 0o755 if info.filename.endswith(".sh") else 0o644
         unix_mode = info.external_attr >> 16
         assert stat.S_ISREG(unix_mode)

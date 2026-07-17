@@ -28,8 +28,11 @@ MODULE_DIR = ROOT / "module" / "trustlab-magisk"
 DEFAULT_OUTPUT = ROOT / "dist" / "androidtrustlab-magisk.zip"
 
 REQUIRED_FILES = (
+    "META-INF/com/google/android/update-binary",
+    "META-INF/com/google/android/updater-script",
     "README.md",
     "action.sh",
+    "customize.sh",
     "module.prop",
     "post-fs-data.sh",
     "scripts/collect_boot_state.sh",
@@ -45,7 +48,18 @@ REQUIRED_FILES = (
     "uninstall.sh",
 )
 ALLOWED_FILES = frozenset(REQUIRED_FILES)
-ALLOWED_DIRECTORIES = frozenset({"scripts"})
+ARCHIVE_DIRECTORY_ENTRIES = frozenset(
+    {
+        "META-INF/",
+        "META-INF/com/",
+        "META-INF/com/google/",
+        "META-INF/com/google/android/",
+        "scripts/",
+    }
+)
+ALLOWED_DIRECTORIES = frozenset(
+    {"META-INF", "META-INF/com", "META-INF/com/google", "META-INF/com/google/android", "scripts"}
+)
 SCRIPT_FILES = frozenset(path for path in REQUIRED_FILES if path.endswith(".sh"))
 
 MODULE_PROP_FIELDS = (
@@ -58,7 +72,7 @@ MODULE_PROP_FIELDS = (
 )
 COLLECTOR_VERSION_RE = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
-    r"(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    r"(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\.installfix\.[1-9][0-9]*)?$"
 )
 MODULE_ID_RE = re.compile(r"^[a-z][a-z0-9._-]{2,63}$")
 VERSION_CODE_RE = re.compile(r"^[1-9][0-9]{0,9}$")
@@ -71,7 +85,7 @@ DEFAULT_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 MIN_ZIP_YEAR = 1980
 MAX_ZIP_YEAR = 2107
 MAX_ENTRIES = 32
-MAX_FILES = 24
+MAX_FILES = 32
 MAX_FILE_BYTES = 2 * 1024 * 1024
 MAX_TOTAL_BYTES = 4 * 1024 * 1024
 MAX_ARCHIVE_PATH_BYTES = 240
@@ -763,21 +777,72 @@ def write_zip(
         allowZip64=False,
     ) as archive:
         archive.comment = b""
-        for source in inventory:
-            payload = _read_module_file(source)
-            info = zipfile.ZipInfo(source.archive_name, archive_timestamp)
-            info.compress_type = zipfile.ZIP_STORED
-            info.create_system = 3
-            info.create_version = 20
-            info.extract_version = 20
-            info.external_attr = (
-                stat.S_IFREG | archive_mode(source.archive_name)
-            ) << 16
-            info.internal_attr = 0
-            info.extra = b""
-            info.comment = b""
-            info.flag_bits = 0
-            archive.writestr(info, payload, compress_type=zipfile.ZIP_STORED)
+        # Interleave explicit directory entries in canonical sorted order with
+        # file entries. Some unzip implementations (including those bundled with
+        # Magisk) do not infer parent directories from file paths and require an
+        # explicit directory entry to create the scripts/ subdirectory before
+        # any files inside it can be extracted.
+        all_entries = sorted(
+            [(dir_name, None) for dir_name in ARCHIVE_DIRECTORY_ENTRIES]
+            + [(source.archive_name, source) for source in inventory],
+            key=lambda entry: entry[0],
+        )
+        for archive_name, source in all_entries:
+            if source is None:
+                info = zipfile.ZipInfo(archive_name, archive_timestamp)
+                info.compress_type = zipfile.ZIP_STORED
+                info.create_system = 3
+                info.create_version = 20
+                info.extract_version = 20
+                info.external_attr = (stat.S_IFDIR | 0o755) << 16
+                info.internal_attr = 0
+                info.extra = b""
+                info.flag_bits = 0
+                archive.writestr(info, b"", compress_type=zipfile.ZIP_STORED)
+            else:
+                payload = _read_module_file(source)
+                info = zipfile.ZipInfo(source.archive_name, archive_timestamp)
+                info.compress_type = zipfile.ZIP_STORED
+                info.create_system = 3
+                info.create_version = 20
+                info.extract_version = 20
+                info.external_attr = (
+                    stat.S_IFREG | archive_mode(source.archive_name)
+                ) << 16
+                info.internal_attr = 0
+                info.extra = b""
+                info.comment = b""
+                info.flag_bits = 0
+                archive.writestr(info, payload, compress_type=zipfile.ZIP_STORED)
+
+
+def _validate_dir_member(
+    info: zipfile.ZipInfo,
+    expected_timestamp: tuple[int, int, int, int, int, int],
+) -> list[str]:
+    errors: list[str] = []
+    unix_mode = info.external_attr >> 16
+    if not stat.S_ISDIR(unix_mode) or stat.S_IMODE(unix_mode) != 0o755:
+        errors.append(f"archive directory mode is invalid: {info.filename}")
+    if info.create_system != 3:
+        errors.append(
+            f"archive directory must declare Unix metadata: {info.filename}"
+        )
+    if info.create_version != 20 or info.extract_version != 20:
+        errors.append(
+            f"archive directory ZIP version is not canonical: {info.filename}"
+        )
+    if info.compress_type != zipfile.ZIP_STORED:
+        errors.append(
+            f"archive directory compression is not canonical: {info.filename}"
+        )
+    if info.date_time != expected_timestamp:
+        errors.append(f"archive directory timestamp is not canonical: {info.filename}")
+    if info.extra or info.comment:
+        errors.append(f"archive directory metadata must be empty: {info.filename}")
+    if info.flag_bits & 0x1:
+        errors.append(f"encrypted archive directory is not allowed: {info.filename}")
+    return errors
 
 
 def _validate_archive_member(
@@ -823,18 +888,30 @@ def validate_archive_structure(
         with zipfile.ZipFile(archive_path, "r", allowZip64=False) as archive:
             infos = archive.infolist()
             raw_names = [info.filename for info in infos]
-            errors.extend(validate_archive_paths(raw_names))
+            file_raw_names = [n for n in raw_names if not n.endswith("/")]
+            dir_raw_names = [n for n in raw_names if n.endswith("/")]
+            errors.extend(validate_archive_paths(file_raw_names))
+            for dir_name in dir_raw_names:
+                if dir_name not in ARCHIVE_DIRECTORY_ENTRIES:
+                    errors.append(f"unexpected archive directory entry: {dir_name}")
             if archive.comment:
                 errors.append("archive comment must be empty")
             if len(infos) > MAX_FILES:
                 errors.append(f"archive file count exceeds {MAX_FILES}")
             if raw_names != sorted(raw_names):
                 errors.append("archive entries must use canonical sorted order")
-            if set(raw_names) != ALLOWED_FILES:
+            if set(file_raw_names) != ALLOWED_FILES:
                 errors.append("archive payload must exactly match the closed allowlist")
+            if set(dir_raw_names) != ARCHIVE_DIRECTORY_ENTRIES:
+                errors.append(
+                    "archive directory entries must exactly match the expected set"
+                )
             total_size = 0
             bounded = True
             for info in infos:
+                if info.filename.endswith("/"):
+                    errors.extend(_validate_dir_member(info, expected_timestamp))
+                    continue
                 total_size += info.file_size
                 member_errors, member_bounded = _validate_archive_member(
                     info, expected_timestamp

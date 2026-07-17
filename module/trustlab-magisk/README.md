@@ -74,7 +74,13 @@ Root-side visibility is not hardware-backed trust proof. Label reports as `root_
 
 ## Packaging note
 
-This module is intended for installation through the Magisk app. The MVP intentionally does not include `META-INF/` recovery-installer files. If recovery flashing is ever supported later, it must use the official Magisk module installer flow and keep the same read-only safety boundaries.
+This package includes the official Magisk module installer under `META-INF/com/google/android/`. Magisk 28.1 and older app installers expect those files, while newer Magisk versions can supply the installer from the app itself. The embedded installer also keeps recovery flashing compatible with the official Magisk flow.
+
+Magisk applies default permissions while extracting a module. This package includes `customize.sh` to restore executable mode on every collector script; without that step, `action.sh` and `service.sh` reject `scripts/write_report.sh` because it is not executable.
+
+## Installation troubleshooting
+
+If a current Magisk installation screen still stops after `Copying zip to temp directory` and shows `Unzip error` before it prints the ZIP filename, repair or reinstall the full official Magisk app, or install from a root shell with `magisk --install-module MODULE.zip`.
 
 The on-device JSON written by the module is a strict portable collection
 manifest, not a normalized trust report. It binds every observed artifact by

@@ -58,8 +58,8 @@ def test_checker_rejects_deliberate_module_version_drift(tmp_path):
     module_prop = tmp_path / "module/trustlab-magisk/module.prop"
     module_prop.write_text(
         module_prop.read_text(encoding="utf-8").replace(
-            "version=0.3.0-dev0", "version=0.3.0-dev1"
-        ),
+                "version=0.3.0-dev0.installfix.1", "version=0.3.0-dev1"
+            ),
         encoding="utf-8",
     )
     errors = check_version_consistency.check_errors(
