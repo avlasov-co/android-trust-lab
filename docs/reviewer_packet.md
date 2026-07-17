@@ -26,7 +26,8 @@ bash scripts/verify_release.sh
 - A strict, integrity-bound dataset graph with deterministic freshness checks.
 - Generated diffs, tables, and result summaries.
 - A read-only Magisk collector module.
-- Packaging safety checks for the Magisk module.
+- Deterministic structural packaging guardrails for the Magisk module; these do
+  not prove shell-script runtime semantics.
 - Clear responsible-use boundaries.
 - Explicit implemented-vs-design-only scope.
 

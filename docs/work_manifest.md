@@ -57,7 +57,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Trust-state diffing | Implemented | Diff engine, generated diff JSON files, and markdown summaries exist |
 | Generated artifact workflow | Implemented | `tools/generate_report.py --check` verifies checked-in derived outputs |
 | Read-only Magisk collector | Implemented | Module files and shell collectors exist under `module/trustlab-magisk/` |
-| Magisk package guardrails | Implemented | Packaging helper rejects common mutation payload locations |
+| Magisk package guardrails | Implemented | Closed 15-file payload, bounded regular-file inventory, normalized ZIP modes/metadata, and two-build byte comparison |
 | Release verification script | Implemented | `scripts/verify_release.sh` runs compile, tests, generated-output, package, and shell checks |
 | AVD-limited sample workflow | Implemented | Sample directories are checked in under `datasets/samples/` |
 | Unprivileged app probe | Design-only | `collector/android/app_probe_design.md` exists, but no app implementation exists |
@@ -121,7 +121,7 @@ PYTHON_BIN=python3 bash scripts/check.sh
 
 The command performs Python compilation, tests with branch coverage, canonical
 metadata and version checks, explicit JSON Schema and artifact validation,
-generated-output freshness checks, Magisk package safety checks, and shell
+generated-output freshness checks, deterministic Magisk structural packaging, and shell
 syntax checks. It sets `PYTHONPATH=analyzer` so local tests run from source. If
 development dependencies are missing, install them first:
 
@@ -146,7 +146,7 @@ Latest validation for this evidence packet:
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
 | Schema and checked-in artifacts | Gate step 10 | 15 schemas, 8 reports, 6 diffs, 1 collection manifest, 3 dataset manifests, and 1 dataset source validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
-| Magisk package safety | Gate step 12 | Pass |
+| Magisk structural packaging | Gate step 12 | Pass; exact payload, modes, metadata, and two-build byte identity |
 | Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
 | Secret detection | Gate step 15 | Pass against the checked-in baseline with network verification disabled |
 | Pre-commit hygiene | `pre-commit run --all-files` | Pass for whitespace, EOF, JSON, YAML, Ruff, schemas, secrets, and ShellCheck |

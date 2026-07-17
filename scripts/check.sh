@@ -103,7 +103,7 @@ echo "[10/15] JSON Schema and checked-in artifact validation"
 echo "[11/15] Generated artifact freshness check"
 "$PYTHON_BIN" tools/generate_report.py --check
 
-echo "[12/15] Magisk package safety check"
+echo "[12/15] Magisk deterministic structural packaging guardrails"
 "$PYTHON_BIN" tools/package_magisk_module.py --check-only
 
 echo "[13/15] Shell syntax check"

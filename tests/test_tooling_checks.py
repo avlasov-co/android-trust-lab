@@ -114,7 +114,7 @@ def test_repository_tool_entry_points_pass(capsys):
         in output
     )
     assert "1 collection manifest" in output
-    assert "Magisk module safety checks passed" in output
+    assert "Magisk deterministic structural packaging guardrails passed" in output
 
 
 def test_ci_gate_enforces_baseline_aware_secret_detection():

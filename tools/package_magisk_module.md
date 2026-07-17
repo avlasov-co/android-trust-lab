@@ -1,33 +1,50 @@
-# Package Magisk Module
+# Deterministic Magisk Module Packaging
 
-Use the checked-in packaging helper from the repository root:
+Use the checked-in helper from the repository root:
 
 ```bash
 python tools/package_magisk_module.py --check-only
 python tools/package_magisk_module.py --output dist/androidtrustlab-magisk.zip
 ```
 
-The helper validates required module files and refuses payloads that would turn the module into a system-modification package.
+`--check-only` still performs two complete temporary builds and compares their
+exact bytes. A normal build publishes only after the same comparison succeeds
+and prints the final SHA-256 digest.
 
-## Safety constraints enforced
+## Canonical archive contract
 
-The package must not contain:
+The payload is a closed allowlist: `README.md`, `module.prop`, `skip_mount`, the
+four root entrypoint scripts, and the eight scripts beneath `scripts/`. No other
+directory or file is accepted. Entries are sorted by canonical POSIX relative
+path. Every script is archived as a Unix regular file with mode `0755`; the
+three non-scripts use `0644`. Checkout modes and source mtimes are ignored.
 
-- `META-INF/`
-- `system.prop`
-- `scripts/lib.sh` unless it is actually introduced and tested later
-- embedded `.zip` files
-- overlay or replacement paths under `system/`, `vendor/`, `product/`, `system_ext/`, or `odm/`
+The timestamp is UTC `SOURCE_DATE_EPOCH`, rounded down to ZIP's two-second
+precision. It must resolve to 1980–2107. When the variable is absent, the
+canonical ZIP-safe default is `315532800` (`1980-01-01T00:00:00Z`). Entries use
+explicit `ZIP_STORED` compression metadata, empty comments and extra fields,
+and Unix creator metadata. Storing this small payload avoids compressor-version
+byte drift.
 
-The module must remain a read-only collector. It must not introduce property modification, SELinux patching, remount helpers, overlay replacement files, root hiding, identity spoofing, or app-specific evasion logic.
+The inventory rejects symlinks, FIFOs, sockets, devices, other special files,
+absolute or traversing names, backslashes, drive/UNC paths, duplicate normalized
+paths, unexpected payloads, embedded archives, excessive paths/counts, files
+over 2 MiB, and total payloads over 4 MiB. Safe bounded reads recheck file
+identity so a swapped symlink or changed file fails the build.
 
-## Manual fallback
+Package-time validation also requires the exact `module.prop` fields, the
+`#!/system/bin/sh` shebang, successful host `sh -n` parsing for every script,
+and an empty regular `skip_mount` file.
 
-If the Python helper is unavailable, package only the module root contents:
+## Scope of the guardrails
 
-```bash
-cd module/trustlab-magisk
-zip -r ../../androidtrustlab-magisk.zip .
-```
+These deterministic structural packaging guardrails prove payload membership,
+paths, filesystem types, size limits, normalized ZIP metadata and modes,
+metadata shape, shebangs, host-shell parseability, and selected static boundary
+markers. They do not prove shell-script runtime semantics, producer identity,
+device behavior, or that an installed module is behaviorally safe. Runtime
+behavior remains subject to source review and the dedicated collector tests.
 
-Before using a manually created archive, run the same safety checks above by inspection and run `sh -n` on every `*.sh` file.
+There is intentionally no generic `zip -r` fallback: it would not preserve the
+canonical modes, timestamps, metadata, inventory validation, or two-build
+comparison.

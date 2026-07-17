@@ -81,7 +81,7 @@ trust-diff v2.2 JSON + markdown summary
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
 | Read-only Magisk root collector module | implemented |
-| Magisk module packaging safety checks | implemented through `tools/package_magisk_module.py` |
+| Deterministic Magisk structural packaging guardrails | implemented through `tools/package_magisk_module.py` |
 | Android app, Gradle project, and instrumentation tests | not present |
 | Unprivileged app probe | design only |
 | APK manifest / permission analyzer | not present |
@@ -103,7 +103,9 @@ python tools/package_magisk_module.py --check-only
 for f in module/trustlab-magisk/*.sh module/trustlab-magisk/scripts/*.sh; do sh -n "$f"; done
 ```
 
-These checks validate analyzer tests, generated sample artifacts, and Magisk collector packaging safety constraints.
+These checks validate analyzer tests, generated sample artifacts, and the
+Magisk collector's deterministic structural packaging contract. Packaging
+validation does not prove shell-script runtime semantics.
 
 ## Basic virtual-target workflow
 

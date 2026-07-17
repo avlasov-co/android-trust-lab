@@ -50,7 +50,8 @@ bash scripts/check.sh
 Set `PYTHON_BIN=/path/to/python` when a specific interpreter is required. The
 check compiles Python sources, runs tests with branch coverage, validates the
 Draft 2020-12 schemas and all checked-in reports/diffs, checks generated-file
-freshness, validates Magisk package safety, and checks shell syntax.
+freshness, validates deterministic Magisk package structure, and checks shell
+syntax. Packaging validation does not prove script runtime semantics.
 
 Focused commands are:
 

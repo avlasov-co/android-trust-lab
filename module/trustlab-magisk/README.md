@@ -15,7 +15,10 @@ It does not:
 
 ## Installation
 
-Package the folder as a Magisk module zip using `tools/package_magisk_module.md` instructions or any normal zip process preserving the module root.
+Package the folder only with the repository helper documented in
+`tools/package_magisk_module.md`. It normalizes entry modes and ZIP metadata,
+validates the closed payload, builds twice, compares exact bytes, and prints the
+published archive SHA-256. A generic ZIP command is not an equivalent build.
 
 ## Boot-time collection
 

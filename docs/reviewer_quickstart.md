@@ -16,7 +16,7 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Dataset integrity and freshness verification | Implemented | `trustlab dataset verify datasets/manifest.json`, `docs/dataset_manifest_v2.md` |
 | Generated result tables and diffs | Implemented | `results/`, `datasets/derived/diffs/`, `tools/generate_report.py` |
 | Read-only Magisk root collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md` |
-| Magisk module packaging safety check | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
+| Deterministic Magisk structural packaging | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
 | Android app / Gradle project | Not present | No `build.gradle`, `settings.gradle`, `AndroidManifest.xml`, Kotlin, or Java app source is included |
 | Unprivileged app probe | Design only | `collector/android/app_probe_design.md` |
 | APK manifest or permission analyzer | Not present | No APK parser, manifest parser, or permission-policy checker is included |
@@ -52,11 +52,15 @@ Expected high-level result:
 ```text
 300+ tests passed
 generated artifacts are up to date
-Magisk module safety checks passed
+Magisk deterministic structural packaging guardrails passed
+reproducible_sha256=<64 lowercase hex characters>
 Magisk shell syntax checks pass
 ```
 
-The exact test count may increase as the repo grows. The important part is that tests pass, generated artifacts are not stale, and the module packaging safety check refuses mutation payloads.
+The exact test count may increase as the repo grows. The important part is that
+tests pass, generated artifacts are not stale, and the packaging helper proves
+the closed payload, normalized metadata/modes, and exact-byte reproducibility.
+It does not prove shell-script runtime semantics.
 
 ## Minimal analyzer demo
 
@@ -97,7 +101,11 @@ Validate safety constraints and build the module archive:
 python tools/package_magisk_module.py --output /tmp/androidtrustlab-magisk.zip
 ```
 
-The packaging helper refuses common mutation payload locations such as `system/`, `vendor/`, `product/`, `system.prop`, `META-INF/`, and embedded zip files. That guardrail keeps the module framed as a read-only collector instead of a system modification bundle.
+The packaging helper accepts only the 15 reviewed module files, normalizes Unix
+modes and ZIP metadata, rejects non-regular or nonportable payloads, checks
+metadata/shebang/shell structure, and compares two independent builds before
+publication. These structural guarantees do not establish runtime behavior;
+review the collector source and runtime tests for that evidence.
 
 ## What not to claim
 
