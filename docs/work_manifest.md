@@ -37,13 +37,13 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Magisk collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md`, `module/trustlab-magisk/README.md` | `find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;` |
 | Magisk packaging helper | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` | `python tools/package_magisk_module.py --check-only` |
 | Tests | Implemented | `tests/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q` |
-| CI checks | Implemented | `.github/workflows/ci.yml`, `.github/workflows/docs.yml` | GitHub Actions on push / PR |
+| CI checks | Implemented | `.github/workflows/ci.yml`, `.github/workflows/android.yml`, `.github/workflows/docs.yml` | Fast checks on push / PR; API 35 PR smoke; scheduled/manual API 27/30/35 matrix |
 | One-command release verification | Implemented | `scripts/verify_release.sh` | `bash scripts/verify_release.sh` |
-| Android app | Implemented | `app/observer/`; collection-free startup plus explicit foreground probe, review, redaction preview, and verified local export | `cd app && ./gradlew --dependency-verification strict :observer:assembleDebug :observer:testDebugUnitTest :observer:lintDebug` |
+| Android app | Implemented | `app/observer/`; collection-free startup plus explicit foreground probe, review, redaction preview, and verified local export | `cd app && ./gradlew --dependency-verification strict :observer:assembleDebug :observer:testDebugUnitTest :observer:lint` |
 | Gradle project | Implemented | Requires JDK 17 / API 37; checksum-locks Gradle 9.4.1 and Maven artifacts with dependency locks/verification | Same Android scaffold gate |
-| Instrumentation tests | Not implemented | No Android instrumentation test source exists | Not applicable |
+| Android test automation | Implemented | JVM, strict lint, debug/release merged manifests, seven installed-app cases, PR managed smoke, scheduled API matrix, and Kotlin-to-Python export bridge; see `docs/android_testing.md` | `cd app && ./gradlew --dependency-verification strict :observer:pixel2Api35DebugAndroidTest -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect` |
 | Physical-device validation | Not performed | `experiments/E99_physical_device_template.md` is a template only | Not applicable |
-| APK analyzer | Not implemented | No APK parser, AndroidManifest parser, or permission policy checker exists | Not applicable |
+| General post-build APK analyzer | Not implemented | The observer's merged target manifests have an exact build-time policy; no arbitrary-APK parser or reverse-engineering analyzer exists | Not applicable |
 | Play Integrity / SafetyNet bypass | Not implemented and intentionally out of scope | `SECURITY.md`, this manifest | Not applicable |
 
 ## Implemented vs design-only
@@ -62,12 +62,12 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | AVD-limited sample workflow | Implemented | Sample directories are checked in under `datasets/samples/` |
 | Unprivileged app probe | Implemented | Typed public-API collector and adapter, explicit foreground review flow, exact redaction preview, and verified temporary-document SAF publication |
 | Privileged probe design notes | Partially implemented | Design notes exist and the Magisk collector implements a read-only root-observer path |
-| Emulator workflow | Partially implemented | Experiment docs and sample artifacts exist; no fully automated emulator launch/run harness is included |
+| Emulator workflow | Implemented for app contract tests | Gradle Managed Device API 35 PR smoke and scheduled/manual API 27/30/35 instrumentation matrix; experiment collection remains separately controlled |
 | Physical-device workflow | Design-only | Template exists, but no collected physical-device reports are checked in |
 | Android app | Implemented | One unprivileged `:observer` module; launch only renders scope and collection requires acknowledgement plus explicit Start |
 | Gradle build | Implemented | Requires external JDK 17 / API 37; checksum-locks Gradle 9.4.1 and Maven artifacts with dependency locks/verification |
-| Instrumentation tests | Not implemented | No Android test harness exists |
-| APK manifest / permission analysis | Not implemented | No APK analyzer exists |
+| Android test automation | Implemented | Seven AndroidJUnit4 installed-app cases plus managed-device CI and strict merged-manifest verification |
+| General post-build APK analysis | Not implemented | Observer target manifests are checked during the build; arbitrary APKs are not parsed or analyzed |
 | Production attestation / certification | Not applicable | The repo records measurements; it does not certify device security |
 | Root hiding / bypass / evasion logic | Not applicable | Explicitly disallowed by safety policy |
 
@@ -172,10 +172,9 @@ supported.
 ## Known limitations
 
 - Android export depends on a local DocumentsProvider advertising write, delete, and rename support; Android does not promise filesystem-style atomic rename across every third-party provider.
-- The Gradle build is implemented, but Android managed-device automation is not yet present.
-- No Android instrumentation tests are implemented.
+- Android managed-device evidence is AVD-limited; API 26 is the app minimum but the automated GMD matrix begins at the supported API 27 level.
 - No physical-device validation reports are checked in.
-- No APK reverse engineering, AndroidManifest analysis, or permission parser is implemented.
+- No general post-build APK reverse engineering or arbitrary-APK permission analyzer is implemented; the observer's own merged manifests are checked at build time.
 - No production attestation, hardware-backed trust, TEE, OEM boot-chain, Widevine, DRM, or device-specific security conclusions are claimed.
 - Current samples are synthetic / AVD-limited and intended for analyzer and collector workflow validation.
 - Dataset verification and repository generation require POSIX directory-descriptor safety primitives in this release.

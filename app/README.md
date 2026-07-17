@@ -44,8 +44,13 @@ From this directory:
 
 ```bash
 ./gradlew --dependency-verification strict :observer:assembleDebug
+./gradlew --dependency-verification strict :observer:assembleRelease
+./gradlew --dependency-verification strict :observer:assembleDebugAndroidTest
 ./gradlew --dependency-verification strict :observer:testDebugUnitTest
-./gradlew --dependency-verification strict :observer:lintDebug
+./gradlew --dependency-verification strict :observer:lint
+./gradlew --dependency-verification strict \
+  :observer:verifyDebugMergedManifest \
+  :observer:verifyReleaseMergedManifest
 ./gradlew --dependency-verification strict :observer:dependencies
 ```
 
@@ -87,3 +92,21 @@ fully staged, digest-verified ZIP published from a temporary document through
 one provider rename. The provider must advertise write, delete, and rename
 support; the app retains no directory grant and reports only categorical
 success, cancellation, or failure.
+
+## Device tests
+
+The AndroidJUnit4 suite verifies the installed public probe, sandbox and
+no-network boundaries, canonical JSON and hashes, archive structure, and the
+SAF-only export contract. The API 35 Gradle Managed Device is the pull-request
+smoke path:
+
+```bash
+./gradlew --dependency-verification strict \
+  :observer:pixel2Api35DebugAndroidTest \
+  -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+```
+
+Scheduled and manual CI runs repeat the suite on API 27, 30, and 35. API 26 is
+the application minimum but not a Gradle Managed Device because supported GMD
+coverage begins at API 27. See `../docs/android_testing.md` for the complete
+test-layer and Kotlin-to-Python export contract.

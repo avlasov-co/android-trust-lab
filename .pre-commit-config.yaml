@@ -11,6 +11,9 @@ repos:
         entry: end-of-file-fixer
         language: system
         types: [text]
+        # These are exact canonical app-emitted JSON bytes; the manifest binds
+        # the newline-free artifact size and SHA-256.
+        exclude: ^tests/fixtures/app_probe_v2_bundle/(?:app_probe|manifest)\.json$
       - id: check-json
         name: check JSON syntax
         entry: check-json

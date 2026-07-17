@@ -40,7 +40,18 @@ def test_android_toolchain_and_dependency_inputs_are_pinned() -> None:
     catalog = tomllib.loads(
         (APP / "gradle/libs.versions.toml").read_text(encoding="utf-8")
     )
-    assert catalog["versions"] == {"agp": "9.2.1", "junit4": "4.13.2"}
+    assert catalog["versions"] == {
+        "agp": "9.2.1",
+        "androidxTestExtJunit": "1.3.0",
+        "androidxTestRunner": "1.7.0",
+        "junit4": "4.13.2",
+    }
+    assert catalog["libraries"]["androidx-test-ext-junit"]["module"] == (
+        "androidx.test.ext:junit"
+    )
+    assert catalog["libraries"]["androidx-test-runner"]["module"] == (
+        "androidx.test:runner"
+    )
 
     wrapper_properties = (APP / "gradle/wrapper/gradle-wrapper.properties").read_text(
         encoding="utf-8"
@@ -84,6 +95,80 @@ def test_android_toolchain_and_dependency_inputs_are_pinned() -> None:
     }
     assert (APP / "settings-gradle.lockfile").is_file()
     assert (MODULE / "gradle.lockfile").is_file()
+
+
+def test_android_test_layers_and_managed_devices_are_wired() -> None:
+    build = (MODULE / "build.gradle.kts").read_text(encoding="utf-8")
+    assert (
+        'testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"' in build
+    )
+    assert "androidTestImplementation(libs.androidx.test.ext.junit)" in build
+    assert "androidTestImplementation(libs.androidx.test.runner)" in build
+    for api in (27, 30, 35):
+        assert f'create("pixel2Api{api}")' in build
+        assert f"apiLevel = {api}" in build
+    assert "apiLevel = 26" not in build
+    assert 'systemImageSource = "aosp"' in build
+    assert '"verify${variantName}MergedManifest"' in build
+    assert "selector().all()" in build
+    for forbidden_root_tag in (
+        '"instrumentation"',
+        '"permission"',
+        '"permission-group"',
+        '"permission-tree"',
+        '"uses-permission"',
+        '"uses-permission-sdk-23"',
+        '"uses-permission-sdk-m"',
+        '"uses-feature"',
+        '"queries"',
+    ):
+        assert forbidden_root_tag in build
+    assert not (MODULE / "lint-baseline.xml").exists()
+
+    instrumentation = (
+        MODULE
+        / "src/androidTest/kotlin/org/androidtrustlab/observer/AndroidObserverContractTest.kt"
+    ).read_text(encoding="utf-8")
+    assert "@RunWith(AndroidJUnit4::class)" in instrumentation
+    assert instrumentation.count("@Test") == 7
+    for contract in (
+        "publicProbeBundleUsesTheStableBoundedContract",
+        "installedAppRetainsTheUnprivilegedSandbox",
+        "installedAppHasNoNetworkCapabilityOrCleartextPolicy",
+        "publicProbeProducesCanonicalHashBoundJson",
+        "exportArchiveIsFlatBoundedAndChecksumBound",
+        "safOnlyExportRejectsFileUrisAndHasNoFileProvider",
+        "safExportPublishesVerifiedBytesThroughADocumentsProvider",
+    ):
+        assert f"fun {contract}()" in instrumentation
+
+
+def test_android_ci_separates_fast_checks_from_managed_device_tests() -> None:
+    workflow = (ROOT / ".github/workflows/android.yml").read_text(encoding="utf-8")
+    assert "fast-android:" in workflow
+    assert "managed-device-smoke:" in workflow
+    assert "managed-device-matrix:" in workflow
+    assert "github.event_name == 'pull_request'" in workflow
+    assert (
+        "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"
+        in workflow
+    )
+    assert ":observer:verifyDebugMergedManifest" in workflow
+    assert ":observer:verifyReleaseMergedManifest" in workflow
+    assert ":observer:pixel2Api35DebugAndroidTest" in workflow
+    for api in (27, 30, 35):
+        assert f"api: '{api}'" in workflow
+        assert f"task: pixel2Api{api}DebugAndroidTest" in workflow
+    assert "system-images;android-35;default;x86_64" in workflow
+    assert "system-images;android-${{ matrix.api }};default;x86_64" in workflow
+    assert (
+        workflow.count(
+            "-Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect"
+        )
+        == 2
+    )
+    assert ";aosp;x86_64" not in workflow
+    assert "pixel2Api26" not in workflow
 
 
 def test_android_sources_do_not_contain_forbidden_bridges_or_capabilities() -> None:

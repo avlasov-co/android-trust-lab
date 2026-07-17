@@ -84,8 +84,8 @@ trust-diff v2.2 JSON + markdown summary
 | Deterministic Magisk structural packaging guardrails | implemented through `tools/package_magisk_module.py` |
 | Android app and Gradle project | implemented under `app/`; startup is collection-free and the foreground flow requires explicit acknowledgement and Start |
 | Unprivileged app probe | typed public-API probe, categorized review UI, redaction preview, and verified local SAF export implemented |
-| Android instrumentation tests | not present |
-| APK manifest / permission analyzer | not present |
+| Android test automation | JVM, strict lint, merged-manifest, seven-case instrumentation, PR managed-device smoke, and scheduled API 27/30/35 matrix implemented |
+| General post-build APK / permission analyzer | not present; observer target manifests are enforced at build time |
 | Physical-device validation | not collected in this release |
 
 For a reviewer-focused runbook, see `docs/reviewer_quickstart.md`. The identity
@@ -114,14 +114,19 @@ The Android scaffold has a separate JDK 17 / SDK 37 gate:
 cd app
 ./gradlew --dependency-verification strict \
   :observer:assembleDebug \
+  :observer:assembleRelease \
+  :observer:assembleDebugAndroidTest \
   :observer:testDebugUnitTest \
-  :observer:lintDebug
+  :observer:lint \
+  :observer:verifyDebugMergedManifest \
+  :observer:verifyReleaseMergedManifest
 ```
 
 The Gradle distribution and Maven dependency graph are checksum-verified. JDK
 17 and SDK 37 remain external prerequisites and are not checksum-provisioned by
-this repository. See `app/README.md` for prerequisites and the deliberately
-unprivileged manifest contract.
+this repository. See `app/README.md` and `docs/android_testing.md` for
+prerequisites, the deliberately unprivileged manifest contract, and the
+managed-device lanes.
 
 ## Basic virtual-target workflow
 

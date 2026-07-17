@@ -32,8 +32,9 @@ state as a known metadata defect until Step 03 resolves it truthfully.
 At the Phase 1 audit there was no Android application, Gradle project,
 instrumentation test suite, or 50-step roadmap file. The repository now has the
 small `app/` Gradle project, typed unprivileged probe, and explicit foreground
-review/export flow. Android instrumentation coverage remains a later roadmap
-step.
+review/export flow. The later Android test layer now adds JVM, strict lint,
+debug/release merged-manifest, installed-app instrumentation, managed-device,
+and Kotlin-to-Python export-contract coverage.
 
 ## Supported development commands
 
@@ -76,9 +77,16 @@ The Android scaffold uses its own verified wrapper and JDK 17 gate:
 cd app
 ./gradlew --dependency-verification strict \
   :observer:assembleDebug \
+  :observer:assembleRelease \
+  :observer:assembleDebugAndroidTest \
   :observer:testDebugUnitTest \
-  :observer:lintDebug
+  :observer:lint \
+  :observer:verifyDebugMergedManifest \
+  :observer:verifyReleaseMergedManifest
 ```
+
+The heavier API 35 PR smoke and scheduled API 27/30/35 matrix are documented in
+`docs/android_testing.md` and run separately from the Python repository gate.
 
 ## Tests and coverage
 

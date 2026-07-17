@@ -19,8 +19,8 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Deterministic Magisk structural packaging | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` |
 | Android app / Gradle project | Implemented | `app/`; one unprivileged module, checksum-locked wrapper, strict dependency verification |
 | Unprivileged app probe | Implemented | typed probe, explicit review UI, redaction preview, and verified local SAF export; see `docs/app_ui_export.md` |
-| Android instrumentation tests | Not present | Added in a later roadmap step |
-| APK manifest or permission analyzer | Not present | No APK parser, manifest parser, or permission-policy checker is included |
+| Android test automation | Implemented | seven installed-app cases, strict merged-manifest checks, PR API 35 smoke, and scheduled API 27/30/35 matrix; see `docs/android_testing.md` |
+| General post-build APK or permission analyzer | Not present | The observer's merged target manifests are enforced during its build; no arbitrary-APK parser or reverse-engineering tool is included |
 | Physical-device validation | Not collected | `experiments/E99_physical_device_template.md` |
 
 ## Minimal local verification
@@ -71,8 +71,12 @@ With JDK 17 and Android SDK Platform 37 installed:
 cd app
 ./gradlew --dependency-verification strict \
   :observer:assembleDebug \
+  :observer:assembleRelease \
+  :observer:assembleDebugAndroidTest \
   :observer:testDebugUnitTest \
-  :observer:lintDebug
+  :observer:lint \
+  :observer:verifyDebugMergedManifest \
+  :observer:verifyReleaseMergedManifest
 ```
 
 Launching the app performs no collection. The user must acknowledge the fixed
@@ -80,7 +84,9 @@ scope and press Start; completed results and the exact redacted artifact remain
 visible before export. The merged manifest requests no permissions or features.
 The only exported component is the launcher activity; cleartext traffic and
 backup are disabled. See `docs/app_ui_export.md` for the state, accessibility,
-and verified temporary-document publication contracts.
+and verified temporary-document publication contracts. The API 35 managed
+device is the pull-request smoke path; `docs/android_testing.md` documents the
+seven cases and scheduled API matrix.
 
 ## Minimal analyzer demo
 
@@ -131,10 +137,7 @@ review the collector source and runtime tests for that evidence.
 
 Do not claim this release contains:
 
-- an Android app
-- a Gradle build
-- instrumentation tests
-- APK manifest or permission analysis
+- APK reverse engineering or a general APK permission analyzer
 - Play Integrity, SafetyNet, Widevine, or DRM conclusions
 - app-specific detection or evasion results
 - physical-device boot-chain validation

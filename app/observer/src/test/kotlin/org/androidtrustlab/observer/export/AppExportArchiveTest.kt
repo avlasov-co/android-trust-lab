@@ -1,7 +1,9 @@
 package org.androidtrustlab.observer.export
 
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.TimeZone
 import java.util.zip.ZipInputStream
 import org.androidtrustlab.observer.probe.AppProbeBundle
@@ -14,6 +16,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppExportArchiveTest {
+    @Test
+    fun canonicalFixtureExactlyMatchesTheAppExporter() {
+        val encoded = File("../../tests/fixtures/app_probe_v2_export.zip.b64")
+            .readText()
+            .filterNot(Char::isWhitespace)
+        assertArrayEquals(Base64.getDecoder().decode(encoded), AppExportArchive.build(goldenBundle()))
+    }
+
     @Test
     fun archiveIsDeterministicCompleteAndDigestBound() {
         val artifact = "{\"artifact_kind\":\"app_probe_json\"}".toByteArray()
@@ -98,6 +108,28 @@ class AppExportArchiveTest {
         ),
         (0 until 12).map { AppProbeOutcome("probe$it", "observed") },
     )
+
+    private fun goldenBundle(): AppProbeBundle {
+        val directory = File("../../tests/fixtures/app_probe_v2_bundle")
+        val artifact = directory.resolve("app_probe.json").readBytes()
+        val manifest = directory.resolve("manifest.json").readBytes()
+        return AppProbeBundle(
+            artifact,
+            manifest,
+            sha256(artifact),
+            sha256(manifest),
+            AppProbeExportMetadata(
+                "atlcol-0001020304050607",
+                "0.3.0-dev0",
+                "2.0.0",
+                "1.0.0",
+                "2026-07-16T10:00:00Z",
+                "2026-07-16T10:00:01Z",
+                "complete",
+            ),
+            (0 until 12).map { AppProbeOutcome("probe$it", "observed") },
+        )
+    }
 
     private fun unzip(bytes: ByteArray): LinkedHashMap<String, ByteArray> {
         val entries = linkedMapOf<String, ByteArray>()
