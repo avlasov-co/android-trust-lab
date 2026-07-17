@@ -45,11 +45,11 @@ further limits accepted implementations to its explicit version registry
 (`0.3.0`, `0.3.0-dev0`, and `1.0.0`). Unknown versions fail closed; an unknown
 major is reported as an unsupported version.
 
-Historical or diagnostic partial manifests remain readable through
-`trustlab normalize --manifest ...`. They are never accepted by the default
-import workflow. The pre-Step-29 module output is partial by design, so the
-runtime hardening step must produce a complete manifest before its output can
-pass this importer.
+Historical, boot-timeout, interrupted, or diagnostic partial manifests remain
+readable through `trustlab normalize --manifest ...`. They are never accepted
+by the default import workflow. The hardened module now produces an eligible
+complete bundle when boot/probe requirements succeed and an explicit partial
+bundle otherwise.
 
 ## Publication
 

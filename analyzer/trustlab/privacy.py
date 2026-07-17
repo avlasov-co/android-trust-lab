@@ -2158,6 +2158,16 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
             }
         },
     }
+    magisk_capture_bindings = {
+        "boot_completion": ("captures/boot_completion.txt", "magisk.boot_completion"),
+        "boot_state": ("captures/boot_state.txt", "magisk.boot_state"),
+        "properties": ("captures/properties.txt", "magisk.properties"),
+        "mounts": ("captures/mounts.txt", "magisk.mounts"),
+        "selinux": ("captures/selinux.txt", "magisk.selinux"),
+        "root_state": ("captures/root_state.txt", "magisk.root_state"),
+        "magisk_state": ("captures/magisk_state.txt", "magisk.magisk_state"),
+        "process_state": ("captures/process_state.txt", "magisk.process_state"),
+    }
     for artifact in manifest.get("artifacts", []):
         if not isinstance(artifact, dict):
             continue
@@ -2204,6 +2214,7 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
         elif logical_name == "command_results":
             is_host_capture = collector_name == "trustlab-host"
             is_adb_capture = collector_name == "trustlab-adb"
+            is_magisk_capture = collector_name == "trustlab-magisk"
             valid = (
                 probe_id in safe_probe_ids
                 and str(probe_id).endswith(".command_results")
@@ -2219,7 +2230,35 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
                         and relative_path == "adb_provenance.json"
                         and artifact.get("status") == "observed"
                     )
+                    or (
+                        is_magisk_capture
+                        and relative_path == "command_results.json"
+                        and artifact.get("status") == "observed"
+                    )
                     or relative_path is None
+                )
+            )
+        elif collector_name == "trustlab-magisk" and logical_name == "collector_log":
+            valid = (
+                relative_path == "collector.log"
+                and probe_id == "magisk.collector_log"
+                and artifact.get("media_type") == "text/plain"
+                and artifact.get("status") == "observed"
+            )
+        elif (
+            collector_name == "trustlab-magisk"
+            and logical_name in magisk_capture_bindings
+        ):
+            expected_path, expected_probe_id = magisk_capture_bindings[
+                str(logical_name)
+            ]
+            status = artifact.get("status")
+            valid = (
+                probe_id == expected_probe_id
+                and artifact.get("media_type") == "text/plain"
+                and (
+                    (status == "observed" and relative_path == expected_path)
+                    or (status != "observed" and relative_path is None)
                 )
             )
         elif collector_name == "trustlab-adb" and logical_name in adb_capture_names:

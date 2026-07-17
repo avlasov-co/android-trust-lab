@@ -1,108 +1,137 @@
 # Magisk Collector Design
 
-The Magisk module is a read-only privileged collector for Android Trust Lab. It does not change system behavior.
+The Magisk module is a read-only privileged observer for Android Trust Lab. It
+captures a root-side view without changing properties, SELinux policy, mounts,
+boot state, Magisk installation, root visibility, or integrity behavior.
+`skip_mount` remains present; the module has no overlay payload.
 
-## Why a root-side snapshot is useful
+## Collection boundary
 
-An adb shell or app observer cannot always see privileged state. A root-side collector can capture mount details, process visibility, SELinux contexts, Magisk paths, and boot properties from a different privilege boundary.
+The collector may observe reviewed boot and security properties, projected
+mount state, SELinux mode and its own context, fixed root/Magisk facts, and the
+seven project-selected process names. Root visibility is useful comparative
+evidence, not hardware-backed proof.
 
-## What the collector can see
+The runtime never invokes `adb root`, `adb remount`, `su`, `setprop`, `mount`,
+reboot or bootloader commands, boot patching, Magisk installation, hiding, or
+integrity-bypass behavior. It reads `/proc/self/mountinfo` and `/proc/mounts`
+directly and projects them field by field; it does not execute the `mount`
+utility.
 
-Depending on target and permissions, it may see:
-
-- boot properties
-- mount state
-- SELinux mode
-- process state
-- filesystem contexts
-- Magisk binary/version/path indicators
-
-## What it collects
-
-- boot state
-- Android properties
-- mounts
-- SELinux state
-- Magisk state
-- process state
-- collection errors
-
-## What it must never modify
-
-The module must not modify properties, patch SELinux, remount partitions, mount overlays, hide root, spoof identity, or help evade security checks.
-
-## Lifecycle
-
-- `post-fs-data.sh`: intentionally minimal in the MVP
-- `service.sh`: waits for boot completion, writes one report, exits
-- `action.sh`: manual collection entrypoint
-- `uninstall.sh`: preserves private report directories and the stable private
-  target pseudonym; no temporary state exists outside per-run directories
-
-## Output paths
-
-Private per-run path:
+The property set exactly matches the host/ADB collector:
 
 ```text
-/data/adb/android-trust-lab/reports/run_<timestamp>.<random>/
+ro.boot.verifiedbootstate
+ro.boot.flash.locked
+ro.boot.vbmeta.device_state
+ro.boot.veritymode
+ro.build.version.release
+ro.build.version.sdk
+ro.debuggable
+ro.secure
+ro.adb.secure
+sys.boot_completed
+ro.kernel.qemu
 ```
 
-The module writes two artifact types:
+Each value passes a field-specific grammar or becomes `unknown`. The collector
+does not retain build fingerprints, product identity, boot reason, slot-derived
+identity, device serials, raw process rows, command arguments, arbitrary
+SELinux contexts, mount sources, device identifiers, or unreviewed paths.
+Magisk version names are projected to a fixed redacted token. Arbitrary stderr
+is never copied into portable output.
+
+## Runtime lifecycle
+
+1. Set `umask 077`, create and re-protect the base, reports, and event
+   directories as `0700`, and reject symlinked output anchors.
+2. Acquire `/data/adb/android-trust-lab/collector.lock` with atomic `mkdir`.
+   A losing invocation writes only a unique private `already_running` event and
+   exits `75`; it never removes a live winning lock or starts another collection.
+   The private owner record binds the shell PID and `/proc` start tick so a
+   definitively dead or PID-reused owner can be recovered without stealing a
+   live lock after abnormal termination. An uncatchable stop before that record
+   is written can leave an ownerless directory. Only a structurally empty lock
+   (or empty recovery mutex) aged at least five minutes is reclaimable; fresh
+   locks and locks with unknown contents remain conservatively unavailable.
+3. Read exactly 32 bytes from `/dev/urandom` into a mode-`0600` lock-owned file,
+   verify its length, hash it, and derive a 16-hex nonce. The run directory name
+   combines that nonce with a UTC timestamp.
+4. Create a private hidden staging directory and capture each probe through a
+   host-executable POSIX-shell orchestrator. Fixed exit-code classes become
+   `observed`, `inaccessible`, `unsupported`, or `command_error`; unstarted
+   probes remain `not_collected`.
+5. Generate the deterministic raw aggregate, structured
+   `command_results.json`, sanitized `collector.log`, sizes, SHA-256 digests,
+   and strict collection-manifest `1.0.0` document.
+6. Atomically claim a fresh final directory with `mkdir`, move only complete
+   artifacts into it, and hard-link `collector_manifest.json` last. The hard
+   link is same-filesystem, atomic, and non-replacing. Consumers treat only that
+   validated manifest as the publication marker.
+7. Remove the staging directory and owned lock. `HUP`, `INT`, and `TERM` stop
+   the active child and pass through the same finalization path as a valid
+   partial collection. `KILL` cannot be trapped and can leave staging or a lock
+   quarantined for stale recovery, but no completion marker.
+
+Existing final paths are never replaced or nested into. Directories are `0700`
+and retained files are `0600`. The stable `target_pseudonym` is random,
+mode `0600`, validated before use, and never derived from a serial or evidence
+bytes.
+
+## Output contract
 
 ```text
-raw.txt
-collector_manifest.json
+/data/adb/android-trust-lab/reports/run_<UTC>_<16-hex-nonce>/
+  captures/                    0700
+    boot_completion.txt        0600 when observed
+    boot_state.txt             0600 when observed
+    properties.txt             0600 when observed
+    mounts.txt                 0600 when observed
+    selinux.txt                0600 when observed
+    root_state.txt             0600 when observed
+    magisk_state.txt           0600 when observed
+    process_state.txt          0600 when observed
+  raw.txt                      0600
+  command_results.json         0600
+  collector.log                0600
+  collector_manifest.json      0600, linked last
 ```
 
-The strict collection-manifest v1 document is not a normalized trust report. It
-uses only portable relative paths, binds `raw.txt` by byte size and SHA-256,
-records a pseudonymous target, and marks missing per-command results as
-`not_collected`. The host analyzer verifies the binding before parsing and
-converts `raw.txt` into the current content-addressed
-`trust_report_v6_0_0.schema.json` format.
+The manifest records module/collector version, start and end UTC timestamps,
+collection method, boot-completion outcome, per-probe statuses and timeout
+flags, warnings (reserved as an empty array), redaction policy version,
+sensitivity, file sizes, and SHA-256 digests. `atl_portable_v1` is the explicit
+redaction version.
 
-Complete transferred output is imported on the host with `trustlab import
-magisk --input COLLECTION_DIR --output PRIVATE_IMPORT_ROOT`. The importer is
-strictly local and never runs ADB or a privileged command. It rejects partial
-output by default, verifies the collector/module version pair and every declared
-artifact, and atomically publishes a private content-addressed bundle. The
-current pre-hardening runtime still declares `partial`; Step 29 must make its
-completion and command-status behavior strict before that runtime output is
-eligible for default import. `trustlab normalize --manifest` remains available
-for explicit analysis of historical partial output.
+A boot-service timeout is `boot_completion: command_error` with
+`timed_out: true` and makes the collection partial. An interruption or required
+probe failure also makes it partial. A manual run that successfully observes
+`sys.boot_completed=0` records `boot_completion: observed_absent`; it does not
+mislabel a successful observation as a command failure.
 
-The mount collector records complete `/proc/self/mountinfo`, `/proc/mounts`, and
-common `mount` output in separate sections. The analyzer prefers mountinfo but
-retains every fallback outcome. Collection is not filtered to a small path list,
-because doing so would discard mount topology, system-as-root context, dynamic
-partition sources, APEX package mounts, and namespace propagation fields.
+Complete output can be verified, privately copied, normalized, and
+content-addressed with:
 
-SELinux mode and the collector's own `id -Z` context are emitted in separate
-sections. Filesystem labels are not mixed with current-process evidence. Process
-collection emits only the seven project-selected exact names and a context when
-available; it never emits PIDs, users, raw rows, or command arguments. Because
-that list is filtered, the analyzer treats an unlisted name as `not_collected`
-rather than proving it absent.
-Failures are emitted only as fixed `trustlab: inaccessible`, `trustlab:
-unsupported`, or `trustlab: command error` markers. Exact exit codes remain
-unavailable, but a failed command cannot be mistaken for a successful empty
-section and raw device diagnostics are not published.
+```bash
+trustlab import magisk --input COLLECTION_DIR --output PRIVATE_IMPORT_ROOT
+```
 
-The pseudonymous target is a randomly generated 64-bit token stored once as
-`/data/adb/android-trust-lab/target_pseudonym` with mode `0600`. Reusing that
-private random token keeps target identity stable across collections without
-hashing or retaining a device serial or observation content. The module validates
-every dynamic value interpolated into the manifest, including its schema-safe
-collector version, before publishing JSON.
+Partial output remains intentionally rejected by that default import path and
+can be examined explicitly with `trustlab normalize --manifest`.
 
-## Permissions
+## Entrypoints
 
-The module runs with Magisk module script privileges. Output is created beneath
-the root-controlled `/data/adb` tree with `umask 077`, exclusive randomized run
-directories, mode `0700` directories, and mode `0600` artifacts. Symlinked
-output directories are rejected. The collector uses a property allowlist and
-does not capture the kernel command line.
+- `post-fs-data.sh` performs no early-boot collection or mutation.
+- `service.sh` waits up to 120 seconds, reports timeout explicitly, invokes one
+  late-boot collection without suppressing its output or exit status, and exits.
+  `HUP`, `INT`, or `TERM` during the wait invokes the writer with an explicit
+  interrupted boot outcome and publishes a valid partial collection.
+- `action.sh` starts one manual collection through the Magisk action UI.
+- `uninstall.sh` preserves private reports, event records, and target identity.
 
 ## Limitations
 
-A root-side collector improves visibility but does not prove hardware-backed boot trust by itself. It also changes the observer class and must be labeled clearly.
+The mount projection intentionally trades raw topology detail for portable
+privacy. Filtered process evidence cannot prove that an unlisted process is
+absent. Hashes establish internal integrity and identity, not producer
+authentication or hardware-backed trust.

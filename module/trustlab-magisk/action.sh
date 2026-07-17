@@ -7,5 +7,5 @@ if [ ! -x "$REPORT_SCRIPT" ]; then
   exit 1
 fi
 
-"$REPORT_SCRIPT" "magisk_module_manual"
+sh "$REPORT_SCRIPT" "magisk_module_manual" "auto"
 exit $?

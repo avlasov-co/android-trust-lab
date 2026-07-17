@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "scripts/collect_selinux.sh",
     "scripts/collect_magisk_state.sh",
     "scripts/collect_process_state.sh",
+    "scripts/collect_root_state.sh",
     "scripts/write_report.sh",
 ]
 
@@ -49,35 +50,24 @@ FORBIDDEN_DIR_PREFIXES = (
 )
 
 COLLECTED_PROPERTY_ALLOWLIST = {
+    "ro.boot.verifiedbootstate",
     "ro.boot.flash.locked",
     "ro.boot.vbmeta.device_state",
-    "ro.boot.verifiedbootstate",
     "ro.boot.veritymode",
-    "ro.build.fingerprint",
     "ro.build.version.release",
     "ro.build.version.sdk",
-    "ro.crypto.state",
-    "ro.crypto.type",
-    "ro.crypto.volume.filenames_mode",
-    "ro.product.device",
-    "ro.product.manufacturer",
-    "ro.product.model",
     "ro.debuggable",
     "ro.secure",
     "ro.adb.secure",
     "sys.boot_completed",
+    "ro.kernel.qemu",
 }
 
 ALLOWED_GETPROP_LINES = {
     'VALUE=$(getprop "$KEY" 2>/dev/null)',
-    "sys.boot_completed=$(getprop sys.boot_completed 2>/dev/null)",
-    "ro.boot.bootreason=$(getprop ro.boot.bootreason 2>/dev/null)",
-    "ro.boot.slot_suffix=$(getprop ro.boot.slot_suffix 2>/dev/null)",
-    "ro.boot.verifiedbootstate=$(getprop ro.boot.verifiedbootstate 2>/dev/null)",
-    "ro.boot.flash.locked=$(getprop ro.boot.flash.locked 2>/dev/null)",
-    "ro.boot.vbmeta.device_state=$(getprop ro.boot.vbmeta.device_state 2>/dev/null)",
-    "ro.boot.veritymode=$(getprop ro.boot.veritymode 2>/dev/null)",
-    'while [ "$(getprop sys.boot_completed 2>/dev/null)" != "1" ] && [ "$count" -lt 120 ]; do',
+    "VALUE=$(getprop sys.boot_completed 2>/dev/null)",
+    "CURRENT_BOOT=$(getprop sys.boot_completed 2>&1)",
+    "BOOT_QUERY_OUTPUT=$(getprop sys.boot_completed 2>&1)",
 }
 
 ALLOWED_PROCESS_QUERY_LINES = {
@@ -176,17 +166,22 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
         ),
         (
             lambda: any(
-                line.startswith("RUN_DIR=$(mktemp -d ") for line in active_write_lines
+                line == "if ! acquire_collector_lock; then"
+                for line in active_write_lines
             ),
-            "collector must create an exclusive randomized run directory",
-        ),
-        (
-            lambda: 'case "$RUN_DIR" in' in active_write_lines,
-            "collector must constrain the randomized run path",
+            "collector must acquire an atomic directory lock",
         ),
         (
             lambda: any(
-                'chmod 0700 "$BASE_DIR" "$OUT_DIR"' in line
+                line
+                == 'if [ -e "$STAGING_DIR" ] || ! mkdir "$STAGING_DIR" 2>/dev/null; then'
+                for line in active_write_lines
+            ),
+            "collector must create an exclusive private staging directory",
+        ),
+        (
+            lambda: any(
+                'chmod 0700 "$BASE_DIR" "$OUT_DIR" "$EVENT_DIR"' in line
                 for line in active_write_lines
             ),
             "collector directories must be mode 0700",
@@ -196,7 +191,9 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
             "raw collector output must be mode 0600",
         ),
         (
-            lambda: any('chmod 0600 "$TMP"' in line for line in active_write_lines),
+            lambda: any(
+                'chmod 0600 "$MANIFEST_TMP"' in line for line in active_write_lines
+            ),
             "manifest output must be mode 0600",
         ),
         (
@@ -204,8 +201,8 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
             "collector must reject symlinked output directories",
         ),
         (
-            lambda: "RUN_ID=${RUN_DIR##*/}" in active_write_lines,
-            "collector manifest IDs must include the exclusive run identifier",
+            lambda: 'RUN_ID="run_${TS_FILE}_${RUN_NONCE}"' in active_write_lines,
+            "collector run IDs must bind UTC time and verified entropy",
         ),
         (
             lambda: any(
@@ -231,10 +228,25 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
         ),
         (
             lambda: any(
-                "COLLECTOR_VERSION" in line and "grep -Eq" in line
+                "grep -Eq '^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)" in line
                 for line in active_write_lines
             ),
             "collector must validate dynamic manifest versions before JSON emission",
+        ),
+        (
+            lambda: "trap 'on_interrupt' HUP INT TERM" in active_write_lines,
+            "collector must trap interruptions",
+        ),
+        (
+            lambda: any(
+                'ln "$MANIFEST" "$FINAL_DIR/collector_manifest.json"' in line
+                for line in active_write_lines
+            ),
+            "collector must publish a non-replacing completion manifest last",
+        ),
+        (
+            lambda: any("collector.log" in line for line in active_write_lines),
+            "collector must preserve a sanitized private log",
         ),
     )
     for predicate, message in required_write_guards:
@@ -254,15 +266,26 @@ def validate_private_collection(module_dir: Path = MODULE_DIR) -> list[str]:
         for line in active_script_lines
     ):
         errors.append("collector must not capture the kernel command line")
+    forbidden_runtime_commands = re.compile(
+        r"^(?:(?:/[^\s]+/)?adb\s+(?:root|remount|reboot)|"
+        r"(?:/[^\s]+/)?fastboot(?:\s|$)|"
+        r"(?:(?:/[^\s]+/)?|toybox\s+)mount(?:\s|$)|"
+        r"(?:/[^\s]+/)?reboot(?:\s|$)|"
+        r"(?:/[^\s]+/)?(?:resetprop|setenforce|setprop|su)(?:\s|$)|"
+        r"magisk\s+(?:--install|--remove-modules|--sqlite)(?:\s|$)|"
+        r"dd\s+.*\bof=/dev/block/)"
+    )
+    if any(forbidden_runtime_commands.search(line) for line in active_script_lines):
+        errors.append("collector must not invoke privileged mutation commands")
     if "/data/local/tmp/android-trust-lab" in write_report:
         errors.append("collector must not publish reports under /data/local/tmp")
     if "chmod 0755" in write_report or "chmod 0644" in write_report:
         errors.append("collector must not make report paths group/world readable")
 
     declared_properties = {
-        line.strip().rstrip("\\").strip()
+        match.group(1)
         for line in collect_props.splitlines()
-        if line.strip().startswith(("ro.", "sys."))
+        if (match := re.fullmatch(r"\s{2}((?:ro|sys)\.[a-z0-9._]+)\s*\\?", line))
     }
     if declared_properties != COLLECTED_PROPERTY_ALLOWLIST:
         errors.append(

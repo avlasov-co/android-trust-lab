@@ -2,6 +2,27 @@
 printf '=== ROOT_PROBE ===\n'
 
 UID_VALUE="$(id -u 2>/dev/null)"
+UID_STATUS=$?
+if [ "$UID_STATUS" -ne 0 ]; then
+  printf 'observer_effective_uid_is_root=observed_absent\n'
+  printf 'root_shell_available=observed_absent\n'
+  printf 'su_binary_observed=observed_absent\n'
+  printf 'su_invocation_tested=observed_absent\n'
+  printf 'su_invocation_result=not_tested\n'
+  printf 'root_management_artifact_observed=observed_absent\n'
+  exit 12
+fi
+case "$UID_VALUE" in
+  ''|*[!0-9]*)
+    printf 'observer_effective_uid_is_root=observed_absent\n'
+    printf 'root_shell_available=observed_absent\n'
+    printf 'su_binary_observed=observed_absent\n'
+    printf 'su_invocation_tested=observed_absent\n'
+    printf 'su_invocation_result=not_tested\n'
+    printf 'root_management_artifact_observed=observed_absent\n'
+    exit 12
+    ;;
+esac
 if [ "$UID_VALUE" = "0" ]; then
   printf 'observer_effective_uid_is_root=observed\n'
   printf 'root_shell_available=observed\n'

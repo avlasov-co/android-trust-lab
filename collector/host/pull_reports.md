@@ -10,6 +10,9 @@ Transfer an individual collection directory only through an already-authorized,
 read-only interface available to the target owner. Android Trust Lab does not
 invoke `su`, change permissions, install Magisk, or make this root-owned path
 ADB-readable. Do not weaken the collector's private modes to facilitate transfer.
+Only a `run_<UTC>_<nonce>` directory containing a validated
+`collector_manifest.json` is published. Hidden `.partial_*` directories are
+interrupted staging state and must not be transferred or imported.
 
 Once the directory is local and unpacked, import it with:
 

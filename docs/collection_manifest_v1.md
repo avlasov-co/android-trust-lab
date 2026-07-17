@@ -30,6 +30,7 @@ statuses keep these cases separate:
 
 Only `observed` entries may carry a path, size, or digest. A timeout is always a
 `command_error`. A `complete` collection cannot conceal failed or omitted probes;
+required ADB and Magisk probes also cannot be `unsupported` in a complete run;
 a `partial` collection contains both usable and unavailable evidence; a `failed`
 collection contains no usable artifact. An individual observed artifact is
 limited to 64 MiB so verification remains bounded.
@@ -78,3 +79,8 @@ The manually authored Magisk sample demonstrates an honest `partial` legacy
 capture: its consolidated `raw_report` is integrity-bound, while missing
 per-command results remain `not_collected` instead of masquerading as an empty
 successful artifact.
+
+The hardened Magisk runtime adds exact per-probe artifacts, structured command
+results, a sanitized collection log, and an explicit boot-completion entry.
+Every observed runtime file is integrity-bound, and the completion manifest is
+the final non-replacing publication marker.

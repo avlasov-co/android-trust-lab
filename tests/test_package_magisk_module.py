@@ -86,6 +86,56 @@ def test_module_safety_rejects_broad_property_collection(tmp_path):
     assert any("only individual allowlisted properties" in error for error in errors)
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "mount",
+        "setprop ro.debuggable 1",
+        "su -c id",
+        "reboot bootloader",
+        "adb root",
+        "adb remount",
+        "fastboot reboot",
+        "/system/bin/mount -o rw,remount /system",
+        "toybox mount -o rw,remount /system",
+        "resetprop ro.debuggable 1",
+        "setenforce 0",
+        "magisk --install boot.img",
+        "dd if=boot.img of=/dev/block/by-name/boot",
+    ],
+)
+def test_module_safety_rejects_forbidden_runtime_commands(tmp_path, command):
+    copied = module_copy(tmp_path)
+    script = copied / "scripts/collect_root_state.sh"
+    script.write_text(
+        script.read_text(encoding="utf-8") + f"\n{command}\n",
+        encoding="utf-8",
+    )
+
+    errors = package_magisk_module.validate_private_collection(copied)
+
+    assert "collector must not invoke privileged mutation commands" in errors
+
+
+def test_module_runtime_keeps_phase_six_safety_and_publication_boundaries():
+    module = ROOT / "module/trustlab-magisk"
+    writer = (module / "scripts/write_report.sh").read_text(encoding="utf-8")
+    service = (module / "service.sh").read_text(encoding="utf-8")
+    mounts = (module / "scripts/collect_mounts.sh").read_text(encoding="utf-8")
+
+    assert (module / "skip_mount").read_bytes() == b""
+    assert ">/dev/null2>&1" not in service.replace(" ", "")
+    assert 'mkdir "$LOCK_DIR"' in writer
+    assert "trap 'on_interrupt' HUP INT TERM" in writer
+    assert 'ln "$MANIFEST" "$FINAL_DIR/collector_manifest.json"' in writer
+    assert 'for PUBLISH_FILE in "$CAPTURE_DIR"/*.txt' not in writer
+    assert "collector.log" in writer
+    assert not any(
+        line.strip().startswith("mount ") or line.strip() == "mount"
+        for line in mounts.splitlines()
+    )
+
+
 def test_module_safety_requires_portable_integrity_bound_manifest(tmp_path):
     copied = module_copy(tmp_path)
     script = copied / "scripts/write_report.sh"
@@ -206,15 +256,17 @@ def test_security_collectors_emit_safe_classifiable_failure_markers(tmp_path):
         env=environment,
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
     processes = subprocess.run(
         ["sh", ROOT / "module/trustlab-magisk/scripts/collect_process_state.sh"],
         env=environment,
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
+    assert selinux.returncode == 10
+    assert processes.returncode == 11
     assert "Permission denied" not in selinux.stdout
     assert "not found" not in selinux.stdout
     assert "not found" not in processes.stdout
@@ -234,6 +286,44 @@ def test_security_collectors_emit_safe_classifiable_failure_markers(tmp_path):
     assert report["selinux"]["current_context"]["status"] == "unsupported"
     assert report["process_state"]["capture_status"] == "unsupported"
     validate_report(report)
+
+
+def test_security_collectors_fail_closed_on_malformed_success(tmp_path):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    commands = {
+        "getenforce": "printf '%s\\n' 'MALFORMED_PRIVATE_MODE'\n",
+        "id": (
+            "if [ \"$1\" = -Z ]; then printf '%s\\n' 'u:r:magisk:s0'; "
+            "else printf '%s\\n' malformed; fi\n"
+        ),
+    }
+    for name, body in commands.items():
+        executable = fake_bin / name
+        executable.write_text(f"#!/bin/sh\n{body}", encoding="utf-8")
+        executable.chmod(0o755)
+    environment = os.environ.copy()
+    environment["PATH"] = f"{fake_bin}{os.pathsep}{environment['PATH']}"
+
+    selinux = subprocess.run(
+        ["sh", ROOT / "module/trustlab-magisk/scripts/collect_selinux.sh"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    root = subprocess.run(
+        ["sh", ROOT / "module/trustlab-magisk/scripts/collect_root_state.sh"],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert selinux.returncode == 12
+    assert root.returncode == 12
+    assert "MALFORMED_PRIVATE_MODE" not in selinux.stdout
+    assert "trustlab: command error" in selinux.stdout
 
 
 def test_module_safety_rejects_symlinks_without_reading_target(tmp_path):
