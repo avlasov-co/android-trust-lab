@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
+from .adb_collector import collect_adb
 from .artifacts import InputKind
 from .dataset_manifest import verify_dataset_manifest
 from .diff import make_diff
@@ -178,6 +179,11 @@ def cmd_collect_host(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_collect_adb(args: argparse.Namespace) -> int:
+    collect_adb(args.serial, args.output)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="trustlab", description="Android Trust Lab analyzer"
@@ -196,6 +202,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     collect_host_parser.add_argument("--output", required=True)
     collect_host_parser.set_defaults(func=cmd_collect_host)
+    collect_adb_parser = collect_sub.add_parser(
+        "adb", help="Collect read-only trust evidence from one authorized ADB target"
+    )
+    collect_adb_parser.add_argument("--serial", required=True)
+    collect_adb_parser.add_argument("--output", required=True)
+    collect_adb_parser.set_defaults(func=cmd_collect_adb)
 
     normalize = sub.add_parser(
         "normalize", help="Normalize raw artifact into trust report JSON"

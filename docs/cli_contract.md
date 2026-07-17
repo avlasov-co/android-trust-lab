@@ -21,6 +21,12 @@ allowlist, captures bounded and redacted provenance, and atomically publishes a
 private unique collection directory. Missing SDK tools and command failures are
 represented inside the completed collection rather than treated as CLI
 failures.
+`collect adb --serial SERIAL --output DIR` first requires one exact authorized
+target through `adb devices` and `adb -s SERIAL get-state`, then runs only the
+documented read-only argument-array allowlist. It publishes a private,
+normalizable collection atomically and is silent on success. Preflight failures
+exit with code 7 before any target shell command; diagnostics never echo the
+serial.
 
 Validation uses Draft 2020-12 with explicit format checking. All detected
 schema errors are reported in deterministic JSON-pointer order; diagnostics
@@ -70,7 +76,7 @@ refuses an output that aliases its raw input, diff refuses an output that aliase
 either input report, and migration refuses an output that aliases its source.
 Manifest normalization refuses to replace either the manifest or any bound
 source artifact.
-Host collection also remains silent after successful publication; the created
+Host and ADB collection also remain silent after successful publication; the created
 directory uses an opaque `atlcol-*` name beneath the caller-selected output
 root.
 Successful dataset verification prints exactly `dataset verified` and never

@@ -2406,16 +2406,24 @@ def _validate_manifest_completion(data: dict[str, Any]) -> None:
     available = {"observed", "observed_absent"}
     statuses = {artifact["status"] for artifact in data["artifacts"]}
     completion = data["completion_status"]
-    if completion == "complete" and statuses & {
+    adb_required_unavailable = (
+        {"unsupported"}
+        if data.get("collector", {}).get("name") == "trustlab-adb"
+        else set()
+    )
+    failed_or_omitted = {
         "inaccessible",
         "not_collected",
         "command_error",
-    }:
+        *adb_required_unavailable,
+    }
+    if completion == "complete" and statuses & failed_or_omitted:
         raise _collection_manifest_semantic_error(
             "complete collections cannot contain failed or omitted probes"
         )
     if completion == "partial" and not (
-        statuses & available and statuses - available - {"unsupported"}
+        statuses & available
+        and statuses - available - ({"unsupported"} - adb_required_unavailable)
     ):
         raise _collection_manifest_semantic_error(
             "partial collections require both usable and unavailable evidence"

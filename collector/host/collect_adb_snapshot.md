@@ -1,83 +1,113 @@
 # ADB Snapshot Collection
 
-ADB collection records shell-visible trust-state signals.
+`trustlab collect adb --serial SERIAL --output PRIVATE_COLLECTION_ROOT` records
+shell-visible trust-state evidence from one owned or explicitly authorized target.
+The command is read-only: it does not root, remount, reboot, install, pull, push,
+or write to the target.
 
-## Commands
+## Selection and identity
 
-```bash
-adb shell getprop ro.boot.verifiedbootstate
-adb shell getprop ro.boot.flash.locked
-adb shell getprop ro.boot.vbmeta.device_state
-adb shell getprop ro.boot.veritymode
-adb shell getprop ro.build.fingerprint
-adb shell getprop ro.build.version.release
-adb shell getprop ro.build.version.sdk
-adb shell getprop ro.product.device
-adb shell getprop ro.product.manufacturer
-adb shell getprop ro.product.model
-adb shell getprop ro.debuggable
-adb shell getprop ro.secure
-adb shell getprop ro.adb.secure
-adb shell getprop sys.boot_completed
-adb shell cat /proc/self/mountinfo
-adb shell cat /proc/mounts
-adb shell mount
-adb shell id
-adb shell getenforce
-adb shell id -Z
-adb shell ps -A -o LABEL,NAME
-```
+Collection first runs the bounded host query `adb devices`, requires exactly one
+listed target matching `SERIAL` in the `device` state, and then confirms that
+selection with `adb -s SERIAL get-state`. No shell command runs before both
+checks succeed. Offline, unauthorized, multiple-device, permission, missing-tool,
+and timeout failures are distinct and never include the serial in diagnostics.
 
-## Rule
+The raw serial exists only in the process argument array and the in-memory
+device-list comparison. Portable provenance uses `<selected-target>` and a
+`target-<16 hex>` HMAC pseudonym derived from the serial and the private 32-byte
+project salt at
+`PRIVATE_COLLECTION_ROOT/.trustlab-adb-private/.trustlab-adb-project-salt`.
+The dedicated state directory is mode `0700`, the salt is mode `0600`, neither
+enters a collection directory, and the pseudonym is stable only for that
+project output root.
 
-Every collected command must map to a trust dimension. Do not collect unrelated
-command output. In particular, do not collect the kernel command line, broad
-property dumps, or full process command lines. Treat the raw artifact as private
-and redact unique identifiers before it leaves the authorized lab target.
-Project process evidence to the exact selected names `init`, `adbd`, `zygote`,
-`zygote64`, `system_server`, `magisk`, and `magiskd` before publication. Retain
-only the selected name, a sanitized SELinux domain when available, capture
-status, scope, and a relative evidence reference; never publish PIDs, users, or
-command arguments. A filtered process list cannot prove that an unlisted process
-does not exist.
+Windows uses an external project secret instead of relying on inherited file
+ACLs: set `TRUSTLAB_ADB_PROJECT_SALT` to exactly 64 lowercase hexadecimal
+characters. The value is read only for HMAC derivation, is removed from child
+process environments, and is never serialized.
 
-Publish collection provenance with
-`collector/schema/collection_manifest_v1_0_0.schema.json`. Record each command
-or probe as a distinct artifact outcome; a command that did not run is
-`not_collected`, not an empty observed file. Only relative artifact paths may be
-published.
+## Reviewed command interface
 
-During normalization, validated `adb_shell` manifest metadata selects the ADB
-typed adapter for the exact integrity-bound raw report. Inline capture imports
-may instead use `artifact_collection_manifest_v1_0_0.schema.json` with
-`artifact_kind` set to `adb_collection_manifest`.
-
-## Suggested raw artifact format
-
-Use section markers:
+Every device command is an exact argument array beginning with
+`adb -s SERIAL`. The immutable allowlist contains only:
 
 ```text
-=== GETPROP ===
-[key]: [value]
-=== MOUNTINFO ===
-...complete /proc/self/mountinfo output...
-=== PROC_MOUNTS ===
-...complete /proc/mounts output...
-=== MOUNT ===
-...
-=== ID ===
-uid=2000(shell) gid=2000(shell)
-=== GETENFORCE ===
-Enforcing
-=== SELINUX_CONTEXT ===
-u:r:shell:s0
-=== PS_SELECTED ===
-u:r:init:s0 init
-u:r:zygote:s0 zygote64
+adb devices
+adb -s SERIAL get-state
+adb -s SERIAL shell getprop EXACT_ALLOWLISTED_KEY
+adb -s SERIAL shell id
+adb -s SERIAL shell getenforce
+adb -s SERIAL shell cat /proc/self/mountinfo
+adb -s SERIAL shell cat /proc/mounts
+adb -s SERIAL shell id -Z
+adb -s SERIAL shell ps -A -o LABEL,NAME
+adb -s SERIAL shell ps -A -o NAME
 ```
 
-Keep each mount source separate and retain its command outcome. The analyzer
-prefers mountinfo, then `/proc/mounts`, then common `mount` output regardless of
-manifest array order. Do not filter to only familiar paths: system-as-root,
-dynamic partitions, APEX package sets, bind/overlay context, propagation, and
-mount-namespace topology depend on complete records.
+`/proc/mounts` is attempted only when `/proc/self/mountinfo` is unavailable,
+empty, truncated, or malformed. The name-only `ps` form is likewise a
+compatibility fallback. The collector never invokes `mount`, a shell wrapper,
+redirection, a broad `getprop`, the kernel command line, process arguments, or
+any mutation command.
+
+The selected property allowlist is:
+
+```text
+ro.boot.verifiedbootstate
+ro.boot.flash.locked
+ro.boot.vbmeta.device_state
+ro.boot.veritymode
+ro.build.version.release
+ro.build.version.sdk
+ro.debuggable
+ro.secure
+ro.adb.secure
+sys.boot_completed
+ro.kernel.qemu
+```
+
+The four `ro.boot.*` fields are the narrowly scoped boot-state evidence;
+`sys.boot_completed` records boot completion; `ro.kernel.qemu` classifies the
+controlled emulator context without collecting product identity or a build
+fingerprint.
+
+Process output is projected in memory to the exact names `init`, `adbd`,
+`zygote`, `zygote64`, `system_server`, `magisk`, and `magiskd`. Portable output
+retains only those names and sanitized SELinux domains—never PIDs, users,
+arguments, unrelated process names, or raw stderr. A selected process view
+cannot prove that an unlisted process is absent.
+
+## Output contract
+
+Each `atlcol-*` directory is mode `0700`; files are mode `0600`. Collection uses
+an exclusive lock, randomized staging directory, bounded stdout/stderr capture,
+per-command deadlines, process-tree cleanup, hashes, and one atomic directory
+rename. `collector_manifest.json` is validated and written last.
+
+```text
+atlcol-<id>/
+  captures/*.txt
+  adb_snapshot.txt
+  adb_provenance.json
+  collector_manifest.json
+```
+
+`adb_snapshot.txt` is the unique normalizable `raw_report` and uses the legacy
+section markers `GETPROP`, `MOUNTINFO`, `PROC_MOUNTS`, `ID`, `GETENFORCE`,
+`SELINUX_CONTEXT`, and `PS_SELECTED`. `adb_provenance.json` records each redacted
+logical argv, timeout, exit code, status, stdout/stderr disposition,
+sensitivity, redaction state, and closed reason code. The outer manifest also
+records every probe outcome so a failed preferred command plus a usable fallback
+is an honest `partial` collection rather than an apparent absence.
+
+Normalize a completed or partial collection with:
+
+```bash
+trustlab normalize \
+  --manifest PRIVATE_COLLECTION_ROOT/atlcol-ID/collector_manifest.json \
+  --output report.json
+```
+
+All captures remain sensitive lab evidence even after serial and identifier
+projection. Share only under the repository privacy policy.

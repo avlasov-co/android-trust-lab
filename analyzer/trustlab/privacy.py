@@ -114,6 +114,7 @@ _PORTABLE_EXPERIMENT_IDS = frozenset(
         "E18_partial_mounts",
         "E19_structured_security",
         "E26_host_collection",
+        "E27_adb_collection",
         "E99_manual",
         "E99_physical_device_template",
     }
@@ -260,6 +261,7 @@ _PROPERTY_VALUE_PATTERNS: dict[str, re.Pattern[str]] = {
     "ro.secure": re.compile(r"^[01]$"),
     "ro.adb.secure": re.compile(r"^[01]$"),
     "sys.boot_completed": re.compile(r"^[01]$"),
+    "ro.kernel.qemu": re.compile(r"^[01]$"),
     "ro.boot.slot_suffix": re.compile(r"^_[ab]$"),
 }
 _PROPERTY_IDENTITY_CATEGORIES = {
@@ -676,6 +678,7 @@ _PORTABLE_CAPTURE_STATUSES = frozenset(
         "inaccessible",
         "not_collected",
         "observed",
+        "observed_absent",
         "timeout",
         "unsupported",
     }
@@ -2127,6 +2130,33 @@ def _validate_manifest_tools(manifest: dict[str, Any]) -> None:
 def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
     collector = manifest.get("collector", {})
     collector_name = collector.get("name") if isinstance(collector, dict) else None
+    adb_capture_names = {
+        "device_selection",
+        "target_state",
+        "identity",
+        "getenforce",
+        "mountinfo",
+        "proc_mounts",
+        "selinux_context",
+        "ps_selected",
+        "ps_selected_fallback",
+        *{
+            f"property_{key.replace('.', '_')}"
+            for key in {
+                "ro.boot.verifiedbootstate",
+                "ro.boot.flash.locked",
+                "ro.boot.vbmeta.device_state",
+                "ro.boot.veritymode",
+                "ro.build.version.release",
+                "ro.build.version.sdk",
+                "ro.debuggable",
+                "ro.secure",
+                "ro.adb.secure",
+                "sys.boot_completed",
+                "ro.kernel.qemu",
+            }
+        },
+    }
     for artifact in manifest.get("artifacts", []):
         if not isinstance(artifact, dict):
             continue
@@ -2145,20 +2175,19 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
         }
         if logical_name == "raw_report":
             status = artifact.get("status")
+            allowed_raw_path = relative_path in {
+                "empty_raw.txt",
+                "moved/raw_sample.txt",
+                "raw_sample.txt",
+            } or (
+                collector_name == "trustlab-adb" and relative_path == "adb_snapshot.txt"
+            )
             valid = (
                 probe_id in safe_probe_ids
                 and str(probe_id).endswith((".raw_report", ".readonly_snapshot"))
                 and artifact.get("media_type") in {"application/json", "text/plain"}
                 and (
-                    (
-                        status in {"observed", "observed_absent"}
-                        and relative_path
-                        in {
-                            "empty_raw.txt",
-                            "moved/raw_sample.txt",
-                            "raw_sample.txt",
-                        }
-                    )
+                    (status in {"observed", "observed_absent"} and allowed_raw_path)
                     or (
                         status not in {"observed", "observed_absent"}
                         and relative_path is None
@@ -2167,6 +2196,7 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
             )
         elif logical_name == "command_results":
             is_host_capture = collector_name == "trustlab-host"
+            is_adb_capture = collector_name == "trustlab-adb"
             valid = (
                 probe_id in safe_probe_ids
                 and str(probe_id).endswith(".command_results")
@@ -2177,7 +2207,30 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
                         and relative_path == "host_provenance.json"
                         and artifact.get("status") == "observed"
                     )
+                    or (
+                        is_adb_capture
+                        and relative_path == "adb_provenance.json"
+                        and artifact.get("status") == "observed"
+                    )
                     or relative_path is None
+                )
+            )
+        elif collector_name == "trustlab-adb" and logical_name in adb_capture_names:
+            status = artifact.get("status")
+            expected_probe_id = (
+                "adb.property." + str(logical_name).removeprefix("property_")
+                if str(logical_name).startswith("property_")
+                else f"adb.{logical_name}"
+            )
+            valid = (
+                probe_id == expected_probe_id
+                and artifact.get("media_type") == "text/plain"
+                and (
+                    (
+                        status == "observed"
+                        and relative_path == f"captures/{logical_name}.txt"
+                    )
+                    or (status != "observed" and relative_path is None)
                 )
             )
         elif logical_name == "other_observed_artifact":

@@ -15,4 +15,9 @@ The classifier emits one axis:
 
 `comparison.reasons` records a deterministic match, difference, or missing-metadata reason for every classification field. `comparison.warnings` is rendered prominently in Markdown. Observer privilege and effective observer UID are visibility context and are excluded from the target-state dimension list.
 
-The analyzer never derives a target pseudonym from a serial or other direct identifier. Collection manifests can supply a stable random pseudonym; otherwise the context remains `unknown`. Synthetic dataset fixtures use an explicit project-authored pseudonym that represents only the fixture target.
+The analyzer itself never derives a target pseudonym from a direct identifier.
+The read-only ADB collector may supply a project-scoped pseudonym derived with
+HMAC-SHA256 and a private random project salt; neither the raw serial nor the
+salt enters portable output. Other collection manifests can supply a stable
+random pseudonym, and synthetic fixtures use an explicit project-authored
+pseudonym that represents only the fixture target.
