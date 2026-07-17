@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Build Magisk module zip
+        run: python3 tools/package_magisk_module.py --output dist/androidtrustlab-magisk.zip
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            gh release create "${{ github.ref_name }}" \
+              --verify-tag \
+              --title "${{ github.ref_name }}" \
+              --generate-notes
+          fi
+          gh release upload "${{ github.ref_name }}" \
+            dist/androidtrustlab-magisk.zip \
+            --clobber
