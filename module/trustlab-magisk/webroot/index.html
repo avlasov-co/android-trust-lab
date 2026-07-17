@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'none'; img-src 'self'; object-src 'none'; script-src 'self'; style-src 'self'">
+  <title>Android Trust Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header><p class="eyebrow">KernelSU module</p><h1>Android Trust Lab</h1><p id="version">Loading module information…</p></header>
+    <section class="notice" aria-label="Safety notice"><h2>Research collector</h2><p>Privileged research collection does not certify device security. Evidence stays private until you explicitly export a verified collection.</p></section>
+    <section id="unsupported" class="card" hidden><h2>Compatible KernelSU bridge required</h2><p>This management interface needs the official KernelSU WebUI bridge with spawn support. No privileged controls are available in this host.</p></section>
+    <div id="application" hidden>
+      <section class="card" aria-labelledby="status-heading"><div class="row"><div><h2 id="status-heading">Collector status</h2><p id="status-text">Initializing…</p><p id="status-detail" class="muted"></p></div><div class="actions"><button id="collect" type="button">Run collection</button><button id="refresh" type="button" class="secondary">Refresh</button></div></div></section>
+      <section class="card" aria-labelledby="collections-heading"><h2 id="collections-heading">Recent collections</h2><p id="empty" class="muted">No private collections are available.</p><div id="collections" class="collection-list" aria-live="polite"></div></section>
+      <section id="detail" class="card" hidden aria-live="polite"><div class="row"><h2>Collection details</h2><button id="close-detail" type="button" class="secondary">Close</button></div><div id="detail-body"></div></section>
+    </div>
+  </main>
+  <dialog id="confirm"><form method="dialog"><h2 id="confirm-title">Confirm</h2><p id="confirm-message"></p><label id="confirmation-label" for="confirmation">Type the collection ID to continue</label><input id="confirmation" autocomplete="off" spellcheck="false"><div class="actions"><button value="cancel">Cancel</button><button id="confirm-submit" value="confirm">Confirm</button></div></form></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
