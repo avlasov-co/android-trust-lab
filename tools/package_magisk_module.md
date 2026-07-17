@@ -14,8 +14,8 @@ and prints the final SHA-256 digest.
 ## Canonical archive contract
 
 The payload is a closed allowlist: `README.md`, `module.prop`, `skip_mount`, the
-four root entrypoint scripts, and the eight scripts beneath `scripts/`. No other
-directory or file is accepted. Entries are sorted by canonical POSIX relative
+root entrypoint scripts, reviewed collector/backend scripts, and the local
+KernelSU WebUI files beneath `webroot/`. No other directory or file is accepted. Entries are sorted by canonical POSIX relative
 path. Every script is archived as a Unix regular file with mode `0755`; the
 three non-scripts use `0644`. Checkout modes and source mtimes are ignored.
 

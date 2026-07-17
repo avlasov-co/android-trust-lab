@@ -42,10 +42,19 @@ REQUIRED_FILES = (
     "scripts/collect_props.sh",
     "scripts/collect_root_state.sh",
     "scripts/collect_selinux.sh",
+    "scripts/run_collection.sh",
+    "scripts/webui_api.sh",
     "scripts/write_report.sh",
     "service.sh",
     "skip_mount",
     "uninstall.sh",
+    "webroot/THIRD_PARTY_NOTICES.md",
+    "webroot/app.js",
+    "webroot/bridge.js",
+    "webroot/index.html",
+    "webroot/state.js",
+    "webroot/styles.css",
+    "webroot/vendor/kernelsu.js",
 )
 ALLOWED_FILES = frozenset(REQUIRED_FILES)
 ARCHIVE_DIRECTORY_ENTRIES = frozenset(
@@ -55,10 +64,20 @@ ARCHIVE_DIRECTORY_ENTRIES = frozenset(
         "META-INF/com/google/",
         "META-INF/com/google/android/",
         "scripts/",
+        "webroot/",
+        "webroot/vendor/",
     }
 )
 ALLOWED_DIRECTORIES = frozenset(
-    {"META-INF", "META-INF/com", "META-INF/com/google", "META-INF/com/google/android", "scripts"}
+    {
+        "META-INF",
+        "META-INF/com",
+        "META-INF/com/google",
+        "META-INF/com/google/android",
+        "scripts",
+        "webroot",
+        "webroot/vendor",
+    }
 )
 SCRIPT_FILES = frozenset(path for path in REQUIRED_FILES if path.endswith(".sh"))
 
@@ -84,13 +103,14 @@ DEFAULT_SOURCE_DATE_EPOCH = 315532800
 DEFAULT_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 MIN_ZIP_YEAR = 1980
 MAX_ZIP_YEAR = 2107
-MAX_ENTRIES = 32
-MAX_FILES = 32
+MAX_ENTRIES = 48
+MAX_FILES = 48
 MAX_FILE_BYTES = 2 * 1024 * 1024
 MAX_TOTAL_BYTES = 4 * 1024 * 1024
 MAX_ARCHIVE_PATH_BYTES = 240
 SHELL_CHECK_TIMEOUT_SECONDS = 10
 READ_CHUNK_BYTES = 64 * 1024
+KERNELSU_BRIDGE_SHA256 = "868805848c3a208c79fbf0f7581255a33c33b812dfaae8b457125fbbb2c400ca"  # pragma: allowlist secret
 
 ARCHIVE_SUFFIXES = frozenset(
     {
@@ -687,6 +707,72 @@ def validate_collector_guardrails(module_dir: Path = MODULE_DIR) -> list[str]:
     return errors
 
 
+def validate_webui_contract(module_dir: Path = MODULE_DIR) -> list[str]:
+    """Check the narrow local-only WebUI boundary and vendored bridge pin."""
+
+    errors: list[str] = []
+    webroot = module_dir / "webroot"
+    index = webroot / "index.html"
+    bridge = webroot / "bridge.js"
+    vendor = webroot / "vendor/kernelsu.js"
+    notice = webroot / "THIRD_PARTY_NOTICES.md"
+    required = (index, bridge, vendor, notice)
+    if not all(path.is_file() and not path.is_symlink() for path in required):
+        return ["WebUI files must be regular local files"]
+    index_text, index_errors = _read_utf8_regular(index, "webroot/index.html")
+    bridge_text, bridge_errors = _read_utf8_regular(bridge, "webroot/bridge.js")
+    notice_text, notice_errors = _read_utf8_regular(
+        notice, "webroot/THIRD_PARTY_NOTICES.md"
+    )
+    errors.extend(index_errors)
+    errors.extend(bridge_errors)
+    errors.extend(notice_errors)
+    if index_text is None or bridge_text is None or notice_text is None:
+        return errors
+    if (
+        "Content-Security-Policy" not in index_text
+        or "connect-src 'none'" not in index_text
+    ):
+        errors.append("WebUI must set a restrictive CSP with connect-src 'none'")
+    if "/data/adb/modules/androidtrustlab/scripts/webui_api.sh" not in bridge_text:
+        errors.append("WebUI bridge must use the fixed backend executable")
+    if "spawn(backend, [operation, ...args]" not in bridge_text:
+        errors.append("WebUI bridge must use KernelSU spawn with an argument array")
+    if hashlib.sha256(vendor.read_bytes()).hexdigest() != KERNELSU_BRIDGE_SHA256:
+        errors.append(
+            "vendored KernelSU bridge digest does not match the pinned source"
+        )
+    if (
+        "kernelsu` version `3.0.2`" not in notice_text
+        or "Apache-2.0" not in notice_text
+    ):
+        errors.append(
+            "WebUI third-party notice must pin the KernelSU bridge version and license"
+        )
+    for path in sorted(webroot.rglob("*")):
+        if not path.is_file() or path.suffix not in {".html", ".js", ".css"}:
+            continue
+        relative = relative_posix(path, module_dir)
+        content, read_errors = _read_utf8_regular(path, relative)
+        errors.extend(read_errors)
+        if content is None:
+            continue
+        if "http://" in content or "https://" in content:
+            errors.append(
+                f"WebUI runtime asset must not contain a network URL: {relative}"
+            )
+        if any(
+            marker in content
+            for marker in ("innerHTML", "document.write", "eval(", "Function(")
+        ):
+            errors.append(
+                f"WebUI runtime asset contains forbidden dynamic rendering: {relative}"
+            )
+        if "onclick=" in content:
+            errors.append(f"WebUI must not use inline event handlers: {relative}")
+    return errors
+
+
 def module_validation_errors(module_dir: Path = MODULE_DIR) -> list[str]:
     errors = validate_payload_structure(module_dir)
     if errors:
@@ -695,6 +781,7 @@ def module_validation_errors(module_dir: Path = MODULE_DIR) -> list[str]:
     errors.extend(validate_module_metadata(module_dir))
     errors.extend(validate_shell_contract(module_dir))
     errors.extend(validate_collector_guardrails(module_dir))
+    errors.extend(validate_webui_contract(module_dir))
     return list(dict.fromkeys(errors))
 
 
@@ -825,9 +912,7 @@ def _validate_dir_member(
     if not stat.S_ISDIR(unix_mode) or stat.S_IMODE(unix_mode) != 0o755:
         errors.append(f"archive directory mode is invalid: {info.filename}")
     if info.create_system != 3:
-        errors.append(
-            f"archive directory must declare Unix metadata: {info.filename}"
-        )
+        errors.append(f"archive directory must declare Unix metadata: {info.filename}")
     if info.create_version != 20 or info.extract_version != 20:
         errors.append(
             f"archive directory ZIP version is not canonical: {info.filename}"

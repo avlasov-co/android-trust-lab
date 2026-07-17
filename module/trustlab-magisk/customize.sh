@@ -23,9 +23,9 @@ $MODPATH/scripts/write_report.sh
 "
 
 for SCRIPT_PATH in $REQUIRED_SCRIPTS; do
-  [ -f "$SCRIPT_PATH" ] || abort "! Missing required module script: ${SCRIPT_PATH#$MODPATH/}"
+  [ -f "$SCRIPT_PATH" ] || abort "! Missing required module script: ${SCRIPT_PATH#"$MODPATH"/}"
   set_perm "$SCRIPT_PATH" 0 0 0755 \
-    || abort "! Could not set executable permission: ${SCRIPT_PATH#$MODPATH/}"
+    || abort "! Could not set executable permission: ${SCRIPT_PATH#"$MODPATH"/}"
 done
 
 ui_print "- Script permissions verified"

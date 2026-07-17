@@ -33,6 +33,19 @@ writer as an explicit partial outcome.
 Run the module action from the Magisk app. Android Trust Lab does not invoke or
 recommend an interactive `su` workflow.
 
+## KernelSU WebUI
+
+When installed in an official KernelSU Manager that provides its WebUI spawn
+bridge, open the module WebUI to inspect sanitized collection metadata, run a
+manual collection, verify a complete collection, explicitly export it, or
+delete one selected private collection. Evidence stays private until an explicit
+verified export to `/sdcard/Download/AndroidTrustLab/<collection-id>/`.
+
+The Action button remains available. Magisk has no native WebUI claim: use its
+Action button and the existing boot workflow. Other WebUI hosts are unverified.
+See `docs/ksu_webui.md` and `docs/ksu_webui_api_v1.md` in the repository for
+the privacy model, compatibility status, and real-device checklist.
+
 ## Output path
 
 ```text
