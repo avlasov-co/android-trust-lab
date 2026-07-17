@@ -61,6 +61,16 @@ records a pseudonymous target, and marks missing per-command results as
 converts `raw.txt` into the current content-addressed
 `trust_report_v6_0_0.schema.json` format.
 
+Complete transferred output is imported on the host with `trustlab import
+magisk --input COLLECTION_DIR --output PRIVATE_IMPORT_ROOT`. The importer is
+strictly local and never runs ADB or a privileged command. It rejects partial
+output by default, verifies the collector/module version pair and every declared
+artifact, and atomically publishes a private content-addressed bundle. The
+current pre-hardening runtime still declares `partial`; Step 29 must make its
+completion and command-status behavior strict before that runtime output is
+eligible for default import. `trustlab normalize --manifest` remains available
+for explicit analysis of historical partial output.
+
 The mount collector records complete `/proc/self/mountinfo`, `/proc/mounts`, and
 common `mount` output in separate sections. The analyzer prefers mountinfo but
 retains every fallback outcome. Collection is not filtered to a small path list,

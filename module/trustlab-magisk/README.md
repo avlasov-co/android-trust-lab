@@ -66,6 +66,13 @@ report.json`. The analyzer parses the exact verified bytes and retains the
 manifest digest, full manifest record, and probe outcomes in the normalized
 report.
 
+For a complete hardened collection, the default host workflow is `trustlab
+import magisk --input COLLECTION_DIR --output PRIVATE_IMPORT_ROOT`. It verifies
+and privately copies the closed bundle before normalizing it. The importer never
+invokes ADB, `su`, or Magisk and deliberately rejects this module's current
+pre-hardening `partial` output; use the generic manifest normalization command
+only when explicitly examining that historical/partial evidence.
+
 The raw snapshot keeps `getenforce` separate from the collector's own `id -Z`
 context. Its `PS_SELECTED` section contains only exact project-selected names
 and sanitized process contexts when available. It never publishes PIDs, users,

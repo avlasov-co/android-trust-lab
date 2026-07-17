@@ -129,6 +129,7 @@ _PORTABLE_COLLECTION_METHODS = frozenset(
         "host_snapshot",
         "identity_fixture",
         "legacy_migration",
+        "magisk_module_boot",
         "magisk_module_manual",
         "manual_capture",
         "manual_fixture",
@@ -2073,7 +2074,7 @@ def _validate_manifest_identity_fields(manifest: dict[str, Any]) -> None:
             "trustlab-host": {"host_snapshot"},
             "trustlab-adb": {"adb_shell_snapshot", "adb_snapshot"},
             "trustlab-app": {"app_snapshot"},
-            "trustlab-magisk": {"magisk_module_manual"},
+            "trustlab-magisk": {"magisk_module_boot", "magisk_module_manual"},
             "trustlab-fixture": {
                 "fixture_snapshot",
                 "manual_fixture",
@@ -2175,12 +2176,18 @@ def _validate_manifest_artifact_bindings(manifest: dict[str, Any]) -> None:
         }
         if logical_name == "raw_report":
             status = artifact.get("status")
-            allowed_raw_path = relative_path in {
-                "empty_raw.txt",
-                "moved/raw_sample.txt",
-                "raw_sample.txt",
-            } or (
-                collector_name == "trustlab-adb" and relative_path == "adb_snapshot.txt"
+            allowed_raw_path = (
+                relative_path
+                in {
+                    "empty_raw.txt",
+                    "moved/raw_sample.txt",
+                    "raw_sample.txt",
+                }
+                or (
+                    collector_name == "trustlab-adb"
+                    and relative_path == "adb_snapshot.txt"
+                )
+                or (collector_name == "trustlab-magisk" and relative_path == "raw.txt")
             )
             valid = (
                 probe_id in safe_probe_ids

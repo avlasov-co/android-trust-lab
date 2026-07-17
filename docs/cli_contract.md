@@ -27,6 +27,15 @@ documented read-only argument-array allowlist. It publishes a private,
 normalizable collection atomically and is silent on success. Preflight failures
 exit with code 7 before any target shell command; diagnostics never echo the
 serial.
+`import magisk --input PATH --output DIR` accepts only an unpacked complete
+Magisk collection directory or its exact `collector_manifest.json`. It verifies
+the strict schema, collector and module versions, completion and redaction
+declarations, closed relative-path set, aggregate limits, regular-file type,
+byte sizes, and SHA-256 hashes. It opens declared files through a no-follow
+directory walk, normalizes and validates the retained verified bytes through the
+Magisk adapter, then atomically publishes a private `sha256-<manifest-digest>`
+tree. It does not extract archives, run ADB, invoke root, or replace an existing
+content address. Successful import is silent.
 
 Validation uses Draft 2020-12 with explicit format checking. All detected
 schema errors are reported in deterministic JSON-pointer order; diagnostics
@@ -79,6 +88,8 @@ source artifact.
 Host and ADB collection also remain silent after successful publication; the created
 directory uses an opaque `atlcol-*` name beneath the caller-selected output
 root.
+Magisk import is also silent and places `collector_manifest.json`, its declared
+evidence, and `trust_report.json` beneath the deterministic content address.
 Successful dataset verification prints exactly `dataset verified` and never
 modifies the bundle.
 

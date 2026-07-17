@@ -24,6 +24,7 @@ from .exceptions import (
     UnsupportedSchemaVersionError,
 )
 from .host_collector import collect_host
+from .magisk_importer import import_magisk
 from .migrations import migrate_report_to_current
 from .normalizer import normalize_collection_manifest_with_inputs, normalize_raw_file
 from .observers import OBSERVER_REGISTRY
@@ -184,6 +185,11 @@ def cmd_collect_adb(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import_magisk(args: argparse.Namespace) -> int:
+    import_magisk(args.input, args.output)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="trustlab", description="Android Trust Lab analyzer"
@@ -208,6 +214,17 @@ def build_parser() -> argparse.ArgumentParser:
     collect_adb_parser.add_argument("--serial", required=True)
     collect_adb_parser.add_argument("--output", required=True)
     collect_adb_parser.set_defaults(func=cmd_collect_adb)
+
+    import_parser = sub.add_parser(
+        "import", help="Verify and import a hostile collection bundle"
+    )
+    import_sub = import_parser.add_subparsers(required=True)
+    import_magisk_parser = import_sub.add_parser(
+        "magisk", help="Verify and normalize one complete Magisk collection"
+    )
+    import_magisk_parser.add_argument("--input", required=True)
+    import_magisk_parser.add_argument("--output", required=True)
+    import_magisk_parser.set_defaults(func=cmd_import_magisk)
 
     normalize = sub.add_parser(
         "normalize", help="Normalize raw artifact into trust report JSON"

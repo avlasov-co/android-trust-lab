@@ -48,6 +48,17 @@ Verify the bound raw artifact and normalize it:
 trustlab normalize --manifest collector_manifest.json --output report.json
 ```
 
+Verify, copy, normalize, and atomically publish a complete Magisk collection:
+
+```bash
+trustlab import magisk --input COLLECTION_DIR --output PRIVATE_IMPORT_ROOT
+```
+
+The dedicated importer is complete-only and applies the additional closed-bundle,
+module-version, aggregate-size, content-addressed publication, and private-mode
+contract documented in `docs/magisk_import_contract.md`. The generic normalize
+command remains the compatibility path for partial historical collections.
+
 The analyzer resolves artifact paths relative to the manifest; rejects traversal,
 all symlink components, and non-regular files; checks the declared size before
 streaming; and parses the exact byte snapshot whose SHA-256 it verified. It also
