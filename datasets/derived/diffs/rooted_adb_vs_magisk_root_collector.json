@@ -825,8 +825,8 @@
       "path": "verified_boot.confidence"
     }
   ],
-  "content_digest": "676cb879e52758c351ea10479019ba2f987ddbc6fd3d58952a3b55bc0bf771b3",
-  "diff_id": "atldiff-676cb879e52758c351ea10479019ba2f",
+  "content_digest": "3835393403c183ac0a3def47c3a777a0a95ae0d97ce171498ce42c16b134b6c6",
+  "diff_id": "atldiff-3835393403c183ac0a3def47c3a777a0",
   "missing_signals": [],
   "new_signals": [
     {
@@ -1325,7 +1325,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.7.0",
+  "schema_version": "2.8.0",
   "summary": "11 dimensions changed, 17 dimensions unchanged; 9 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

@@ -9,3 +9,6 @@ This table is generated from checked-in sample reports. Current samples are synt
 | E02_rooted_avd | avd | root_collector | synthetic_root_collector_snapshot | not_collected | not present | enforcing | none | false | green | 1 | low | sample |
 | E03_writable_system_avd | avd | adb_shell | synthetic_writable_system_snapshot | not_collected | not present | enforcing | /system | true | green | 1 | low | sample |
 | E05_magisk_collector | avd | root_collector | magisk_module_manual | present | present | enforcing | none | false | green | 1 | low | sample |
+| E35_cross_observer | avd | unprivileged_app | app_snapshot | not_collected | not_collected | not_collected | not_collected | not_collected | not_collected | not_collected | unassessed | sample |
+| E35_cross_observer | avd | adb_shell | adb_shell_snapshot | not_collected | not_collected | enforcing | none | false | green | 1 | low | sample |
+| E35_cross_observer | avd | root_collector | magisk_module_manual | present | present | permissive | none | false | green | 1 | low | sample |

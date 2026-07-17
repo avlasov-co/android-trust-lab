@@ -80,6 +80,7 @@ trust-diff v2.2 JSON + markdown summary
 | Structured SELinux/process evidence with scoped absence semantics | implemented |
 | Raw text parsing, normalization, schema validation, and diff generation | implemented |
 | Synthetic / AVD-limited sample reports and generated result diffs | implemented |
+| Linked synthetic app / ADB / root target-state fixture with pairwise observer-axis diffs | implemented under `tests/fixtures/cross_observer_bundle/`; see `docs/cross_observer_fixture.md` |
 | Read-only Magisk root collector module | implemented |
 | Deterministic Magisk structural packaging guardrails | implemented through `tools/package_magisk_module.py` |
 | Android app and Gradle project | implemented under `app/`; startup is collection-free and the foreground flow requires explicit acknowledgement and Start |

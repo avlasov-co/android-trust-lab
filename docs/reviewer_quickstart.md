@@ -10,7 +10,7 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Raw artifact parser | Implemented | `analyzer/trustlab/parser.py`, `tests/test_parser.py` |
 | Trust report normalization | Implemented | `analyzer/trustlab/normalizer.py`, `tests/test_normalizer.py` |
 | Trust diff generation | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py` |
-| JSON schemas | Implemented | report v1/v2/v3 and diff v1/v2 schemas under `collector/schema/` |
+| JSON schemas | Implemented | versioned report schemas through 6.0 and diff schemas through 2.8 under `collector/schema/` |
 | Content provenance | Implemented | `docs/content_identity.md`, `analyzer/trustlab/identity.py`, `tests/test_content_identity.py` |
 | Synthetic / AVD-limited samples | Implemented | `datasets/source.json`, `datasets/samples/`, `datasets/manifest.json` |
 | Dataset integrity and freshness verification | Implemented | `trustlab dataset verify datasets/manifest.json`, `docs/dataset_manifest_v2.md` |
@@ -20,6 +20,7 @@ This guide separates checked-in behavior from design-only scope. The point is to
 | Android app / Gradle project | Implemented | `app/`; one unprivileged module, checksum-locked wrapper, strict dependency verification |
 | Unprivileged app probe | Implemented | typed probe, explicit review UI, redaction preview, and verified local SAF export; see `docs/app_ui_export.md` |
 | Android test automation | Implemented | seven installed-app cases, strict merged-manifest checks, PR API 35 smoke, and scheduled API 27/30/35 matrix; see `docs/android_testing.md` |
+| Cross-observer fixture | Implemented | one linked synthetic target state with typed app, ADB, and root evidence, three manifests, three reports, three pairwise diffs, manual expectations, and generated matrix; see `docs/cross_observer_fixture.md` |
 | General post-build APK or permission analyzer | Not present | The observer's merged target manifests are enforced during its build; no arbitrary-APK parser or reverse-engineering tool is included |
 | Physical-device validation | Not collected | `experiments/E99_physical_device_template.md` |
 
@@ -87,6 +88,24 @@ backup are disabled. See `docs/app_ui_export.md` for the state, accessibility,
 and verified temporary-document publication contracts. The API 35 managed
 device is the pull-request smoke path; `docs/android_testing.md` documents the
 seven cases and scheduled API matrix.
+
+## Cross-observer demo
+
+The Step 35 fixture holds one synthetic target state constant while changing
+from the app sandbox to ADB shell and then a root collector:
+
+```bash
+python tools/generate_report.py --check
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer \
+  python -m pytest -q tests/test_cross_observer_fixtures.py
+```
+
+Inspect `results/figures/cross_observer_matrix.md` and the three generated diffs
+under `tests/fixtures/cross_observer_bundle/generated/diffs/`. App-inaccessible
+SELinux context is classified as an observer context change, never a regression.
+The deliberately contradictory ADB/root SELinux modes retain both report
+identities, raw source hashes, evidence references, and factorized confidence.
+This is project-authored synthetic evidence, not physical OEM behavior.
 
 ## Minimal analyzer demo
 

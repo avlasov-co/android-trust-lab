@@ -6,11 +6,13 @@
 2. `docs/work_manifest.md`
 3. `docs/reviewer_quickstart.md`
 4. `docs/evidence_matrix.md`
-5. `results/trust_state_diffs.md`
-6. `docs/dataset_manifest_v2.md`
-7. `results/artifact_manifest.json`
-8. `docs/android_testing.md`
-9. `SECURITY.md`
+5. `docs/cross_observer_fixture.md`
+6. `results/figures/cross_observer_matrix.md`
+7. `results/trust_state_diffs.md`
+8. `docs/dataset_manifest_v2.md`
+9. `results/artifact_manifest.json`
+10. `docs/android_testing.md`
+11. `SECURITY.md`
 
 ## Fast validation
 
@@ -26,6 +28,9 @@ bash scripts/verify_release.sh
 - Synthetic / AVD-limited sample reports.
 - A strict, integrity-bound dataset graph with deterministic freshness checks.
 - Generated diffs, tables, and result summaries.
+- One independently hashed, manifest-bound synthetic target state observed by
+  the app sandbox, ADB shell, and root collector, with all pairwise diffs and
+  manually authored expectations.
 - A read-only Magisk collector module.
 - Deterministic structural packaging guardrails for the Magisk module; these do
   not prove shell-script runtime semantics.
@@ -46,3 +51,5 @@ bash scripts/verify_release.sh
 - No Play Integrity, SafetyNet, DRM, Widevine, or app-specific bypass work.
 - No root hiding, stealth, persistence, or evasion tooling.
 - No production security certification.
+- The cross-observer fixture is synthetic and does not represent physical OEM
+  behavior.

@@ -82,6 +82,7 @@ The v4 mount model is part of the existing report evidence projection, so any
 record, source status, resolution, or APEX-set change changes `content_digest`.
 Report v3 identity framing remains unchanged for historical validation.
 
-Diff schemas `2.1.0` through `2.6.0` are frozen and readable. Current diff `2.7.0` migrates
-readable report inputs to v5, binds both common v5 identities, and records every
-applied report migration. See [Report Schema v5](report_schema_v5.md).
+Diff schemas `2.1.0` through `2.7.0` are frozen and readable. Current diff
+`2.8.0` migrates readable report inputs to v6, binds both common v6 identities,
+and records every applied report migration. See
+[Report Schema v6](report_schema_v6.md).

@@ -26,14 +26,15 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Bounded parser and hostile-input policy | Implemented | `docs/parser_limits.md`, `analyzer/trustlab/parser.py`, `tests/test_parser_limits.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_parser_limits.py tests/test_adversarial_inputs.py` |
 | Structured SELinux/process evidence | Implemented | `analyzer/trustlab/security_evidence.py`, `docs/report_schema_v5.md`, `tests/test_structured_security_evidence.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_security_evidence.py tests/test_structured_security_evidence.py` |
 | Diff engine | Implemented | `analyzer/trustlab/diff.py`, `tests/test_diff.py`, `datasets/derived/diffs/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_diff.py` |
-| JSON schemas, identity, and migration | Implemented | report v1–v5 and diff v1–v2.2 schemas, `analyzer/trustlab/identity.py`, `analyzer/trustlab/migrations.py`, `tests/test_content_identity.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_content_identity.py tests/test_report_migration.py` |
+| JSON schemas, identity, and migration | Implemented | report v1–v6 and diff v1–v2.8 schemas, `analyzer/trustlab/identity.py`, `analyzer/trustlab/migrations.py`, `tests/test_content_identity.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_schema_validation.py tests/test_content_identity.py tests/test_report_migration.py` |
 | Portable collection manifests | Implemented | `collector/schema/collection_manifest_v1_0_0.schema.json`, `analyzer/trustlab/collection_manifest.py`, `tests/test_collection_manifest.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_collection_manifest.py` |
 | Bounded host collector | Implemented | `analyzer/trustlab/host_collector.py`, `collector/host/collect_host_snapshot.md`, `tests/test_host_collector.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_host_collector.py` |
 | Read-only ADB collector | Implemented | `analyzer/trustlab/adb_collector.py`, `collector/host/collect_adb_snapshot.md`, `tests/test_adb_collector.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_adb_collector.py` |
 | Secure Magisk import | Implemented | `analyzer/trustlab/magisk_importer.py`, `docs/magisk_import_contract.md`, `tests/test_magisk_importer.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_magisk_importer.py` |
 | Verifiable dataset manifest | Implemented | `datasets/source.json`, `datasets/manifest.json`, `docs/dataset_manifest_v2.md`, `analyzer/trustlab/dataset_manifest.py` | `trustlab dataset verify datasets/manifest.json` |
 | Sample reports | Implemented | `datasets/samples/`, `datasets/manifest.json` | `python tools/generate_report.py --check` |
-| Generated diffs/tables | Implemented | `datasets/derived/diffs/`, `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md` | `python tools/generate_report.py --check` |
+| Generated diffs/tables | Implemented | `datasets/derived/diffs/`, `results/summary_table.md`, `results/trust_state_diffs.md`, `results/figures/trust_dimensions_matrix.md`, `results/figures/cross_observer_matrix.md` | `python tools/generate_report.py --check` |
+| Cross-observer fixture | Implemented | `experiments/E35_cross_observer.md`, `tests/fixtures/cross_observer_bundle/`, `docs/cross_observer_fixture.md`, `tests/test_cross_observer_fixtures.py` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q tests/test_cross_observer_fixtures.py` |
 | Magisk collector | Implemented | `module/trustlab-magisk/`, `docs/magisk_collector_design.md`, `module/trustlab-magisk/README.md` | `find module/trustlab-magisk -name "*.sh" -print -exec sh -n {} \;` |
 | Magisk packaging helper | Implemented | `tools/package_magisk_module.py`, `tests/test_package_magisk_module.py` | `python tools/package_magisk_module.py --check-only` |
 | Tests | Implemented | `tests/` | `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=analyzer pytest -q` |
@@ -55,7 +56,7 @@ Current checked-in evidence is synthetic / AVD-limited. Physical-device validati
 | Report normalization | Implemented | Normalizer code and sample reports exist |
 | Schema validation | Implemented | JSON schemas and validation tests exist |
 | Trust-state diffing | Implemented | Diff engine, generated diff JSON files, and markdown summaries exist |
-| Generated artifact workflow | Implemented | `tools/generate_report.py --check` verifies checked-in derived outputs |
+| Generated artifact workflow | Implemented | `tools/generate_report.py --check` verifies dataset and separate cross-observer derived outputs |
 | Read-only Magisk collector | Implemented | Module files and shell collectors exist under `module/trustlab-magisk/` |
 | Magisk package guardrails | Implemented | Closed 15-file payload, bounded regular-file inventory, normalized ZIP modes/metadata, and two-build byte comparison |
 | Release verification script | Implemented | `scripts/verify_release.sh` runs compile, tests, generated-output, package, and shell checks |
@@ -135,19 +136,19 @@ Latest validation for this evidence packet:
 
 | Check | Command | Status |
 |---|---|---|
-| Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-16 |
-| Ruff formatting and lint | Gate steps 2–3 | Pass; 64 Python files formatted and linted |
-| Strict static typing | Gate step 4 | Pass for 36 analyzer and tool modules |
-| Unit tests | Gate step 5 | 585 passed on the development runtime; CI covers Python 3.11, 3.12, 3.13, and 3.14 |
-| Analyzer coverage | Gate step 5 | 92.01% statements; 82.27% branches; floors 85%/80% |
-| Tools coverage | Gate step 5 | 87.05% statements; 74.56% branches; floors 70%/60% |
+| Complete repository gate | `bash scripts/check.sh` in the activated development environment | Pass on 2026-07-17 |
+| Ruff formatting and lint | Gate steps 2–3 | Pass; 91 Python files formatted and linted |
+| Strict static typing | Gate step 4 | Pass for 49 analyzer and tool modules |
+| Unit tests | Gate step 5 | 1,040 passed on the development runtime; CI covers Python 3.11, 3.12, 3.13, and 3.14 |
+| Analyzer coverage | Gate step 5 | 89.43% statements; 80.40% branches; floors 85%/80% |
+| Tools coverage | Gate step 5 | 87.03% statements; 75.95% branches; floors 70%/60% |
 | Canonical metadata | Gate step 6 | Pass, including CFF 1.2 structure |
 | Project version | Gate step 7 | Pass at `0.3.0.dev0` |
 | Python support declarations | Gate step 8 | Pass for Python 3.11, 3.12, 3.13, and 3.14 |
-| Schema and checked-in artifacts | Gate step 10 | 15 schemas, 8 reports, 6 diffs, 1 collection manifest, 3 dataset manifests, and 1 dataset source validated |
+| Schema and checked-in artifacts | Gate step 10 | 24 schemas, 30 registry dimensions, 11 reports, 9 diffs, 4 collection manifests, 3 dataset manifests, and 1 dataset source validated |
 | Generated report freshness | Gate step 11 | Pass; generated artifacts are up to date |
 | Magisk structural packaging | Gate step 12 | Pass; exact payload, modes, metadata, and two-build byte identity |
-| Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 11 Magisk scripts and both repository Bash scripts |
+| Shell syntax and ShellCheck | Gate steps 13–14 | Pass for 12 Magisk scripts and both repository Bash scripts |
 | Secret detection | Gate step 15 | Pass against the checked-in baseline with network verification disabled |
 | Pre-commit hygiene | `pre-commit run --all-files` | Pass for whitespace, EOF, JSON, YAML, Ruff, schemas, secrets, and ShellCheck |
 
@@ -161,8 +162,9 @@ schema versions, canonical evidence states, exact registry lookup, migration and
 cross-version diff rules, canonical JSON identity, deprecation windows, and
 sample-retention policy. The supported-version table and schema-resource
 registry are machine-tested in `tests/test_compatibility_policy.py`. Report v1
-through v4 are read-only compatibility inputs, report v5 is the current validated
-writer, diff v1 through v2.1 are read-only, and diff v2.2 is the current writer. Strict
+through v5 are read-only compatibility inputs and report v6 is the current
+validated writer. Diff v1 through v2.7 are read-only, and diff v2.8 is the
+current writer. Strict
 collection manifest v1 is readable and writable. Dataset manifest v1 remains
 readable, strict dataset manifest v2
 is the sole verified writer format, and dataset source v1 drives deterministic
@@ -177,6 +179,7 @@ supported.
 - No general post-build APK reverse engineering or arbitrary-APK permission analyzer is implemented; the observer's own merged manifests are checked at build time.
 - No production attestation, hardware-backed trust, TEE, OEM boot-chain, Widevine, DRM, or device-specific security conclusions are claimed.
 - Current samples are synthetic / AVD-limited and intended for analyzer and collector workflow validation.
+- The cross-observer bundle is project-authored synthetic evidence; it is not an AVD capture and does not represent physical OEM behavior.
 - Dataset verification and repository generation require POSIX directory-descriptor safety primitives in this release.
 - The physical-device experiment file is a template, not completed evidence.
 

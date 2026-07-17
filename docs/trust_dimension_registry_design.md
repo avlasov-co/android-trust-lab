@@ -61,10 +61,11 @@ or unknown identifier fails closed during core or consumer initialization.
 
 ## Compatibility behavior
 
-The registry describes current report `6.0.0` dimensions and current diff
-`2.7.0` generation. This metadata-only refactor does not bump either wire
-schema. The first 27 measured dimensions preserve their existing paths, order,
-materiality, direction, confidence, and interpretation. Step 32 activates
+The registry was introduced against report `6.0.0` and diff `2.7.0` without a
+wire-schema bump. Current diff `2.8.0` consumes the same registry contract while
+allowing its registered hyphenated extension evidence path. The first 27
+measured dimensions preserve their existing paths, order, materiality,
+direction, confidence, and interpretation. Step 32 activates
 `app_visible_state` as the twenty-eighth measured dimension only when a
 validated typed app-probe extension exists. `physical_device_state` and
 `root_visible_state` remain documented contextual dimensions with no fabricated

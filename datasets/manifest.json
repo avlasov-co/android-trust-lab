@@ -7,7 +7,7 @@
   "artifact_schema_versions": {
     "collection_manifest": "1.0.0",
     "declarative_source": "1.0.0",
-    "derived_diff": "2.7.0",
+    "derived_diff": "2.8.0",
     "normalized_report": "6.0.0",
     "raw_artifact": "1.0.0"
   },
@@ -26,7 +26,7 @@
       "role": "declarative_source",
       "schema_family": "dataset_source",
       "schema_version": "1.0.0",
-      "sha256": "0eb48d9a0b6c4b814b52c839e40b20011ceaae13b30f3c372b736ba37c4f9ee4"
+      "sha256": "6825575f6cbf6b3796172126585b9ccad4821df87f1c4f3d4aa08829b945b8b4"
     },
     {
       "artifact_id": "raw-stock-avd-adb",
@@ -217,8 +217,8 @@
       "relative_path": "derived/diffs/stock_adb_vs_rooted_adb.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.7.0",
-      "sha256": "d35e5d2458d0569d270c1dc194b67fd4aaf7f2a0e18c3b26e0f4e41fc652604b"
+      "schema_version": "2.8.0",
+      "sha256": "db79b878b648670c7847b7aa5ded4ccf8eb549ba28cad495b1f8b46d75790f20"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-rooted-root",
@@ -233,8 +233,8 @@
       "relative_path": "derived/diffs/rooted_adb_vs_rooted_root.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.7.0",
-      "sha256": "35a6b4062df0ac9641f97bf7433de9535e9fe5ad0439f7173488d440f3f002bf"
+      "schema_version": "2.8.0",
+      "sha256": "59f57a76d643ccf007a830aed8c25d8172530363623cc89dccd97c0928a81ada"
     },
     {
       "artifact_id": "diff-stock-vs-writable-system",
@@ -249,8 +249,8 @@
       "relative_path": "derived/diffs/stock_vs_writable_system.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.7.0",
-      "sha256": "7ed70d9fbb0b4d3d41c17d98a306086d1bf6f7c8461e47c6912bbf25d096d233"
+      "schema_version": "2.8.0",
+      "sha256": "c034f8603511f4bbdbfee2584e6e7ee333849e1c6d0a428b5e4f1c12c968277e"
     },
     {
       "artifact_id": "diff-rooted-adb-vs-magisk-root",
@@ -265,8 +265,8 @@
       "relative_path": "derived/diffs/rooted_adb_vs_magisk_root_collector.json",
       "role": "derived_diff",
       "schema_family": "diff",
-      "schema_version": "2.7.0",
-      "sha256": "6358c11800a2a675fe1484db3c803d76b25891be538eacdba321a622de835ba5"
+      "schema_version": "2.8.0",
+      "sha256": "6924c17c5039b03a1510c7eb24b11e8e1a280cdcc28819cd097d4e18ecb3bbba"
     }
   ],
   "authorization": {

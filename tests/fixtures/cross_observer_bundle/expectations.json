@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0.0",
+  "bundle_id": "atl-cross-observer-synthetic-rooted-avd",
+  "origin_classification": "synthetic",
+  "experimental_protocol_id": "atl_cross_observer_v1",
+  "experiment_id": "E35_cross_observer",
+  "target": {
+    "pseudonymous_id": "target-3535353535353535",
+    "target_type": "avd",
+    "state_id": "state-e35-cross-observer-rooted-avd"
+  },
+  "observers": [
+    {
+      "observer_id": "app",
+      "observer_type": "unprivileged_app",
+      "visibility_protocol": "app",
+      "raw_path": "app/app_probe.json",
+      "manifest_path": "app/collection_manifest.json",
+      "report_path": "generated/reports/app_report.json",
+      "raw_sha256": "91036f7ff9bb79dbaa0106d3948eaa53c2d63e5e623383f0218bed5b7b2f4c05",
+      "manifest_sha256": "34191ee8b27e69334de6793955f9698832c5d23ca6801f1aef00459f891d7384"
+    },
+    {
+      "observer_id": "adb",
+      "observer_type": "adb_shell",
+      "visibility_protocol": "adb",
+      "raw_path": "adb/adb_snapshot.txt",
+      "manifest_path": "adb/collection_manifest.json",
+      "report_path": "generated/reports/adb_report.json",
+      "raw_sha256": "aeae07a7317a1be82374170599aedd18a0b27598485eac09f8c41fad06a2f999",
+      "manifest_sha256": "856850d1f8819931cc5719119b478e1b465eb548f10a57978e87b46b40bf0d21"
+    },
+    {
+      "observer_id": "root",
+      "observer_type": "root_collector",
+      "visibility_protocol": "root",
+      "raw_path": "root/raw.txt",
+      "manifest_path": "root/collection_manifest.json",
+      "report_path": "generated/reports/root_report.json",
+      "raw_sha256": "bb4c864937b5e49df78654cb140ea93086fcbaecd7a1eb069cdafb6ad9c92dc2",
+      "manifest_sha256": "2f74642c1263f99249baace63fbcdf8f1ed7ae836a6f06c30b1c84c95a093cda"
+    }
+  ],
+  "pairs": [
+    {
+      "pair_id": "app-vs-adb",
+      "title": "E35 app observer versus ADB-shell observer",
+      "base_observer_id": "app",
+      "compare_observer_id": "adb",
+      "diff_path": "generated/diffs/app_vs_adb.json"
+    },
+    {
+      "pair_id": "app-vs-root",
+      "title": "E35 app observer versus root collector",
+      "base_observer_id": "app",
+      "compare_observer_id": "root",
+      "diff_path": "generated/diffs/app_vs_root.json"
+    },
+    {
+      "pair_id": "adb-vs-root",
+      "title": "E35 ADB-shell observer versus root collector",
+      "base_observer_id": "adb",
+      "compare_observer_id": "root",
+      "diff_path": "generated/diffs/adb_vs_root.json"
+    }
+  ],
+  "expectations": {
+    "comparison_axis": "same_state_observer_change",
+    "forbidden_directions": [
+      "improvement",
+      "regression"
+    ],
+    "visibility_transitions": [
+      {
+        "pair_id": "app-vs-adb",
+        "dimension": "selinux_current_context",
+        "before_status": "inaccessible",
+        "after_status": "observed",
+        "classification": "context_change",
+        "direction": "context_change",
+        "confidence_level": "moderate"
+      },
+      {
+        "pair_id": "app-vs-root",
+        "dimension": "selinux_current_context",
+        "before_status": "inaccessible",
+        "after_status": "observed",
+        "classification": "context_change",
+        "direction": "context_change",
+        "confidence_level": "moderate"
+      }
+    ],
+    "shared_dimensions": [
+      {
+        "dimension": "emulator_state",
+        "observer_ids": [
+          "app",
+          "adb",
+          "root"
+        ],
+        "expected": {
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "dimension": "verified_boot_state",
+        "observer_ids": [
+          "adb",
+          "root"
+        ],
+        "expected": {
+          "status": "observed",
+          "value": "green"
+        }
+      },
+      {
+        "dimension": "mount_integrity",
+        "observer_ids": [
+          "adb",
+          "root"
+        ],
+        "expected": {
+          "overlay_detected": {
+            "status": "observed_absent",
+            "value": false
+          },
+          "writable_sensitive_mounts": {
+            "status": "observed_absent",
+            "value": []
+          }
+        }
+      },
+      {
+        "dimension": "su_binary_visibility",
+        "observer_ids": [
+          "adb",
+          "root"
+        ],
+        "expected": {
+          "status": "observed",
+          "value": true
+        }
+      }
+    ],
+    "contradictions": [
+      {
+        "pair_id": "adb-vs-root",
+        "dimension": "selinux_mode",
+        "before": {
+          "status": "observed",
+          "value": "enforcing"
+        },
+        "after": {
+          "status": "observed",
+          "value": "permissive"
+        },
+        "classification": "context_change",
+        "direction": "context_change",
+        "confidence_level": "moderate",
+        "before_evidence_refs": [
+          "legacy-sections/GETENFORCE"
+        ],
+        "after_evidence_refs": [
+          "legacy-sections/GETENFORCE"
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "Project-authored synthetic evidence; no collection event occurred.",
+    "The fixture models one rooted AVD target state and does not represent physical OEM behavior.",
+    "Observer visibility protocols differ by design even though the experimental protocol and target state are shared.",
+    "SHA-256 bindings establish internal fixture consistency, not device attestation or external authenticity."
+  ]
+}

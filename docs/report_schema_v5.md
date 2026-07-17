@@ -79,11 +79,12 @@ evidence status, sanitized context, scope, completeness, limitation, or selected
 observation changes report content identity. Evidence references are retained in
 reports but excluded from semantic diff values.
 
-Diff schemas `2.2.0` through `2.6.0` are frozen and readable. Current diff `2.7.0` migrates readable inputs to report
-v5 and adds status-aware dimensions for current SELinux context, denial
-collection, and selected-process visibility. Consequently, an inaccessible
-process view differs from a complete observation of absence without leaking
-source references into the changed value.
+Diff schemas `2.2.0` through `2.7.0` are frozen and readable. Current diff
+`2.8.0` migrates readable inputs to report v6 and retains status-aware
+dimensions for current SELinux context, denial collection, and selected-process
+visibility. Consequently, an inaccessible process view differs from a complete
+observation of absence without leaking source references into the changed
+value.
 
 Typed-adapter warning text and stderr are not copied into portable reports. The
 adapter retains fixed parser/status diagnostics and replaces arbitrary source

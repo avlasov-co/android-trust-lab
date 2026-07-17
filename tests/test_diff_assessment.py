@@ -50,7 +50,7 @@ def test_current_diff_separates_materiality_direction_and_confidence():
     diff = make_diff(load_json(STOCK), load_json(ROOTED_ADB))
     signal = changed(diff, "su_binary_visibility")
 
-    assert diff["schema_version"] == "2.7.0"
+    assert diff["schema_version"] == "2.8.0"
     assert "severity" not in signal
     assert signal["materiality"] == "moderate"
     assert signal["direction"] == "indeterminate"

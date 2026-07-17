@@ -48,7 +48,7 @@ dimensions. None of these dimensions may be inferred only from
 `observer.observer_type`, because that would create fake signal when the
 observer changes.
 
-Observer type, privilege, effective UID, and protocol are visibility-context fields, not target-state dimensions. Diff schema `2.7.0` records them under `comparison.context` and uses them to classify observer changes without reporting them as target mutation. Its structured status transitions also keep inaccessible, uncollected, failed, and observed-absent evidence distinct. Materiality, direction, and confidence remain separate per-dimension assessments and are not combined into a trust score.
+Observer type, privilege, effective UID, and visibility protocol are context fields, not target-state dimensions. Diff schema `2.8.0` records them under `comparison.context` and uses them to classify observer changes without reporting them as target mutation. Its structured status transitions also keep inaccessible, uncollected, failed, and observed-absent evidence distinct. Materiality, direction, and confidence remain separate per-dimension assessments and are not combined into a trust score.
 
 ## Signal sources
 

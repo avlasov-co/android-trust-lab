@@ -1,0 +1,67 @@
+{
+  "collection_id": "atlcol-3500000000000001",
+  "schema_version": "1.0.0",
+  "experiment_id": "E35_cross_observer",
+  "collector": {
+    "name": "trustlab-app",
+    "version": "0.3.0-dev0"
+  },
+  "observer": {
+    "observer_type": "unprivileged_app",
+    "privilege_level": "app_sandbox",
+    "collection_method": "app_snapshot"
+  },
+  "target": {
+    "pseudonymous_id": "target-3535353535353535",
+    "target_type": "avd"
+  },
+  "started_at": "2026-07-16T12:00:00Z",
+  "ended_at": "2026-07-16T12:00:01Z",
+  "completion_status": "partial",
+  "tool_versions": {
+    "trustlab_app": "0.3.0-dev0"
+  },
+  "environment": {
+    "platform": "android",
+    "transport": "app_api",
+    "execution_context": "app_collector"
+  },
+  "warnings": [],
+  "redaction_policy": {
+    "policy_id": "atl_portable_v1",
+    "redaction_state": "applied",
+    "direct_identifiers_removed": true,
+    "serials_removed": true,
+    "secrets_removed": true
+  },
+  "artifacts": [
+    {
+      "logical_name": "raw_report",
+      "relative_path": "app_probe.json",
+      "media_type": "application/json",
+      "byte_size": 5053,
+      "sha256": "91036f7ff9bb79dbaa0106d3948eaa53c2d63e5e623383f0218bed5b7b2f4c05",
+      "probe_id": "app.readonly_snapshot",
+      "status": "observed",
+      "exit_code": null,
+      "timed_out": false,
+      "sensitivity": "internal",
+      "redaction_state": "redacted",
+      "detail": null
+    },
+    {
+      "logical_name": "probe_outcome.selinux_self_context",
+      "relative_path": null,
+      "media_type": "application/json",
+      "byte_size": null,
+      "sha256": null,
+      "probe_id": "app.selinux_self_context",
+      "status": "inaccessible",
+      "exit_code": null,
+      "timed_out": false,
+      "sensitivity": "internal",
+      "redaction_state": "withheld",
+      "detail": null
+    }
+  ]
+}

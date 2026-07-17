@@ -10,7 +10,11 @@ from typing import Any, cast
 
 from .assessment import confidence_assessment, direction_assessment
 from .comparison import observer_protocol
-from .dimension_registry import DEFAULT_DIMENSIONS, TRUST_DIMENSIONS_BY_ID
+from .dimension_registry import (
+    DEFAULT_DIMENSIONS,
+    TRUST_DIMENSIONS_BY_ID,
+    comparison_value,
+)
 from .exceptions import SchemaValidationError
 from .transitions import (
     classify_status_transition,
@@ -115,6 +119,7 @@ _PORTABLE_EXPERIMENT_IDS = frozenset(
         "E19_structured_security",
         "E26_host_collection",
         "E27_adb_collection",
+        "E35_cross_observer",
         "E99_manual",
         "E99_physical_device_template",
     }
@@ -1846,11 +1851,60 @@ def _validate_diff_privilege(value: object) -> None:
         raise SchemaValidationError("diff observer privilege is not portable")
 
 
+def _validate_diff_app_probe(value: object) -> None:
+    expected_refs = [f"captures/{probe_id}.txt" for probe_id in _APP_PROBE_IDS]
+
+    def portable_payload(payload: object) -> bool:
+        try:
+            canonical = _app_exact_object(payload, {"schema_version", "probes"})
+            probes = canonical["probes"]
+            if (
+                canonical["schema_version"] != "2.0.0"
+                or not isinstance(probes, list)
+                or len(probes) != len(_APP_PROBE_IDS)
+            ):
+                return False
+            reconstructed_probes = []
+            for expected_id, probe in zip(_APP_PROBE_IDS, probes, strict=True):
+                item = _app_exact_object(probe, {"probe_id", "status", "value"})
+                status = item["status"]
+                if (
+                    item["probe_id"] != expected_id
+                    or not isinstance(status, str)
+                    or status not in _APP_PROBE_STATUSES
+                ):
+                    return False
+                reconstructed_probes.append(
+                    {
+                        **item,
+                        "reason": _APP_PROBE_REASONS[status],
+                        "evidence_refs": [f"captures/{expected_id}.txt"],
+                    }
+                )
+            _validate_app_probe_extension(
+                {
+                    "status": "observed",
+                    "value": {
+                        "schema_version": canonical["schema_version"],
+                        "probes": reconstructed_probes,
+                    },
+                    "reason": None,
+                    "evidence_refs": expected_refs,
+                }
+            )
+        except SchemaValidationError:
+            return False
+        return True
+
+    _validate_diff_observation(value, predicate=portable_payload)
+
+
 def _validate_diff_dimension_value(dimension: str, value: object) -> None:
     if _validate_diff_observation_dimension(dimension, value):
         return
     handlers = {
         "apex_mount_set": _validate_diff_apex,
+        "app_visible_state": _validate_diff_app_probe,
         "dynamic_partition_state": _validate_diff_dynamic_partitions,
         "magisk_command_status": _validate_diff_status,
         "mount_integrity": _validate_diff_mount_integrity,
@@ -2088,8 +2142,8 @@ def _expected_observed_value(value: object, status: str) -> object:
     if not evidence_is_available(status):
         return None
     if isinstance(value, dict) and value.get("status") == status:
-        return value.get("value")
-    return value
+        return comparison_value(value.get("value"))
+    return comparison_value(value)
 
 
 def _validate_structured_signal_portability(
@@ -2153,7 +2207,7 @@ def _validate_structured_signal_portability(
             raise SchemaValidationError(
                 "diff structured signal interpretation is invalid"
             )
-        if diff["schema_version"] == "2.7.0" and any(
+        if diff["schema_version"] in {"2.7.0", "2.8.0"} and any(
             signal.get(key) != change.get(key)
             for key in (
                 "materiality",
@@ -2255,13 +2309,13 @@ def _validate_changed_dimensions_portability(
         ) != _DIFF_INTERPRETATIONS.get(dimension, _DEFAULT_DIFF_INTERPRETATION):
             raise SchemaValidationError("diff dimension metadata is not canonical")
         if (
-            schema_version != "2.7.0"
+            schema_version not in {"2.7.0", "2.8.0"}
             and item.get("severity") != _DIFF_SEVERITIES[dimension]
         ):
             raise SchemaValidationError("diff dimension metadata is not canonical")
         _validate_diff_dimension_value(dimension, item.get("before"))
         _validate_diff_dimension_value(dimension, item.get("after"))
-        if schema_version in {"2.6.0", "2.7.0"}:
+        if schema_version in {"2.6.0", "2.7.0", "2.8.0"}:
             before_status = evidence_status(item.get("before"))
             after_status = evidence_status(item.get("after"))
             expected_transition = {
@@ -2276,7 +2330,7 @@ def _validate_changed_dimensions_portability(
             }
             if item.get("transition") != expected_transition:
                 raise SchemaValidationError("diff status transition is not canonical")
-        if schema_version == "2.7.0":
+        if schema_version in {"2.7.0", "2.8.0"}:
             _validate_diff_assessment(diff, item, dimension)
     if len(changed_names) != len(set(changed_names)):
         raise SchemaValidationError("diff changed dimensions are not unique")
@@ -2286,7 +2340,7 @@ def _validate_changed_dimensions_portability(
 def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
     all_dimensions = set(_DIFF_DIMENSION_PATHS)
     schema_version = diff.get("schema_version")
-    if schema_version in {"2.5.0", "2.6.0", "2.7.0"}:
+    if schema_version in {"2.5.0", "2.6.0", "2.7.0", "2.8.0"}:
         all_dimensions -= {"observer_privilege", "observer_uid_root"}
     changed_names, changed_by_name = _validate_changed_dimensions_portability(
         diff, all_dimensions
@@ -2295,7 +2349,7 @@ def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
     for field in (unchanged,):
         if not isinstance(field, list) or not set(field) <= all_dimensions:
             raise SchemaValidationError("diff signal list is not portable")
-    if schema_version in {"2.6.0", "2.7.0"}:
+    if schema_version in {"2.6.0", "2.7.0", "2.8.0"}:
         _validate_structured_signal_portability(
             diff,
             changed_by_name,
@@ -2315,14 +2369,14 @@ def _validate_diff_dimensions_portability(diff: dict[str, Any]) -> None:
     if set(changed_names) & set(unchanged):
         raise SchemaValidationError("diff changed and unchanged dimensions overlap")
     if (
-        schema_version in {"2.5.0", "2.6.0", "2.7.0"}
+        schema_version in {"2.5.0", "2.6.0", "2.7.0", "2.8.0"}
         and (set(changed_names) | set(unchanged)) != all_dimensions
     ):
         raise SchemaValidationError(
             "diff target-state dimensions do not form a complete partition"
         )
     expected_summary = f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions unchanged."
-    if schema_version in {"2.6.0", "2.7.0"}:
+    if schema_version in {"2.6.0", "2.7.0", "2.8.0"}:
         expected_summary = (
             f"{len(changed_names)} dimensions changed, {len(unchanged)} dimensions "
             f"unchanged; {len(diff['new_signals'])} signals became available, "
@@ -2347,12 +2401,19 @@ def validate_portable_diff(diff: object) -> None:
         "2.5.0",
         "2.6.0",
         "2.7.0",
+        "2.8.0",
     }:
         return
     _validate_diff_provenance(diff)
-    if diff.get("schema_version") in {"2.4.0", "2.5.0", "2.6.0", "2.7.0"}:
+    if diff.get("schema_version") in {
+        "2.4.0",
+        "2.5.0",
+        "2.6.0",
+        "2.7.0",
+        "2.8.0",
+    }:
         _validate_diff_compatibility_portability(diff)
-    if diff.get("schema_version") in {"2.5.0", "2.6.0", "2.7.0"}:
+    if diff.get("schema_version") in {"2.5.0", "2.6.0", "2.7.0", "2.8.0"}:
         _validate_diff_comparison_portability(diff)
     _validate_diff_dimensions_portability(diff)
 

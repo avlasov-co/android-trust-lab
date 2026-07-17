@@ -1,0 +1,902 @@
+{
+  "boot_state": {
+    "boot_completed": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "boot_reason": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "kernel_cmdline_present": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "slot_suffix": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "collection_event_id": "atlevent-fdcd043623c20fc3144363af5ccf8cf2",
+  "collection_timestamp": "2026-07-16T12:00:01Z",
+  "content_digest": "0c7377abc09d4e1bc7c9f728d2e8c25d96ee83dc2aaddff3ce0d84f5b53a19f0",
+  "emulator_state": {
+    "indicators": {
+      "reason": null,
+      "status": "observed",
+      "value": [
+        "hardware_ranchu",
+        "product_sdk"
+      ]
+    },
+    "is_emulator": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    }
+  },
+  "experiment_id": "E35_cross_observer",
+  "extensions": {
+    "org.androidtrustlab.adapter": {
+      "captures": [
+        {
+          "name": "build_version",
+          "source_ref": "captures/build_version.txt",
+          "status": "observed"
+        },
+        {
+          "name": "app_identity",
+          "source_ref": "captures/app_identity.txt",
+          "status": "observed"
+        },
+        {
+          "name": "install_source",
+          "source_ref": "captures/install_source.txt",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_self_context",
+          "source_ref": "captures/selinux_self_context.txt",
+          "status": "inaccessible"
+        },
+        {
+          "name": "file_system_shell",
+          "source_ref": "captures/file_system_shell.txt",
+          "status": "observed"
+        },
+        {
+          "name": "file_system_su",
+          "source_ref": "captures/file_system_su.txt",
+          "status": "observed"
+        },
+        {
+          "name": "file_system_xbin_su",
+          "source_ref": "captures/file_system_xbin_su.txt",
+          "status": "observed"
+        },
+        {
+          "name": "file_vendor_bin_su",
+          "source_ref": "captures/file_vendor_bin_su.txt",
+          "status": "observed"
+        },
+        {
+          "name": "file_sbin_su",
+          "source_ref": "captures/file_sbin_su.txt",
+          "status": "observed"
+        },
+        {
+          "name": "proc_self_status",
+          "source_ref": "captures/proc_self_status.txt",
+          "status": "observed"
+        },
+        {
+          "name": "proc_self_mountinfo",
+          "source_ref": "captures/proc_self_mountinfo.txt",
+          "status": "observed"
+        },
+        {
+          "name": "emulator_indicators",
+          "source_ref": "captures/emulator_indicators.txt",
+          "status": "observed"
+        }
+      ],
+      "collector_version": "0.3.0-dev0",
+      "errors": [],
+      "input_kind": "app_probe_json",
+      "input_schema_version": "2.0.0",
+      "warnings": []
+    },
+    "org.androidtrustlab.app-probe": {
+      "evidence_refs": [
+        "captures/build_version.txt",
+        "captures/app_identity.txt",
+        "captures/install_source.txt",
+        "captures/selinux_self_context.txt",
+        "captures/file_system_shell.txt",
+        "captures/file_system_su.txt",
+        "captures/file_system_xbin_su.txt",
+        "captures/file_vendor_bin_su.txt",
+        "captures/file_sbin_su.txt",
+        "captures/proc_self_status.txt",
+        "captures/proc_self_mountinfo.txt",
+        "captures/emulator_indicators.txt"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "probes": [
+          {
+            "evidence_refs": [
+              "captures/build_version.txt"
+            ],
+            "probe_id": "build_version",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "base_os_present": true,
+              "build_fingerprint_sha256": "f1616f2cd4ecb53714738102072a3f608760472be86202141a0ca5551a563f88",
+              "build_tags": [
+                "test_keys"
+              ],
+              "build_type": "user",
+              "release": "14",
+              "sdk_int": 34,
+              "security_patch": "2026-07-05",
+              "supported_abis": [
+                "x86_64"
+              ]
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/app_identity.txt"
+            ],
+            "probe_id": "app_identity",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "app_uid": 10135,
+              "debuggable": false
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/install_source.txt"
+            ],
+            "probe_id": "install_source",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "api_variant": "install_source_info",
+              "installer_present": true,
+              "source_category": "app_store"
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/selinux_self_context.txt"
+            ],
+            "probe_id": "selinux_self_context",
+            "reason": "the app sandbox could not access this capability",
+            "status": "inaccessible",
+            "value": null
+          },
+          {
+            "evidence_refs": [
+              "captures/file_system_shell.txt"
+            ],
+            "probe_id": "file_system_shell",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "exists": true,
+              "path_id": "system_shell",
+              "read_access": {
+                "status": "observed",
+                "value": true
+              }
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/file_system_su.txt"
+            ],
+            "probe_id": "file_system_su",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "exists": false,
+              "path_id": "system_su",
+              "read_access": {
+                "status": "observed",
+                "value": false
+              }
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/file_system_xbin_su.txt"
+            ],
+            "probe_id": "file_system_xbin_su",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "exists": true,
+              "path_id": "system_xbin_su",
+              "read_access": {
+                "status": "observed",
+                "value": true
+              }
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/file_vendor_bin_su.txt"
+            ],
+            "probe_id": "file_vendor_bin_su",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "exists": false,
+              "path_id": "vendor_bin_su",
+              "read_access": {
+                "status": "observed",
+                "value": false
+              }
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/file_sbin_su.txt"
+            ],
+            "probe_id": "file_sbin_su",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "exists": false,
+              "path_id": "sbin_su",
+              "read_access": {
+                "status": "observed",
+                "value": false
+              }
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/proc_self_status.txt"
+            ],
+            "probe_id": "proc_self_status",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "bounding_capabilities_nonzero": false,
+              "effective_capabilities_nonzero": false,
+              "no_new_privs": true,
+              "seccomp_filter_count": 1,
+              "seccomp_mode": 2
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/proc_self_mountinfo.txt"
+            ],
+            "probe_id": "proc_self_mountinfo",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "apex_mount_count": 8,
+              "malformed_record_count": 0,
+              "record_count": 38,
+              "selected_mounts": [
+                {
+                  "filesystem_type": "ext4",
+                  "mount_point_id": "root",
+                  "overlay": false,
+                  "read_only": true
+                },
+                {
+                  "filesystem_type": "ext4",
+                  "mount_point_id": "system",
+                  "overlay": false,
+                  "read_only": true
+                },
+                {
+                  "filesystem_type": "tmpfs",
+                  "mount_point_id": "apex",
+                  "overlay": false,
+                  "read_only": true
+                }
+              ]
+            }
+          },
+          {
+            "evidence_refs": [
+              "captures/emulator_indicators.txt"
+            ],
+            "probe_id": "emulator_indicators",
+            "reason": null,
+            "status": "observed",
+            "value": {
+              "indicators": [
+                "hardware_ranchu",
+                "product_sdk"
+              ],
+              "outcome": "indicated"
+            }
+          }
+        ],
+        "schema_version": "2.0.0"
+      }
+    },
+    "org.androidtrustlab.collection": {
+      "canonical_manifest_sha256": "4ce2beaa76299bee4e8f39707ce69978be88444bf742843d08f3988ff886e796",
+      "canonicalization": "atl-canonical-json-v1",
+      "portable_binding": {
+        "artifact_results": [
+          {
+            "command_id": "artifact-001",
+            "detail": null,
+            "exit_code": null,
+            "status": "observed",
+            "timed_out": false
+          },
+          {
+            "command_id": "artifact-002",
+            "detail": null,
+            "exit_code": null,
+            "status": "inaccessible",
+            "timed_out": false
+          }
+        ],
+        "collection_errors": [
+          "collection manifest completion status: partial",
+          "probe 002: inaccessible"
+        ],
+        "collection_id": "collection-redacted",
+        "completion_status": "partial",
+        "raw_artifact_sha256": "91036f7ff9bb79dbaa0106d3948eaa53c2d63e5e623383f0218bed5b7b2f4c05",
+        "raw_artifact_status": "observed",
+        "redaction_state": "redacted"
+      }
+    },
+    "org.androidtrustlab.comparison-context": {
+      "environment_context": "synthetic",
+      "experiment_id": "E35_cross_observer",
+      "measurement_id": "atlevent-fdcd043623c20fc3144363af5ccf8cf2",
+      "observer": "unprivileged_app",
+      "observer_privilege": "app_sandbox",
+      "protocol": "app",
+      "report_schema_version": "6.0.0",
+      "state_id": "state-e35-cross-observer-rooted-avd",
+      "target_class": "avd",
+      "target_pseudonym": "target-3535353535353535"
+    }
+  },
+  "limitations": {
+    "collection_errors": [
+      "collection manifest completion status: partial",
+      "probe 002: inaccessible"
+    ],
+    "emulator_target": true,
+    "incomplete_permissions": true,
+    "missing_real_bootloader": true,
+    "missing_tee_validation": true
+  },
+  "magisk_state": {
+    "binary_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk binary visibility evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "command_status": {
+      "evidence_refs": [],
+      "reason": "the Magisk command evidence was not collected",
+      "status": "not_collected"
+    },
+    "daemon_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk daemon evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "limitations": [
+      "daemon_visibility_inconclusive",
+      "magisk_command_unavailable",
+      "process_visibility_scoped",
+      "zygisk_indicator_not_runtime_proof"
+    ],
+    "module_context": {
+      "evidence_refs": [],
+      "reason": "the Magisk module context evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "process_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk process evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "source_observer": "unprivileged_app",
+    "version_code": {
+      "evidence_refs": [],
+      "reason": "the Magisk version code evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "version_name": {
+      "evidence_refs": [],
+      "reason": "the Magisk version name evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "zygisk_visibility": {
+      "evidence_refs": [],
+      "reason": "the Zygisk visibility evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "mounts": {
+    "apex_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/apex",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "apex_set": {
+      "bind_count": 0,
+      "mount_count": 0,
+      "overlay_count": 0,
+      "package_count": 0,
+      "packages": [],
+      "read_only_count": 0,
+      "record_indices": [],
+      "unknown_access_count": 0,
+      "writable_count": 0
+    },
+    "data_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/data",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "dynamic_partitions": {
+      "record_indices": [],
+      "sources": [],
+      "state": "unknown"
+    },
+    "integrity_context": {
+      "assessment": "not_assessed",
+      "bind_mounts_detected": 0,
+      "reason": "mount access is contextual evidence, not an integrity verdict",
+      "unknown_sensitive_mounts": [
+        "/apex",
+        "/data",
+        "/odm",
+        "/product",
+        "/system",
+        "/system_ext",
+        "/vendor"
+      ]
+    },
+    "integrity_summary": {
+      "overlay_detected": {
+        "reason": "source did not provide a usable observation",
+        "status": "not_collected",
+        "value": null
+      },
+      "writable_sensitive_mounts": {
+        "reason": "source did not provide a usable observation",
+        "status": "not_collected",
+        "value": null
+      }
+    },
+    "observation": {
+      "attempts": [],
+      "evidence_paths": [],
+      "parse_status": "not_parsed",
+      "scope": "observer_self",
+      "selected_format": null,
+      "selected_source": null,
+      "selection_reason": "no mount capture was usable"
+    },
+    "odm_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/odm",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "product_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/product",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "records": [],
+    "system_ext_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/system_ext",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "system_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/system",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    },
+    "system_resolution": {
+      "reason": "neither an exact /system mount nor a root mount was observed",
+      "record_indices": [],
+      "state": "unresolved",
+      "system_root": null
+    },
+    "vendor_mount": {
+      "classification": null,
+      "fs_type": null,
+      "mount_point": "/vendor",
+      "options": [],
+      "raw": null,
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected"
+    }
+  },
+  "observer": {
+    "collection_method": "app_snapshot",
+    "observer_type": "unprivileged_app",
+    "privilege_level": "app_sandbox"
+  },
+  "process_state": {
+    "capture_status": "not_collected",
+    "completeness": "unknown",
+    "evidence_refs": [],
+    "limitations": [
+      "observer_scoped_visibility"
+    ],
+    "scope": "unknown",
+    "selected_processes": [
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "init",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "adbd",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "zygote",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "zygote64",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "system_server",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magisk",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magiskd",
+        "visibility": {
+          "reason": "the capture was not collected",
+          "status": "not_collected",
+          "value": null
+        }
+      }
+    ],
+    "source_format": "unknown",
+    "source_observer": "unprivileged_app"
+  },
+  "properties": {
+    "all_count": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "boot": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "build": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "crypto": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "product": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "security": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "provenance": {
+    "command_results": [
+      {
+        "command_id": "artifact-001",
+        "detail": null,
+        "exit_code": null,
+        "status": "observed",
+        "timed_out": false
+      },
+      {
+        "command_id": "artifact-002",
+        "detail": null,
+        "exit_code": null,
+        "status": "inaccessible",
+        "timed_out": false
+      }
+    ],
+    "generator": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
+    "migration_history": [],
+    "normalizer": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
+    "source_schema_version": "raw"
+  },
+  "raw_artifacts": [
+    {
+      "byte_size": 5053,
+      "collection_id": "collection-redacted",
+      "collector_name": "trustlab-app",
+      "collector_version": "0.3.0-dev0",
+      "logical_id": "raw-artifact-001",
+      "media_type": "application/json",
+      "redaction_state": "redacted",
+      "relative_path": "artifacts/raw-artifact-001.json",
+      "sha256": "91036f7ff9bb79dbaa0106d3948eaa53c2d63e5e623383f0218bed5b7b2f4c05",
+      "status": "observed"
+    }
+  ],
+  "report_id": "atlrep-4cfa8562f35e54a06330bdc4919e5f98",
+  "root_state": {
+    "limitations": [
+      "independent_root_probe_not_collected",
+      "root_shell_not_tested",
+      "su_not_tested"
+    ],
+    "observer_effective_uid_is_root": {
+      "evidence_refs": [],
+      "reason": "the observer effective UID evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "root_management_artifact_observed": {
+      "evidence_refs": [],
+      "reason": "the root-management artifact evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "root_shell_available": {
+      "evidence_refs": [],
+      "reason": "the root shell availability evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "source_observer": "unprivileged_app",
+    "su_binary_observed": {
+      "evidence_refs": [],
+      "reason": "the su binary evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "su_invocation_result": {
+      "evidence_refs": [],
+      "reason": "the su invocation result evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "su_invocation_tested": {
+      "evidence_refs": [],
+      "reason": "the su invocation test evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "schema_version": "6.0.0",
+  "selinux": {
+    "current_context": {
+      "evidence_refs": [],
+      "reason": "the observer could not access the capture",
+      "status": "inaccessible",
+      "value": null
+    },
+    "denial_collection": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
+      "status": "not_collected"
+    },
+    "limitations": [
+      "complete_policy_not_inspected",
+      "denials_not_collected",
+      "current_context_not_observed"
+    ],
+    "policy_mode": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "source_observer": "unprivileged_app"
+  },
+  "target": {
+    "android_version": {
+      "reason": null,
+      "status": "observed",
+      "value": "14"
+    },
+    "build_fingerprint": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "device_codename": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "manufacturer": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "model": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "sdk": {
+      "reason": null,
+      "status": "observed",
+      "value": "34"
+    },
+    "target_type": "avd"
+  },
+  "verified_boot": {
+    "confidence": {
+      "command_success": "not_collected",
+      "corroborating_signal_count": 0,
+      "evidence_refs": [],
+      "level": "unassessed",
+      "observer_capability": "app_sandbox",
+      "source_quality": "unavailable",
+      "target_limitations": [
+        "hardware_attestation_not_collected",
+        "observer_capability_limited",
+        "virtual_target_not_hardware_backed"
+      ]
+    },
+    "flash_locked": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "raw_properties": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "vbmeta_device_state": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "verified_boot_state": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    },
+    "verity_mode": {
+      "reason": "source did not provide a usable observation",
+      "status": "not_collected",
+      "value": null
+    }
+  }
+}

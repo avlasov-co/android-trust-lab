@@ -1,0 +1,990 @@
+{
+  "boot_state": {
+    "boot_completed": {
+      "reason": null,
+      "status": "observed",
+      "value": "1"
+    },
+    "boot_reason": {
+      "reason": null,
+      "status": "observed",
+      "value": "reboot"
+    },
+    "kernel_cmdline_present": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": false
+    },
+    "slot_suffix": {
+      "reason": null,
+      "status": "observed",
+      "value": "_a"
+    }
+  },
+  "collection_event_id": "atlevent-f90bdc82ffc4ddd7b25f2f75415c2c97",
+  "collection_timestamp": "2026-07-16T12:00:03Z",
+  "content_digest": "b972bc2c0d81800ddbae4b642934cb82c929bd3cce2c22e99f9906f3e96c0ff0",
+  "emulator_state": {
+    "indicators": {
+      "reason": null,
+      "status": "observed",
+      "value": [
+        "fingerprint",
+        "model",
+        "ro.kernel.qemu"
+      ]
+    },
+    "is_emulator": {
+      "reason": null,
+      "status": "observed",
+      "value": true
+    }
+  },
+  "experiment_id": "E35_cross_observer",
+  "extensions": {
+    "org.androidtrustlab.adapter": {
+      "captures": [
+        {
+          "name": "properties",
+          "source_ref": "legacy-sections/GETPROP",
+          "status": "observed"
+        },
+        {
+          "name": "boot_state",
+          "source_ref": "legacy-sections/BOOT_STATE",
+          "status": "observed"
+        },
+        {
+          "name": "mountinfo",
+          "source_ref": "legacy-sections/MOUNTINFO",
+          "status": "not_collected"
+        },
+        {
+          "name": "proc_mounts",
+          "source_ref": "legacy-sections/PROC_MOUNTS",
+          "status": "not_collected"
+        },
+        {
+          "name": "mounts",
+          "source_ref": "legacy-sections/MOUNT",
+          "status": "observed"
+        },
+        {
+          "name": "identity",
+          "source_ref": "legacy-sections/ID",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_mode",
+          "source_ref": "legacy-sections/GETENFORCE",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_context",
+          "source_ref": "legacy-sections/SELINUX_CONTEXT",
+          "status": "observed"
+        },
+        {
+          "name": "selinux_denials",
+          "source_ref": "legacy-sections/SELINUX_DENIALS",
+          "status": "not_collected"
+        },
+        {
+          "name": "kernel_cmdline",
+          "source_ref": "legacy-sections/CMDLINE",
+          "status": "not_collected"
+        },
+        {
+          "name": "su_paths",
+          "source_ref": "legacy-sections/SU_PATHS",
+          "status": "observed"
+        },
+        {
+          "name": "root_probe",
+          "source_ref": "legacy-sections/ROOT_PROBE",
+          "status": "not_collected"
+        },
+        {
+          "name": "processes",
+          "source_ref": "legacy-sections/PS",
+          "status": "observed"
+        }
+      ],
+      "collector_version": "0.3.0-dev0",
+      "errors": [],
+      "input_kind": "adb_collection_manifest",
+      "input_schema_version": "1.0.0",
+      "warnings": [
+        "adapter warning 001 withheld",
+        "adapter warning 002 withheld"
+      ]
+    },
+    "org.androidtrustlab.collection": {
+      "canonical_manifest_sha256": "d45068fd00bbfa539675df512699a3265363c8816d55b5b015fcf2cb165441d3",
+      "canonicalization": "atl-canonical-json-v1",
+      "portable_binding": {
+        "artifact_results": [
+          {
+            "command_id": "artifact-001",
+            "detail": null,
+            "exit_code": 0,
+            "status": "observed",
+            "timed_out": false
+          }
+        ],
+        "collection_errors": [],
+        "collection_id": "collection-redacted",
+        "completion_status": "complete",
+        "raw_artifact_sha256": "aeae07a7317a1be82374170599aedd18a0b27598485eac09f8c41fad06a2f999",
+        "raw_artifact_status": "observed",
+        "redaction_state": "redacted"
+      }
+    },
+    "org.androidtrustlab.comparison-context": {
+      "environment_context": "synthetic",
+      "experiment_id": "E35_cross_observer",
+      "measurement_id": "atlevent-f90bdc82ffc4ddd7b25f2f75415c2c97",
+      "observer": "adb_shell",
+      "observer_privilege": "shell",
+      "protocol": "adb",
+      "report_schema_version": "6.0.0",
+      "state_id": "state-e35-cross-observer-rooted-avd",
+      "target_class": "avd",
+      "target_pseudonym": "target-3535353535353535"
+    }
+  },
+  "limitations": {
+    "collection_errors": [],
+    "emulator_target": true,
+    "incomplete_permissions": true,
+    "missing_real_bootloader": true,
+    "missing_tee_validation": true
+  },
+  "magisk_state": {
+    "binary_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk binary visibility evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "command_status": {
+      "evidence_refs": [],
+      "reason": "the Magisk command evidence was not collected",
+      "status": "not_collected"
+    },
+    "daemon_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk daemon evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "limitations": [
+      "daemon_visibility_inconclusive",
+      "magisk_command_unavailable",
+      "process_visibility_scoped",
+      "zygisk_indicator_not_runtime_proof"
+    ],
+    "module_context": {
+      "evidence_refs": [],
+      "reason": "the Magisk module context evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "process_visibility": {
+      "evidence_refs": [],
+      "reason": "the Magisk process evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "source_observer": "adb_shell",
+    "version_code": {
+      "evidence_refs": [],
+      "reason": "the Magisk version code evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "version_name": {
+      "evidence_refs": [],
+      "reason": "the Magisk version name evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "zygisk_visibility": {
+      "evidence_refs": [],
+      "reason": "the Zygisk visibility evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "mounts": {
+    "apex_mount": {
+      "classification": "tmpfs",
+      "fs_type": "tmpfs",
+      "mount_point": "/apex",
+      "options": [
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "apex_set": {
+      "bind_count": 0,
+      "mount_count": 1,
+      "overlay_count": 0,
+      "package_count": 0,
+      "packages": [],
+      "read_only_count": 1,
+      "record_indices": [
+        6
+      ],
+      "unknown_access_count": 0,
+      "writable_count": 0
+    },
+    "data_mount": {
+      "classification": "read-write",
+      "fs_type": "ext4",
+      "mount_point": "/data",
+      "options": [
+        "nodev",
+        "nosuid",
+        "rw"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "dynamic_partitions": {
+      "record_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "sources": [
+        "/dev/block/dm-redacted"
+      ],
+      "state": "detected"
+    },
+    "integrity_context": {
+      "assessment": "not_assessed",
+      "bind_mounts_detected": 0,
+      "reason": "mount access is contextual evidence, not an integrity verdict",
+      "unknown_sensitive_mounts": []
+    },
+    "integrity_summary": {
+      "overlay_detected": {
+        "reason": "collection completed and the signal was absent",
+        "status": "observed_absent",
+        "value": false
+      },
+      "writable_sensitive_mounts": {
+        "reason": "collection completed and the signal was absent",
+        "status": "observed_absent",
+        "value": []
+      }
+    },
+    "observation": {
+      "attempts": [
+        {
+          "capture_status": "not_collected",
+          "format": "mountinfo",
+          "malformed_line_count": 0,
+          "name": "mountinfo",
+          "parse_status": "not_parsed",
+          "record_count": 0,
+          "source_ref": "captures/mountinfo.txt",
+          "warnings": []
+        },
+        {
+          "capture_status": "not_collected",
+          "format": "proc_mounts",
+          "malformed_line_count": 0,
+          "name": "proc_mounts",
+          "parse_status": "not_parsed",
+          "record_count": 0,
+          "source_ref": "captures/proc_mounts.txt",
+          "warnings": []
+        },
+        {
+          "capture_status": "observed",
+          "format": "mount",
+          "malformed_line_count": 0,
+          "name": "mounts",
+          "parse_status": "complete",
+          "record_count": 7,
+          "source_ref": "captures/mounts.txt",
+          "warnings": []
+        }
+      ],
+      "evidence_paths": [
+        "captures/mounts.txt"
+      ],
+      "parse_status": "complete",
+      "scope": "observer_self",
+      "selected_format": "mount",
+      "selected_source": "mounts",
+      "selection_reason": "selected mounts after mountinfo, proc_mounts was unavailable or unusable"
+    },
+    "odm_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/odm",
+      "options": [
+        "relatime",
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "product_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/product",
+      "options": [
+        "relatime",
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "records": [
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "relatime",
+          "ro"
+        ],
+        "mount_point": "/system",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 0,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 1,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "relatime",
+          "ro"
+        ],
+        "mount_point": "/vendor",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 1,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 2,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "relatime",
+          "ro"
+        ],
+        "mount_point": "/product",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 2,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 3,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "relatime",
+          "ro"
+        ],
+        "mount_point": "/system_ext",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 3,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 4,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "relatime",
+          "ro"
+        ],
+        "mount_point": "/odm",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 4,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 5,
+        "super_options": []
+      },
+      {
+        "access": "writable",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "ext4",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "nodev",
+          "nosuid",
+          "rw"
+        ],
+        "mount_point": "/data",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 5,
+        "root": null,
+        "source": "/dev/block/dm-redacted",
+        "source_line": 6,
+        "super_options": []
+      },
+      {
+        "access": "read_only",
+        "bind_state": "unknown",
+        "evidence_path": "captures/mounts.txt",
+        "format": "mount",
+        "fs_type": "tmpfs",
+        "major_minor": null,
+        "mount_id": null,
+        "mount_options": [
+          "ro"
+        ],
+        "mount_point": "/apex",
+        "optional_fields": [],
+        "overlay_state": "not_detected",
+        "parent_id": null,
+        "parse_status": "parsed",
+        "propagation": {
+          "kind": "unknown",
+          "master_id": null,
+          "propagate_from_id": null,
+          "shared_id": null,
+          "unbindable": false
+        },
+        "raw": "<withheld>",
+        "record_index": 6,
+        "root": null,
+        "source": "tmpfs",
+        "source_line": 7,
+        "super_options": []
+      }
+    ],
+    "system_ext_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/system_ext",
+      "options": [
+        "relatime",
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "system_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/system",
+      "options": [
+        "relatime",
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    },
+    "system_resolution": {
+      "reason": "one exact /system mount was observed",
+      "record_indices": [
+        0
+      ],
+      "state": "explicit_system",
+      "system_root": "/system"
+    },
+    "vendor_mount": {
+      "classification": "read-only",
+      "fs_type": "ext4",
+      "mount_point": "/vendor",
+      "options": [
+        "relatime",
+        "ro"
+      ],
+      "raw": "<withheld>",
+      "reason": null,
+      "status": "observed"
+    }
+  },
+  "observer": {
+    "collection_method": "adb_shell_snapshot",
+    "observer_type": "adb_shell",
+    "privilege_level": "shell"
+  },
+  "process_state": {
+    "capture_status": "observed",
+    "completeness": "complete",
+    "evidence_refs": [
+      "legacy-sections/PS"
+    ],
+    "limitations": [
+      "observer_scoped_visibility",
+      "selected_filter_not_exhaustive"
+    ],
+    "scope": "selected",
+    "selected_processes": [
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:init:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "init",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:adbd:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "adbd",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "zygote",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:zygote:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "zygote64",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": null,
+          "status": "observed",
+          "value": "u:r:system_server:s0"
+        },
+        "evidence_refs": [
+          "legacy-sections/PS"
+        ],
+        "name": "system_server",
+        "visibility": {
+          "reason": null,
+          "status": "observed",
+          "value": true
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magisk",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      },
+      {
+        "context": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        },
+        "evidence_refs": [],
+        "name": "magiskd",
+        "visibility": {
+          "reason": "the capture scope cannot prove process absence",
+          "status": "not_collected",
+          "value": null
+        }
+      }
+    ],
+    "source_format": "selected",
+    "source_observer": "adb_shell"
+  },
+  "properties": {
+    "all_count": {
+      "reason": null,
+      "status": "observed",
+      "value": 15
+    },
+    "boot": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.boot.flash.locked": "1",
+        "ro.boot.vbmeta.device_state": "locked",
+        "ro.boot.verifiedbootstate": "green",
+        "ro.boot.veritymode": "enforcing"
+      }
+    },
+    "build": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.build.fingerprint": "redacted-build-fingerprint",
+        "ro.build.version.release": "14",
+        "ro.build.version.sdk": "34"
+      }
+    },
+    "crypto": {
+      "reason": "collection completed and the signal was absent",
+      "status": "observed_absent",
+      "value": {}
+    },
+    "product": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.product.device": "redacted-device-codename",
+        "ro.product.manufacturer": "redacted-manufacturer",
+        "ro.product.model": "redacted-model"
+      }
+    },
+    "security": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.adb.secure": "1",
+        "ro.debuggable": "0",
+        "ro.secure": "1",
+        "sys.boot_completed": "1"
+      }
+    }
+  },
+  "provenance": {
+    "command_results": [
+      {
+        "command_id": "artifact-001",
+        "detail": null,
+        "exit_code": 0,
+        "status": "observed",
+        "timed_out": false
+      }
+    ],
+    "generator": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
+    "migration_history": [],
+    "normalizer": {
+      "name": "trustlab",
+      "version": "0.3.0.dev0"
+    },
+    "source_schema_version": "raw"
+  },
+  "raw_artifacts": [
+    {
+      "byte_size": 1497,
+      "collection_id": "collection-redacted",
+      "collector_name": "redacted-collector",
+      "collector_version": "0.3.0-dev0",
+      "logical_id": "raw-artifact-001",
+      "media_type": "text/plain",
+      "redaction_state": "redacted",
+      "relative_path": "artifacts/raw-artifact-001.txt",
+      "sha256": "aeae07a7317a1be82374170599aedd18a0b27598485eac09f8c41fad06a2f999",
+      "status": "observed"
+    }
+  ],
+  "report_id": "atlrep-d7eceb32d4d8ce916f393d534434c7ec",
+  "root_state": {
+    "limitations": [
+      "independent_root_probe_not_collected",
+      "root_shell_not_tested",
+      "su_not_tested"
+    ],
+    "observer_effective_uid_is_root": {
+      "evidence_refs": [
+        "legacy-sections/ID"
+      ],
+      "reason": "the observer effective UID was not root",
+      "status": "observed_absent",
+      "value": false
+    },
+    "root_management_artifact_observed": {
+      "evidence_refs": [],
+      "reason": "the root-management artifact evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "root_shell_available": {
+      "evidence_refs": [],
+      "reason": "the root shell availability evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "source_observer": "adb_shell",
+    "su_binary_observed": {
+      "evidence_refs": [
+        "legacy-sections/SU_PATHS"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": true
+    },
+    "su_invocation_result": {
+      "evidence_refs": [],
+      "reason": "the su invocation result evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    },
+    "su_invocation_tested": {
+      "evidence_refs": [],
+      "reason": "the su invocation test evidence was not collected",
+      "status": "not_collected",
+      "value": null
+    }
+  },
+  "schema_version": "6.0.0",
+  "selinux": {
+    "current_context": {
+      "evidence_refs": [
+        "legacy-sections/SELINUX_CONTEXT"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": "u:r:shell:s0"
+    },
+    "denial_collection": {
+      "evidence_refs": [],
+      "reason": "the capture was not collected",
+      "status": "not_collected"
+    },
+    "limitations": [
+      "complete_policy_not_inspected",
+      "denials_not_collected"
+    ],
+    "policy_mode": {
+      "evidence_refs": [
+        "legacy-sections/GETENFORCE"
+      ],
+      "reason": null,
+      "status": "observed",
+      "value": "enforcing"
+    },
+    "source_observer": "adb_shell"
+  },
+  "target": {
+    "android_version": {
+      "reason": null,
+      "status": "observed",
+      "value": "14"
+    },
+    "build_fingerprint": {
+      "reason": null,
+      "status": "observed",
+      "value": "redacted-build-fingerprint"
+    },
+    "device_codename": {
+      "reason": null,
+      "status": "observed",
+      "value": "redacted-device-codename"
+    },
+    "manufacturer": {
+      "reason": null,
+      "status": "observed",
+      "value": "redacted-manufacturer"
+    },
+    "model": {
+      "reason": null,
+      "status": "observed",
+      "value": "redacted-model"
+    },
+    "sdk": {
+      "reason": null,
+      "status": "observed",
+      "value": "34"
+    },
+    "target_type": "avd"
+  },
+  "verified_boot": {
+    "confidence": {
+      "command_success": "complete",
+      "corroborating_signal_count": 4,
+      "evidence_refs": [
+        "legacy-sections/BOOT_STATE",
+        "legacy-sections/GETPROP"
+      ],
+      "level": "low",
+      "observer_capability": "shell",
+      "source_quality": "legacy_inferred",
+      "target_limitations": [
+        "hardware_attestation_not_collected",
+        "legacy_capture_status_inferred",
+        "virtual_target_not_hardware_backed"
+      ]
+    },
+    "flash_locked": {
+      "reason": null,
+      "status": "observed",
+      "value": "1"
+    },
+    "raw_properties": {
+      "reason": null,
+      "status": "observed",
+      "value": {
+        "ro.boot.flash.locked": "1",
+        "ro.boot.vbmeta.device_state": "locked",
+        "ro.boot.verifiedbootstate": "green",
+        "ro.boot.veritymode": "enforcing"
+      }
+    },
+    "vbmeta_device_state": {
+      "reason": null,
+      "status": "observed",
+      "value": "locked"
+    },
+    "verified_boot_state": {
+      "reason": null,
+      "status": "observed",
+      "value": "green"
+    },
+    "verity_mode": {
+      "reason": null,
+      "status": "observed",
+      "value": "enforcing"
+    }
+  }
+}

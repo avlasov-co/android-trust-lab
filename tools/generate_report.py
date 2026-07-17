@@ -19,7 +19,12 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "analyzer"))
+sys.path.insert(0, str(ROOT / "tools"))
 
+from cross_observer_fixture import (  # noqa: E402
+    CROSS_OBSERVER_MATRIX_RELATIVE,
+    build_cross_observer_artifacts,
+)
 from trustlab import __version__
 from trustlab.collection_manifest import CollectionManifest
 from trustlab.comparison import attach_comparison_context
@@ -109,6 +114,7 @@ def broad_artifact_manifest(
             "Dataset source evidence is bound separately by datasets/manifest.json.",
             "No standalone Magisk zip is stored as a checked-in repository artifact.",
             "Current sample evidence is synthetic / AVD-limited and does not claim physical-device validation.",
+            "The separate Step 35 cross-observer fixture is project-authored synthetic evidence bound by its three collection manifests and manually authored expectations.",
             "Use the complete repository gate for validation results; this generated manifest does not attest to test execution.",
         ],
     }
@@ -527,6 +533,14 @@ def build_outputs() -> dict[Path, bytes]:
         outputs[dataset_dir / artifacts[artifact_id]["relative_path"]] = diff_payload
         diff_entries.append((derivation, diff))
 
+    cross_observer = build_cross_observer_artifacts(ROOT)
+    outputs.update(cross_observer.outputs)
+    combined_reports = [
+        *reports,
+        *cross_observer.reports_by_observer.values(),
+    ]
+    combined_diff_entries = [*diff_entries, *cross_observer.diff_entries]
+
     if set(artifact_payloads) != set(artifacts):
         raise ValueError(
             "dataset source contains an unsupported or unresolved artifact"
@@ -575,9 +589,11 @@ def build_outputs() -> dict[Path, bytes]:
             diff_entries[0][1]
         )
 
-    outputs[ROOT / "results/summary_table.md"] = summary_table(reports).encode()
+    outputs[ROOT / "results/summary_table.md"] = summary_table(
+        combined_reports
+    ).encode()
     outputs[ROOT / "results/trust_state_diffs.md"] = diff_markdown(
-        diff_entries
+        combined_diff_entries
     ).encode()
     outputs[ROOT / "results/figures/trust_dimensions_matrix.md"] = matrix_markdown(
         reports_by_exp
@@ -603,12 +619,26 @@ def build_outputs() -> dict[Path, bytes]:
         if artifact["role"] in {"normalized_report", "derived_diff"}
     )
     artifact_specs.extend(
+        (
+            path,
+            "generated_cross_observer_report"
+            if "/reports/" in path.as_posix()
+            else "generated_cross_observer_diff",
+        )
+        for path in cross_observer.outputs
+        if path != ROOT / CROSS_OBSERVER_MATRIX_RELATIVE
+    )
+    artifact_specs.extend(
         [
             (ROOT / "results/summary_table.md", "generated_table"),
             (ROOT / "results/trust_state_diffs.md", "generated_report"),
             (
                 ROOT / "results/figures/trust_dimensions_matrix.md",
                 "generated_matrix",
+            ),
+            (
+                ROOT / CROSS_OBSERVER_MATRIX_RELATIVE,
+                "generated_cross_observer_matrix",
             ),
             (
                 ROOT / "docs/trust_dimension_registry.md",

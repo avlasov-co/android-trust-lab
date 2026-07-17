@@ -46,6 +46,7 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
         "trust_diff_v2_5_0.schema.json",
         "trust_diff_v2_6_0.schema.json",
         "trust_diff_v2_7_0.schema.json",
+        "trust_diff_v2_8_0.schema.json",
         "trust_dimension_registry_v1_0_0.schema.json",
         "trust_report_v1_0_0.schema.json",
         "trust_report_v2_0_0.schema.json",
@@ -59,11 +60,20 @@ def test_packaged_project_schema_registry_is_meta_schema_valid():
 def test_current_report_and_diff_schemas_are_closed_and_required_complete():
     for name in (
         "trust_report_v6_0_0.schema.json",
-        "trust_diff_v2_7_0.schema.json",
+        "trust_diff_v2_8_0.schema.json",
     ):
         schema = load_schema(name)
         assert set(schema["required"]) == set(schema["properties"])
         assert schema["additionalProperties"] is False
+
+
+def test_diff_v2_8_adds_extension_safe_paths_without_mutating_frozen_v2_7():
+    path = "extensions.org.androidtrustlab.app-probe"
+    frozen = load_schema("trust_diff_v2_7_0.schema.json")["$defs"]["signalPath"]
+    current = load_schema("trust_diff_v2_8_0.schema.json")["$defs"]["signalPath"]
+
+    assert not Draft202012Validator(frozen).is_valid(path)
+    assert Draft202012Validator(current).is_valid(path)
 
 
 def test_current_identity_documents_reject_excessive_nesting_before_schema_walk():

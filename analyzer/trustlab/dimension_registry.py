@@ -87,7 +87,11 @@ def _comparison_value(value: Any) -> Any:
     """Project evidence onto status/value semantics, excluding reference noise."""
 
     if isinstance(value, dict) and {"status", "value", "reason"} <= value.keys():
-        return {"status": value["status"], "value": value["value"]}
+        return {
+            key: _comparison_value(item)
+            for key, item in value.items()
+            if key not in {"evidence_refs", "reason"}
+        }
     if (
         isinstance(value, dict)
         and {"status", "reason", "evidence_refs"} <= value.keys()

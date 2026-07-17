@@ -46,7 +46,7 @@ def test_supported_version_table_is_complete_and_exact():
             ),
         ),
         SchemaFamily.DIFF: SchemaSupport(
-            current_write_version="2.7.0",
+            current_write_version="2.8.0",
             readable_versions=frozenset(
                 {
                     "1.0.0",
@@ -58,6 +58,7 @@ def test_supported_version_table_is_complete_and_exact():
                     "2.5.0",
                     "2.6.0",
                     "2.7.0",
+                    "2.8.0",
                 }
             ),
         ),
@@ -106,6 +107,7 @@ def test_schema_resource_registry_is_exact_and_fail_closed():
         (SchemaFamily.DIFF, "2.5.0"): "trust_diff_v2_5_0.schema.json",
         (SchemaFamily.DIFF, "2.6.0"): "trust_diff_v2_6_0.schema.json",
         (SchemaFamily.DIFF, "2.7.0"): "trust_diff_v2_7_0.schema.json",
+        (SchemaFamily.DIFF, "2.8.0"): "trust_diff_v2_8_0.schema.json",
         (SchemaFamily.DATASET_MANIFEST, "1.0.0"): (
             "dataset_manifest_v1_0_0.schema.json"
         ),
@@ -201,7 +203,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         "dataset_manifest": dataset_manifest["schema_version"],
     } == {
         "report": "6.0.0",
-        "diff": "2.7.0",
+        "diff": "2.8.0",
         "dataset_manifest": "2.0.0",
     }
     assert report["schema_version"] == current_write_version(SchemaFamily.REPORT)
@@ -232,7 +234,7 @@ def test_writers_emit_literal_versions_declared_by_the_support_table():
         (
             validate_diff,
             "tests/fixtures/sample_diff.json",
-            "trust_diff_v2_7_0.schema.json",
+            "trust_diff_v2_8_0.schema.json",
         ),
         (
             validate_diff,

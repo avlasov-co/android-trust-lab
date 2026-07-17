@@ -1960,6 +1960,7 @@ def validate_diff(data: object) -> None:
         "2.5.0",
         "2.6.0",
         "2.7.0",
+        "2.8.0",
     }:
         _validate_canonical_document(data, artifact_name="diff")
     validate_with_schema(
@@ -1977,6 +1978,7 @@ def validate_diff(data: object) -> None:
         "2.5.0",
         "2.6.0",
         "2.7.0",
+        "2.8.0",
     }:
         _validate_v2_diff_semantics(data, schema_version=resource_version)
     validate_portable_diff(data)
@@ -2031,6 +2033,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.5.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
             "2.6.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
             "2.7.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
+            "2.8.0": {"3.0.0", "4.0.0", "5.0.0", "6.0.0"},
         }[schema_version]
         if (original_version in content_addressed_versions) != (
             original_digest is not None
@@ -2149,6 +2152,17 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
                 ]
                 for version in SUPPORTED_REPORT_SCHEMA_VERSIONS
             },
+            "2.8.0": {
+                version: [
+                    (
+                        step.migration_id,
+                        step.source_schema_version,
+                        step.target_schema_version,
+                    )
+                    for step in report_migration_path(version)
+                ]
+                for version in SUPPORTED_REPORT_SCHEMA_VERSIONS
+            },
         }
         expected_steps = expected_steps_by_version[schema_version].get(original_version)
         if expected_steps is None or len(migrations) != len(expected_steps):
@@ -2177,6 +2191,7 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             "2.5.0": "6.0.0",
             "2.6.0": "6.0.0",
             "2.7.0": "6.0.0",
+            "2.8.0": "6.0.0",
         }[schema_version]
         if original_version == current_report_version and (
             provenance["original_report_id"] != common_report["report_id"]
@@ -2187,9 +2202,9 @@ def _validate_v2_diff_semantics(data: object, *, schema_version: str) -> None:
             raise SchemaValidationError(
                 "diff provenance does not bind the original current report identity"
             )
-    if schema_version in {"2.4.0", "2.5.0", "2.6.0", "2.7.0"}:
+    if schema_version in {"2.4.0", "2.5.0", "2.6.0", "2.7.0", "2.8.0"}:
         _validate_diff_compatibility(data)
-    if schema_version in {"2.5.0", "2.6.0", "2.7.0"}:
+    if schema_version in {"2.5.0", "2.6.0", "2.7.0", "2.8.0"}:
         _validate_diff_comparison(data)
 
 

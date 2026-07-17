@@ -50,6 +50,10 @@ def main() -> int:
     report_paths.append(ROOT / "tests" / "fixtures" / "sample_normalized_report.json")
     report_paths.append(ROOT / "tests" / "fixtures" / "report_v1_historical.json")
     report_paths.append(ROOT / "tests" / "fixtures" / "report_v2_historical.json")
+    cross_observer_root = ROOT / "tests" / "fixtures" / "cross_observer_bundle"
+    report_paths.extend(
+        sorted((cross_observer_root / "generated" / "reports").glob("*.json"))
+    )
     for path in report_paths:
         validate_report(load_json(path))
 
@@ -59,6 +63,9 @@ def main() -> int:
         artifact_paths[derivation["artifact_id"]]
         for derivation in manifest["derived_diffs"]
     )
+    diff_paths.extend(
+        sorted((cross_observer_root / "generated" / "diffs").glob("*.json"))
+    )
     for path in diff_paths:
         validate_diff(load_json(path))
 
@@ -67,6 +74,9 @@ def main() -> int:
         for artifact in manifest["artifacts"]
         if artifact["role"] == "collection_manifest"
     ]
+    collection_manifest_paths.extend(
+        sorted(cross_observer_root.glob("*/collection_manifest.json"))
+    )
     for path in collection_manifest_paths:
         validate_collection_manifest(load_json(path))
 
@@ -74,7 +84,7 @@ def main() -> int:
         f"validated {len(schema_names)} schemas, "
         f"{len(TRUST_DIMENSION_DEFINITIONS)} dimensions in 1 registry, "
         f"{len(report_paths)} reports, {len(diff_paths)} diffs, and "
-        f"{len(collection_manifest_paths)} collection manifest, "
+        f"{len(collection_manifest_paths)} collection manifests, "
         f"{len(historical_manifest_paths) + 1} dataset manifests, "
         "and 1 dataset source"
     )

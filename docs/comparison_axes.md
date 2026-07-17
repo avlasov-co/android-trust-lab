@@ -1,6 +1,6 @@
 # Comparison Axes and Comparability
 
-Introduced in diff `2.5.0` and retained by current diff `2.7.0`, comparison-axis classification runs before interpreting target-state dimensions. Reports may carry the identity-bound `org.androidtrustlab.comparison-context` extension with a privacy-preserving target pseudonym, state ID, and environment context. Target class, experiment, collection protocol, observer, observer privilege, report schema, and measurement ID are bound from the report itself.
+Introduced in diff `2.5.0` and retained by current diff `2.8.0`, comparison-axis classification runs before interpreting target-state dimensions. Reports may carry the identity-bound `org.androidtrustlab.comparison-context` extension with a privacy-preserving target pseudonym, state ID, and environment context. Target class, experiment, observer visibility protocol, observer, observer privilege, report schema, and measurement ID are bound from the report itself.
 
 The classifier emits one axis:
 

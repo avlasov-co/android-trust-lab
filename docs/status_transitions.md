@@ -1,6 +1,6 @@
 # Status-Aware Diff Transitions
 
-Introduced in diff `2.6.0` and retained by current diff `2.7.0`, status-aware comparison keeps evidence status separate from observed values. A literal observed string such as `unknown` therefore remains data and cannot collide with the `not_collected`, `inaccessible`, `command_error`, or `unsupported` outcomes.
+Introduced in diff `2.6.0` and retained by current diff `2.8.0`, status-aware comparison keeps evidence status separate from observed values. A literal observed string such as `unknown` therefore remains data and cannot collide with the `not_collected`, `inaccessible`, `command_error`, or `unsupported` outcomes.
 
 Every changed dimension records its before and after status, transition classification, and confidence impact. Availability changes also produce structured entries in `new_signals` or `missing_signals` with observed values, source evidence references, and a status-specific interpretation.
 

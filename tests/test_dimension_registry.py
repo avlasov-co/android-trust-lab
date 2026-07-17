@@ -16,6 +16,7 @@ from trustlab.dimension_registry import (
     TRUST_DIMENSION_DEFINITIONS,
     TRUST_DIMENSIONS_BY_ID,
     TrustDimensionRegistryError,
+    comparison_value,
     dimension_definition,
     dimensions_equal,
     extract_dimension,
@@ -175,6 +176,36 @@ def test_canonical_comparator_ignores_reason_and_evidence_reference_noise():
     assert dimensions_equal(dimension, before, after)
     after["value"] = False
     assert not dimensions_equal(dimension, before, after)
+
+
+def test_canonical_comparator_recursively_excludes_nested_evidence_references():
+    before = {
+        "status": "observed",
+        "value": {
+            "probes": [
+                {
+                    "probe_id": "example",
+                    "status": "observed",
+                    "value": True,
+                    "reason": None,
+                    "evidence_refs": ["captures/before.txt"],
+                }
+            ]
+        },
+        "reason": None,
+        "evidence_refs": ["captures/outer-before.txt"],
+    }
+    after = deepcopy(before)
+    after["value"]["probes"][0]["evidence_refs"] = ["captures/after.txt"]
+    after["evidence_refs"] = ["captures/outer-after.txt"]
+
+    assert comparison_value(before) == {
+        "status": "observed",
+        "value": {
+            "probes": [{"probe_id": "example", "status": "observed", "value": True}]
+        },
+    }
+    assert dimensions_equal("app_visible_state", before, after)
 
 
 def test_contextual_dimensions_return_and_require_canonical_sentinel():

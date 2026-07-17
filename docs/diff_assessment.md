@@ -1,6 +1,6 @@
 # Diff Materiality, Direction, and Confidence
 
-Current diff schema `2.7.0` separates three questions that vulnerability-style severity previously conflated:
+Current diff schema `2.8.0` separates three questions that vulnerability-style severity previously conflated. It retains the `2.7.0` assessment model and adds evidence-path support for registered extension names containing hyphens:
 
 - `materiality` describes how important a dimension is to interpreting the experiment: `informational`, `low`, `moderate`, or `high`.
 - `direction` describes a justified transition: `improvement`, `regression`, `context_change`, `visibility_change`, or `indeterminate`.

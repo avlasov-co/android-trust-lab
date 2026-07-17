@@ -210,8 +210,8 @@
     "warnings": []
   },
   "confidence_changes": [],
-  "content_digest": "73674a822bdfbb832b718f24abb6bcbe0875113a65f10d64aea05df52cbb67f1",
-  "diff_id": "atldiff-73674a822bdfbb832b718f24abb6bcbe",
+  "content_digest": "1579de84a7976bc478e537bf0da38bc6ebdc1f633e05a7fe753ee5fff87e961b",
+  "diff_id": "atldiff-1579de84a7976bc478e537bf0da38bc6",
   "missing_signals": [],
   "new_signals": [],
   "provenance": {
@@ -241,7 +241,7 @@
       "original_schema_version": "6.0.0"
     }
   },
-  "schema_version": "2.7.0",
+  "schema_version": "2.8.0",
   "summary": "2 dimensions changed, 26 dimensions unchanged; 0 signals became available, 0 signals became unavailable.",
   "unchanged_dimensions": [
     "bootloader_lock_state",

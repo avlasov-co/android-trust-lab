@@ -1,7 +1,8 @@
 # Generate Report
 
-Regenerate checked-in sample reports, dataset-bound diffs, result tables, the
-strict dataset manifest, and the broader generated-artifact manifest:
+Regenerate checked-in sample reports, dataset-bound diffs, the linked
+cross-observer reports and diffs, result tables, the strict dataset manifest,
+and the broader generated-artifact manifest:
 
 ```bash
 python tools/generate_report.py
@@ -23,5 +24,12 @@ before writing, atomically replaces changed generated files, and publishes
 ```bash
 trustlab dataset verify datasets/manifest.json
 ```
+
+The separate Step 35 source graph is driven by the manually authored
+`tests/fixtures/cross_observer_bundle/expectations.json`. The generator validates
+all three source hashes and collection manifests, evaluates expectations against
+the in-memory reports and pairwise diffs, and only then publishes its generated
+files. It remains outside frozen dataset source v1 because its typed app raw
+artifact is `application/json`.
 
 See `docs/dataset_manifest_v2.md` for the artifact graph and origin rules.
